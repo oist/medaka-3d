@@ -112,6 +112,26 @@ class TestAssets:
         assert catalog.get("sleap.round8.top.centroid", deep=True) == model
         assert catalog.of_kind("sleap_model")[0].provenance == "retrain_20260722_round8"
 
+    def test_absolute_path_references_canonical_location(self, tmp_path):
+        """Large checkpoints stay where they are; the manifest points at them."""
+        root, _ = self.build_root(tmp_path)
+        elsewhere = tmp_path / "canonical" / "big.ckpt"
+        elsewhere.parent.mkdir(parents=True)
+        elsewhere.write_bytes(b"elsewhere")
+        manifest = json.loads((root / "MANIFEST.json").read_text(encoding="utf-8"))
+        manifest["assets"]["sleap.round7.side.centroid"] = {
+            "path": str(elsewhere),
+            "size": elsewhere.stat().st_size,
+            "sha256": sha256_file(elsewhere),
+            "kind": "sleap_model",
+            "provenance": "retrain_20260704",
+        }
+        (root / "MANIFEST.json").write_text(json.dumps(manifest), encoding="utf-8")
+
+        catalog = load_catalog(root)
+        assert catalog.get("sleap.round7.side.centroid", deep=True) == elsewhere
+        assert catalog.verify_all(deep=True) == []
+
     def test_missing_manifest_is_an_error(self, tmp_path):
         (tmp_path / "bare").mkdir()
         with pytest.raises(AssetError, match=r"No MANIFEST\.json"):

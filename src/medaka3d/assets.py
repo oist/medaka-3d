@@ -118,9 +118,13 @@ def load_catalog(asset_root: Path) -> AssetCatalog:
 
     assets: dict[str, Asset] = {}
     for key, entry in payload.get("assets", {}).items():
+        # Absolute paths let the manifest reference an asset at its canonical
+        # location instead of forcing a second copy under asset_root. Multi-GB
+        # checkpoints stay where they are; only homeless assets are copied in.
+        declared = Path(entry["path"])
         assets[key] = Asset(
             key=key,
-            path=Path(asset_root) / entry["path"],
+            path=declared if declared.is_absolute() else Path(asset_root) / declared,
             size=int(entry["size"]),
             sha256=entry["sha256"],
             kind=entry.get("kind", "unknown"),

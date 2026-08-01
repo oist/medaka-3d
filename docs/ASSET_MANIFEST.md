@@ -246,14 +246,21 @@ tagged `round7_260704`** — that is most of the dataset already run through the
 It is derived output, so by the governing rule it should be dropped. But it represents roughly
 65 × 3 = 195 full-length view-inferences of GPU time, which is the scarce resource.
 
-**Measured (K_1_2 as representative): ~777 MB per experiment → ~50 GB across 65.** But that
-double-counts: each view keeps both the 8 per-chunk `.slp` (~15 MB each) *and* the merged
-`<view>.slp` (~125 MB). The chunks are redundant once merged and are pure HPC scratch residue.
-
-- Merged `.slp` only, all 3 views: ~375 MB/exp → **~24 GB**
-- Merged `.slp`, **top camera only**: ~125 MB/exp → **~8 GB**
-
-Eight gigabytes for a validated head start on 65 experiments is cheap.
+> ### ⚠️ Correction — an earlier draft of this section was wrong
+>
+> It assumed each view kept both per-chunk `.slp` *and* a merged `<view>.slp`, and that the
+> chunks were therefore redundant scratch. A direct enumeration showed otherwise:
+>
+> **Only 27 of 216 views had ever been merged. For the other 189, the chunks *were* the
+> predictions.** The merge is a local analysis-time step (`--merge-chunks`) that had only been
+> run for about 9 experiments. Deleting "redundant chunks" would have destroyed the inference
+> output outright for most of the dataset.
+>
+> Measured totals: `sleap_output` was **52.24 GB / 6,252 files**, of which the `round7_260704`
+> tag was 24.13 GB across 65 experiments, and `top_cam` within it 8.12 GB.
+>
+> The lesson generalises: this is precisely the class of confident-but-unverified assumption
+> that made the retired repo untrustworthy. Enumerate, don't extrapolate from one sample.
 
 The complication is the **split production rounds**:
 
@@ -266,11 +273,15 @@ So two thirds of that cluster time (the side views) produced output from a model
 been replaced. Re-running side inference with round 8 is needed regardless, if the new pipeline
 is to use the current models.
 
-**Recommendation:** keep the round-7 `top_cam` predictions as a free head start and a
-regression baseline; plan to re-run side inference under round 8. Confirm the round-8 side model
-actually improves the downstream 3D result on one experiment *before* committing ~130
-view-inferences of cluster time to it — the round-8 decision was made on SLEAP metrics, not on
-3D outcomes.
+**Resolution (executed 2026-08-01):** kept the round-7 `top_cam` output — **523 files, 7.94 GB,
+all 65 experiments** — as a head start and regression baseline. Deleted everything else in
+`sleap_output`: **5,729 files, 44.30 GB**, comprising the superseded round-7 side output and all
+older round-3/4/5 prediction trees whose checkpoints were themselves deleted.
+
+Before committing ~130 view-inferences of cluster time to re-running the sides under round 8,
+confirm on **one** experiment that round 8 actually improves the downstream 3D result. The
+round-8 decision was made on SLEAP keypoint metrics, not on 3D outcomes, and
+`docs/PRIOR_FINDINGS.md` §2.2 records that track-quality QC metrics are blind to identity swaps.
 
 **Extract before archiving `report/`:** the DECISION and summary files are the evidence base for
 the "which model is production" answers above —
@@ -323,3 +334,46 @@ Found during this audit — each is a live source of confusion in the old repo:
 
 **Net: ~22 GB of durable assets + ~1.07 TB of untouched source data.**
 Against ~175k lines of code and ~153 GB of derived output that do not travel.
+
+---
+
+## Execution log — 2026-08-01
+
+Ordering rule held throughout: **nothing was deleted until the keeper copy was verified.**
+
+### Preserved
+
+| Action | Result |
+|---|---|
+| Rescued single-copy assets from the repo | `annotations/` + both D2 COCO sets → archive. 2,892 files / 591 MB, verified by file count **and** total bytes |
+| Archived `report/` | 5,868 files / 6.29 GB. 0 files, 0 bytes failed |
+| Archived `runs/` | 44.76 GB. 0 bytes failed. *Highest-risk item — `runs/` was gitignored and had never been in git history* |
+| Archived `outputs/` | 19.47 GB. Clean |
+| Rescued labels from doomed model dirs | 10 `.pkg.slp` / 7.44 GB → `assets/training/sleap/legacy/`, sizes verified against source |
+| BORIS moved off Google Drive | 26 CSVs → `assets/groundtruth/boris/` on backed-up `/bucket` |
+| Calibration + ground truth + COCO + catalog | copied into the asset root |
+
+> **The near-miss worth remembering.** The "rejected" round-9 model directories contained
+> `side_ci_review_210_labeled_complete_full.pkg.slp` — 482 MB of hand-reviewed side labels — and
+> rounds 3–5 held ~6.4 GB more. "Delete the superseded models" would have destroyed 7.44 GB of
+> human annotation, because labels were stored *inside* model directories. Labels are not models.
+> In the new layout they live under `assets/training/`, never inside a run directory.
+
+### Deleted (164.46 GB reclaimed on `/bucket`)
+
+| What | Freed | Justification |
+|---|---|---|
+| 11 superseded SLEAP model rounds (3/4/5, all sideopt, all round-9/9b, eval leftovers) | **41.79 GB** | Rejected by the 2026-07-29 decision. Labels extracted first |
+| `detectron2_output/` mask shards (K_1_1/2/3) | **78.37 GB** | Fully regenerable from the `.pth` + video; models confirmed intact elsewhere first |
+| `sleap_output/` — all but round-7 `top_cam` | **44.30 GB** | Side output superseded by round 8; older rounds' checkpoints no longer exist |
+
+**Retained on `/bucket`:** `sleap_models/` 19.81 GB (round 7 + round 8 only), `sleap_output/`
+7.94 GB (round-7 top, 65 experiments), `assets/` 27.70 GB, `archive/medaka-mating-pipeline/`
+~71 GB, and the 1.07 TB of source recordings, untouched.
+
+### Not done
+
+- The retired repo's working copy on `C:` is left exactly as it was, for the user to delete.
+- `medaka_202508` (535 GB, 28 pilot sessions) declared **out of scope** and left untouched.
+- The 7.94 GB of retained round-7 `top_cam` predictions can still be deleted in one command if
+  a fully clean inference restart is preferred.
