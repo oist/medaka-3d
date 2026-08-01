@@ -74,6 +74,62 @@ this and is the default protocol for any `identifier` experiment.
 This is also the answer to "is cross-day linkage possible?" — it is the same
 measurement. Cross-day accuracy *is* the re-identification result.
 
+### What ground truth is actually obtainable (experimenter, 2026-08-02)
+
+This constrains the whole design and corrects an over-reading of `group_list.csv`.
+
+| Judgement | Obtainable? |
+|---|---|
+| Which fish is the female, from a **single frame** | **Yes**, near-perfectly |
+| Which male is *white* vs *red*, from a single frame | **No** — the descriptors were assigned by close morphological examination at setup, not applied to video |
+| Which male is which **across a crossing** | **Yes**, by scrubbing back and forth around the intersection |
+
+So the colour descriptors are *not* a usable in-video labelling cue, and my earlier
+claim that they hand a CNN a strong signal was too optimistic. They remain the
+physical referent for M1/M2, and evidence that a real morphological difference
+exists — a CNN may still exploit pixel statistics a human cannot, which is
+exactly the idtracker.ai precedent. But they cannot be assumed.
+
+**The design already matches what is obtainable.** `EncounterTruth` asks for
+exactly the operation the expert can perform: mark the animals at entry, mark
+them at exit, preserve the correspondence. Nothing else is required of them.
+
+Two consequences:
+
+1. **Male labels in ground truth are anonymous but consistent.** The annotator
+   asserts "this male leaving is that male arriving", not "this is the white
+   one". Chaining adjudicated encounters across a video yields globally
+   consistent males for that day — which is the stated *minimum* requirement.
+2. **`naming_accuracy` is scoreable for the female, not yet for the males.**
+   Reported per identity, never as one pooled number. Do not read male naming
+   accuracy until an anchor exists.
+
+### The cross-day anchor problem, and a physical way out
+
+Within a day, identity comes from continuity. **Across days there is no
+continuity** — the fish are removed and returned — so cross-day linkage must come
+from something intrinsic. If the expert cannot name a male from appearance, human
+ground truth cannot validate an appearance model directly, and we would be
+validating a model against itself.
+
+A way out that does not depend on appearance at all: **measured 3D body length.**
+
+Calibration gives metric 3D, and mouth–tail distance is a physical measurement
+that is view-invariant, pose-correctable and independent of colour, lighting and
+camera. `group_list.csv` records a size difference for 16 of 24 trials.
+
+The test is cheap and self-validating:
+
+1. Within one day, use continuity ground truth to separate male A from male B.
+2. Measure each one's 3D length distribution over thousands of frames.
+3. If the distributions separate, size is a usable anchor.
+4. Check the ordering is stable across days and across trials of the same group.
+
+If it holds, cross-day linkage gets an anchor that owes nothing to appearance —
+and an appearance model can then be *validated against it* rather than against
+itself. If the distributions overlap, that is an equally valuable negative result,
+obtained cheaply.
+
 ### One trap to avoid
 
 If part of how the males are told apart in practice is **behavioural** — one is
@@ -123,6 +179,59 @@ Nothing downstream is meaningful without this.
 
 **Exit criterion:** a single command scores any registered component and emits a
 `Scorecard`. Until that exists, Phase C is forbidden.
+
+### Phase B0 — fix SLEAP at crossings (highest practical leverage)
+
+Reported by the experimenter, 2026-08-02, on round 8: **detection degrades exactly
+at crossings.** Instances connect one tail to two mouths; in an X-shaped crossing
+one fish is found and the other becomes unstable.
+
+This is upstream of everything. A wrong or missing detection at a crossing
+poisons association, linking and identity in turn, and no amount of downstream
+cleverness recovers a fish that was never detected. Fix it first.
+
+**Diagnosis — three causes, all addressable:**
+
+1. **The training set contains essentially no crossings.** §2.10: every clean-mask
+   frame has 3D separation >20 mm, and male crops are never closer than 100 px.
+   Labels were mined from frames the pipeline already handled, so the model has
+   effectively never seen an X-crossing. This is almost certainly the main cause,
+   and it is self-inflicted rather than a limitation of SLEAP. *Verify first* by
+   counting labelled frames with two instances closer than 100 px.
+2. **Top-down is structurally weak here.** The pipeline is centroid → crop →
+   keypoints. When two fish overlap, the crop contains both, and
+   `centered_instance` has no mechanism to decide which mouth belongs to which
+   tail. "One tail, two mouths" is the exact signature of that failure.
+3. **Top-down vs bottom-up was decided on the wrong distribution.** Round 7 trained
+   a bottom-up baseline and `EVAL_SUMMARY.md` chose top-down for production — but
+   over all frames, which are overwhelmingly well-separated fish. **A model can win
+   on average while losing precisely where it matters.** Bottom-up part-affinity
+   fields explicitly model which limb belongs to which instance, which is the
+   problem at hand.
+
+**Actions, cheapest first:**
+
+- **Re-evaluate the existing round-7 top-down and bottom-up models on crossing
+  frames only.** No training, both checkpoints are on `/bucket`. May flip the
+  production choice, or justify running both and merging.
+- **Mine crossing frames with `eval.find_encounters()` and annotate them.** The
+  encounter detector already locates exactly these moments from existing tracks.
+  A few hundred labelled crossing frames should move this more than any
+  architectural change.
+- **Add a geometric plausibility filter.** With mouth+tail and calibration, body
+  length is a physical quantity with a known range (~25–35 mm). Two instances
+  sharing a node, or a 3D length far outside distribution, is detectable and
+  rejectable as a cheap post-process — it catches the reported failure directly.
+- **Use multi-view consistency as a detection gate.** A 2D instance that cannot
+  triangulate coherently against the other two views is suspect. Three cameras
+  are an advantage no single-view tracker has; the old pipeline used them for
+  reconstruction but never fed the result back to filter detections.
+
+> **One annotation pass serves two purposes.** The frames needed to retrain SLEAP
+> at crossings are the *same frames* needed for identity ground truth, and the
+> same ones the expert can adjudicate by scrubbing. Annotate encounters once, and
+> use the result for both. Given a budget of a few hours, this is the difference
+> between the plan being affordable and not.
 
 ### Phase B — collect the data the methods actually need
 

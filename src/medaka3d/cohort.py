@@ -3,23 +3,35 @@
 Two things live here that the retired repo left implicit, at real scientific
 cost.
 
-**Days are not replicates.** A folder name encodes
-``<set_date>_<GROUP>_<trial>_<day>_<paradigm>``, and the *same three fish* are
-recorded on three consecutive days within one trial. ``K_1_1``, ``K_1_2`` and
-``K_1_3`` are one trio observed three times, not three independent trials. The
-retired repo's headline "female mate choice in all 3 trials (0.61 / 0.71 / 0.80)"
-is therefore n=1 trio with three repeated measures, not n=3 — and its own
-findings dossier recorded the question as INCONCLUSIVE while the answer sat in
-the experiment list. ``Trial`` exists so that the independent unit is a type,
-not a convention someone has to remember.
+**The group is the individual.** A folder name encodes
+``<set_date>_<GROUP>_<trial>_<day>_<paradigm>``. A group name denotes one trio of
+fish for its entire lifetime, so *every* experiment sharing a group name — across
+days and across trials — is a repeated measure of the same three animals. The
+white male of ``K_1`` is the same fish as the white male of ``K_2``, 15 days
+later.
 
-**M1 and M2 are not arbitrary labels.** The experimenter recorded a physical
-descriptor for every animal — colour and relative size — in ``group_list.csv``.
-For group K the males are *white* and *red*. This matters twice over: it is the
-ground-truth referent that makes cross-day identity meaningful at all, and it is
-evidence that a learnable appearance signal exists. The dossier's claim that the
-males are "not visually distinguishable by eye" is contradicted by the
-experimenter's own records.
+Consequences: ``K_1_1``, ``K_1_2``, ``K_1_3`` are one trio observed three times,
+so the retired repo's headline "female mate choice in all 3 trials
+(0.61 / 0.71 / 0.80)" is n=1, not n=3 — its own dossier recorded the question as
+INCONCLUSIVE while the answer sat in the experiment list. And the independent
+unit is the **group**, not the trial: ``Trio`` exists so that this is a type
+rather than a convention someone has to remember.
+
+The same fact is an asset. Six recording days spanning weeks, of known-identical
+individuals, is a re-identification benchmark that needs no extra annotation:
+train on one trial, test on another.
+
+**M1 and M2 denote specific animals.** The experimenter recorded a physical
+descriptor for each — colour and relative size — in ``group_list.csv`` (group K:
+males *white* and *red*), assigned by expert morphological examination at setup,
+never from behaviour.
+
+Note the limit, which matters for ground truth: those descriptors were assigned
+under close examination, and the experimenter reports being **unable to apply
+them reliably to a single video frame**. Continuity through a crossing can be
+adjudicated by scrubbing; absolute naming of a male from one frame generally
+cannot. See ``docs/DEVELOPMENT_STRATEGY.md`` for how ground truth is built
+around that constraint.
 """
 
 from __future__ import annotations
@@ -78,12 +90,23 @@ class ExperimentId:
         )
 
     @property
-    def trial_key(self) -> tuple[str, int]:
-        """The independent experimental unit: one trio of fish.
+    def trio_key(self) -> str:
+        """**The independent experimental unit.**
 
-        Group all analysis by this, never by folder. Two folders sharing a
-        trial_key are the same animals and their measurements are not
-        independent observations.
+        A group name denotes one trio of individuals for its whole lifetime. The
+        white male of ``K_1`` is the *same fish* as the white male of ``K_2``,
+        recorded 15 days later. So every experiment sharing a group name is a
+        repeated measure of the same three animals, and statistics must be
+        grouped by this, never by folder and never by trial.
+        """
+        return self.group
+
+    @property
+    def trial_key(self) -> tuple[str, int]:
+        """A recording block: consecutive days with one setup.
+
+        Useful for session-level grouping, but **not** an independent unit —
+        two trials of one group are still the same fish.
         """
         return (self.group, self.trial)
 
@@ -187,6 +210,31 @@ def load_groups(path: str | Path) -> dict[str, Group]:
     return groups
 
 
+#: Notes in `group_list.csv` implying a group did NOT get three fresh fish.
+_REUSE_HINTS = ("only change", "give up female", "change female")
+
+
+def groups_with_possible_shared_individuals(groups: dict[str, Group]) -> dict[str, str]:
+    """Groups whose note suggests they reuse animals from another group.
+
+    Returns ``{group_name: note}``. **Confirm each with the experimenter before
+    treating these as independent units.**
+
+    Concretely: group C is noted "give up female at 20260105" and group P, set on
+    exactly 20260105, is noted "only change female" — and both list males *red*
+    and *white*. If P is C's males with a new female, then C and P are not two
+    independent replicates, and the two males appear across roughly three weeks.
+
+    That is a statistical hazard and a re-identification opportunity at the same
+    time, which is why this reports rather than decides.
+    """
+    return {
+        name: group.note
+        for name, group in sorted(groups.items())
+        if any(hint in group.note.lower() for hint in _REUSE_HINTS)
+    }
+
+
 @dataclass(frozen=True, slots=True)
 class Trial:
     """One trio of fish observed across consecutive days.
@@ -224,6 +272,61 @@ class Trial:
         """
         held = self.day(test_day)
         return tuple(e for e in self.days if e.day != test_day), held
+
+
+@dataclass(frozen=True, slots=True)
+class Trio:
+    """All recordings of one group — i.e. of one set of three individuals.
+
+    **This is the independent unit for statistics.** Everything inside it is a
+    repeated measure.
+    """
+
+    group: str
+    trials: tuple[Trial, ...]
+
+    @property
+    def experiments(self) -> tuple[ExperimentId, ...]:
+        return tuple(e for t in self.trials for e in t.days)
+
+    @property
+    def n_days(self) -> int:
+        return len(self.experiments)
+
+    def trial(self, trial: int) -> Trial:
+        for candidate in self.trials:
+            if candidate.trial == trial:
+                return candidate
+        raise CohortError(f"group {self.group} has no trial {trial}")
+
+    def holdout_by_trial(
+        self, test_trial: int
+    ) -> tuple[tuple[ExperimentId, ...], tuple[ExperimentId, ...]]:
+        """Split by recording block: train on one trial, test on another.
+
+        The strongest re-identification test available without new annotation.
+        Trials of one group are separated by days to weeks — different sessions,
+        different lighting, the fish having grown — yet provably the same
+        animals. A model that transfers across this has learned the individual
+        and nothing else.
+        """
+        held = self.trial(test_trial)
+        train = tuple(e for t in self.trials if t.trial != test_trial for e in t.days)
+        if not train:
+            raise CohortError(f"group {self.group} has only trial {test_trial}; no training split")
+        return train, held.days
+
+
+def group_trios(folders: list[str], *, strict: bool = False) -> dict[str, Trio]:
+    """Group recording folders into trios — the independent statistical unit."""
+    trials = group_trials(folders, strict=strict)
+    buckets: dict[str, list[Trial]] = {}
+    for (group, _), trial in trials.items():
+        buckets.setdefault(group, []).append(trial)
+    return {
+        group: Trio(group=group, trials=tuple(sorted(items, key=lambda t: t.trial)))
+        for group, items in sorted(buckets.items())
+    }
 
 
 def group_trials(folders: list[str], *, strict: bool = False) -> dict[tuple[str, int], Trial]:

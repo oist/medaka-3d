@@ -12,6 +12,8 @@ from medaka3d.cohort import (
     ExperimentId,
     FishDescriptor,
     group_trials,
+    group_trios,
+    groups_with_possible_shared_individuals,
     load_groups,
 )
 from medaka3d.types import Identity
@@ -41,14 +43,19 @@ class TestExperimentId:
         assert e.set_date == "20251225"
 
     def test_days_of_one_trial_share_a_trial_key(self):
-        """The load-bearing fact: K_1_1..K_1_3 are ONE experimental unit."""
         keys = {ExperimentId.parse(f"20251225_K_1_{d}_FCMC").trial_key for d in (1, 2, 3)}
         assert keys == {("K", 1)}
 
-    def test_different_trials_of_one_group_are_distinct_units(self):
+    def test_every_experiment_of_a_group_is_the_same_trio(self):
+        """The load-bearing fact: a group name IS the individuals.
+
+        K_1 and K_2 are different recording blocks 15 days apart, but the same
+        three fish -- so they are repeated measures, not replicates.
+        """
         a = ExperimentId.parse("20251225_K_1_1_FCMC")
         b = ExperimentId.parse("20260109_K_2_1_FCMC")
-        assert a.trial_key != b.trial_key
+        assert a.trial_key != b.trial_key  # different recording blocks
+        assert a.trio_key == b.trio_key == "K"  # same animals
 
     def test_suffixed_paradigm_is_kept(self):
         assert ExperimentId.parse("20250106_E_2_1_FCMC_P2").paradigm == "FCMC_P2"
@@ -160,6 +167,53 @@ class TestTrials:
     def test_holdout_rejects_a_missing_day(self):
         with pytest.raises(CohortError, match="no day 9"):
             group_trials(self.FOLDERS)[("K", 1)].holdout_split(test_day=9)
+
+
+class TestTrios:
+    def test_group_is_the_independent_unit(self):
+        trios = group_trios(TestTrials.FOLDERS)
+        assert set(trios) == {"K", "E"}
+        assert trios["K"].n_days == 4  # 3 days of trial 1 + 1 of trial 2
+
+    def test_cross_trial_holdout_spans_recording_blocks(self):
+        """The strongest re-ID split available with no extra annotation."""
+        train, test = group_trios(TestTrials.FOLDERS)["K"].holdout_by_trial(test_trial=2)
+        assert {e.trial for e in train} == {1}
+        assert {e.trial for e in test} == {2}
+        assert not {e.folder for e in train} & {e.folder for e in test}
+
+    def test_single_trial_group_cannot_be_split_across_trials(self):
+        with pytest.raises(CohortError, match="no training split"):
+            group_trios(["20251220_E_1_1_FCMC"])["E"].holdout_by_trial(test_trial=1)
+
+    def test_missing_trial_is_reported(self):
+        with pytest.raises(CohortError, match="no trial 9"):
+            group_trios(TestTrials.FOLDERS)["K"].trial(9)
+
+
+class TestSharedIndividuals:
+    def test_plain_abandonment_is_not_a_reuse_hint(self, groups):
+        """'give up at <date>' retires a group; it does not reuse animals."""
+        assert groups_with_possible_shared_individuals(groups) == {}
+
+    def test_change_female_is_flagged(self, tmp_path):
+        path = tmp_path / "g.csv"
+        path.write_text(
+            GROUP_CSV + "20260105,Q,yellow,red,white,only change female\n", encoding="utf-8"
+        )
+        flagged = groups_with_possible_shared_individuals(load_groups(path))
+        assert flagged == {"Q": "only change female"}
+
+    def test_real_sheet_flags_the_c_p_male_sharing(self):
+        real = Path("Z:/StephensU/medaka/assets/catalog/experiment_list/group_list.csv")
+        if not real.is_file():
+            pytest.skip("asset root not mounted")
+        g = load_groups(real)
+        flagged = groups_with_possible_shared_individuals(g)
+        assert "P" in flagged and "C" in flagged
+        # both list the same two males; P is set the day C's female was given up
+        assert g["C"].male_1.colours == g["P"].male_1.colours
+        assert g["C"].male_2.colours == g["P"].male_2.colours
 
 
 def test_real_group_list_is_parseable():
