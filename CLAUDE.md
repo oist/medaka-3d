@@ -19,11 +19,18 @@ nothing was.
 hypothesis with a re-verification recipe**, never as established fact. Three constraints bound
 everything that came before:
 
-- Nearly all analysis rests on **3 experiments out of 71**, and it is not established that they
-  are three independent females.
+- Nearly all analysis rests on **one trio of fish**. `K_1_1`, `K_1_2`, `K_1_3` are the *same
+  three fish on three consecutive days* — repeated measures, not three replicates. The prior
+  "N=3 mate choice" result is n=1. The dataset holds **24 trials across 14 groups**, 22 with
+  all three days; 23 of the 24 were never analysed.
 - Only ~22–26 experiments have any human (BORIS) annotation.
 - Ground truth labels **only the female**. There has never been a male-vs-male ground truth set,
-  so every M1/M2 claim is currently unvalidatable.
+  so every M1/M2 claim is currently unvalidated.
+
+Use `medaka3d.cohort` for anything involving experiment structure. The independent statistical
+unit is `Trial` (group + trial), **never** the folder. The experimenter's physical descriptors
+for each fish (group K: female *yellow*, males *white* and *red*) live in `group_list.csv` and
+are loaded by `cohort.load_groups` — M1/M2 denote specific animals, not arbitrary slots.
 
 Do not repeat a prior number as settled. Cite it as a hypothesis and say what would confirm it.
 

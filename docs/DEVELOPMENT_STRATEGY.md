@@ -35,9 +35,55 @@ methods before fixing measurement is what produced 53 undead experiments.
 
 | Question | Decision | Consequence |
 |---|---|---|
-| Per-male identity (M1 vs M2)? | **Required** | The hardest open problem stays in scope. Male-male GT must be built — it has never existed |
-| Annotation budget | **A few hours** | Forces encounter-level annotation. Frame-level labelling is not affordable and never was |
+| Per-male identity (M1 vs M2)? | **Required** | It is the experiment's purpose: male–male competition, and which male she accepts. Not optional |
+| Cross-day linkage of M1/M2 | **Highly desirable** | Turns identity into a re-identification problem — and into the validation instrument (below) |
+| Annotation budget | **A few hours** | Forces encounter-level annotation. Frame-level labelling was never affordable |
 | Structure | `labs/` quarantine, CI-enforced | Experiments cannot silently accumulate |
+
+### Why per-male identity is now the *most promising* part, not the hardest
+
+Two discoveries from the experimenter's own records (see
+[PRIOR_FINDINGS.md](PRIOR_FINDINGS.md) §Corrections) invert the earlier outlook.
+
+**The males differ by colour.** `group_list.csv` records a physical descriptor
+for every animal. Group K: female *yellow*, males *white* and *red*. Across 24
+trials, 14 are separated by colour + size, 8 by colour, only 2 by size alone.
+The retired repo concluded that appearance was marginal and geometry had hit a
+ceiling — without ever using this. Colour is about the strongest signal a CNN
+can be handed.
+
+**The same three fish are recorded on three consecutive days.**
+`K_1_1 / K_1_2 / K_1_3` is one trio observed three times. That is the design the
+whole identity problem should be built around.
+
+### The three-day design is the validation instrument
+
+Every appearance dataset in the retired repo was circular and leaky (§4.4):
+trained and tested within the same video, so a model could score well by
+memorising a background patch or a lighting gradient rather than the animal.
+
+The repeated-measures design removes that possibility outright:
+
+> **Train on day 1. Test on day 3.**
+
+Different session, different lighting, different behaviour, same animals. A
+model that transfers has learned the individual — there is no within-video
+shortcut available to it. `Trial.holdout_split(test_day=3)` implements exactly
+this and is the default protocol for any `identifier` experiment.
+
+This is also the answer to "is cross-day linkage possible?" — it is the same
+measurement. Cross-day accuracy *is* the re-identification result.
+
+### One trap to avoid
+
+If part of how the males are told apart in practice is **behavioural** — one is
+bolder, one courts more — then using that to label ground truth would make the
+mate-choice analysis circular: identity inferred from behaviour, then behaviour
+compared between identities.
+
+Ground truth must rest on **morphology only**: colour, markings, body
+proportion. If an annotator cannot tell them apart from a still frame without
+watching what the fish does, that frame is not usable ground truth.
 
 ### Why a few hours is enough
 
@@ -94,20 +140,47 @@ appearance dataset built so far was circular and leaky (§4.4).
 Only now. Each experiment is a lab, implements one stage Protocol, and is scored
 by the shared harness.
 
-Priority order, by expected value against swaps:
+Priority order, revised now that the colour cue and the three-day design are known:
 
-1. **Segmentation-instance linking** (`linker`). SAM2 video propagation is
-   genuinely stronger than what was tried. Constraint from §2.7: segmentation is a
-   *confidence signal*, never a hard veto.
-2. **Contact-trained appearance identifier** (`identifier`). Only meaningful after
-   Phase B — the previous classifiers were trained on data where the males were
-   never within 100 px.
+1. **Colour-anchored appearance identifier, validated cross-day** (`identifier`).
+   The highest-value experiment in the project. Train on day 1 of a
+   colour-separated trial (K, M, F, P), test on day 3. Success is a genuine
+   re-identification result and directly delivers the cross-day linkage the
+   study needs. Reported as `naming_accuracy`, not survival.
+2. **Segmentation-instance linking** (`linker`). SAM2 video propagation is far
+   stronger than what was tried, and masks give the appearance model clean
+   colour pixels rather than a background-contaminated bbox. Constraint from
+   §2.7: segmentation is a *confidence signal*, never a hard veto.
 3. **Global fragment path-cover** (`identifier`). The best-designed *unexecuted*
    proposal in the old repo: constrained path-cover with explicit edge costs and
    multiple independent biological anchors, **leaving unanchored paths unlabelled**.
-   Abstention is scored as a first-class outcome precisely to make this viable.
+   With a working colour anchor it becomes far more tractable than it was.
 4. **Reflection-suppressing scene model** (`detector`). Addresses the
    entry-phantom bug (§4.6), where reflections produced false fish.
+
+### On the idtracker.ai precedent
+
+The precedent is real: it routinely separates 3+ animals that humans cannot
+distinguish, by training a CNN on crops taken from *global fragments* — stretches
+where every animal is simultaneously visible and separated — then propagating
+those identities through crossings.
+
+The retired repo ran it and it failed its localisation gate (§2.9). That is
+worth understanding rather than dismissing, because three things were working
+against it and all three are fixable:
+
+- It was fed 3D-cleaned **top-camera-only** input. We have three synchronised
+  views, so there is 3× the appearance evidence per frame that idtracker.ai's
+  single-view design cannot use.
+- Its crops came from pipelines that filtered out close contact, so the model
+  never saw the regime it had to resolve.
+- Nobody had established that a visual cue existed, so a poor result was
+  indistinguishable from an absent signal. We now know the cue is colour.
+
+**Adopt the mechanism, not the tool**: global-fragment mining plus a CNN is the
+right architecture, extended to three views and anchored on a known cue. Keep
+idtracker.ai itself as a baseline to beat, since it gives a published reference
+point.
 
 ### On 3D Gaussian splatting
 

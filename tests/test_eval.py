@@ -139,11 +139,24 @@ class TestScoring:
         # one exchange, counted once -- not once per animal involved
         assert out.swapped_pairs == ((M1, M2),)
 
-    def test_consistent_relabelling_is_not_a_swap(self):
-        """M1/M2 letters are arbitrary; only a *change* in assignment counts."""
+    def test_consistent_relabelling_survives_but_is_misnamed(self):
+        """Continuity and naming are separate failures.
+
+        M1/M2 are anchored to the experimenter's colour descriptors (group K:
+        white vs red), so a consistent global relabelling is a real error --
+        but it is a *naming* error, not a tracking one. The method never lost
+        an animal, so it survived.
+        """
         relabelled = {F: (0.0, 0.0), M2: (500.0, 0.0), M1: (0.0, 500.0)}
         out = score_encounter(truth(SEPARATED, SEPARATED), relabelled, relabelled)
-        assert out.survived and not out.is_error
+        assert out.survived and not out.is_error  # continuity intact
+        assert set(out.misnamed) == {M1, M2}  # naming wrong
+        assert not out.correctly_named
+
+    def test_correct_naming_is_recorded(self):
+        out = score_encounter(truth(SEPARATED, SEPARATED), SEPARATED, SEPARATED)
+        assert out.correctly_named and out.misnamed == ()
+        assert out.n_named == 3
 
     def test_unknown_is_abstention_not_error(self):
         partial = {F: (0.0, 0.0), Identity.UNKNOWN: (500.0, 0.0)}
@@ -182,6 +195,19 @@ class TestScorecard:
 
     def test_swaps_reported_per_pair_never_pooled(self):
         assert self.build().swaps_by_pair() == {"M1-M2": 1}
+
+    def test_naming_accuracy_is_independent_of_survival(self):
+        """A perfect tracker that names every animal wrong: survival 1, naming 0."""
+        relabelled = {F: (500.0, 0.0), M1: (0.0, 500.0), M2: (0.0, 0.0)}
+        card = Scorecard(method="misnamer")
+        card.outcomes = [score_encounter(truth(SEPARATED, SEPARATED), relabelled, relabelled)]
+        assert card.survival_rate == 1.0
+        assert card.naming_accuracy == 0.0
+
+    def test_naming_accuracy_ignores_abstentions(self):
+        card = self.build()  # 1 correct, 1 swapped, 1 abstained
+        # 2 committed encounters x 3 animals; the swap misnames 2 of them
+        assert card.naming_accuracy == pytest.approx(4 / 6)
 
     def test_summary_is_json_ready(self):
         import json

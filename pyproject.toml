@@ -35,3 +35,8 @@ src = ["src", "tests"]
 
 [tool.ruff.lint]
 select = ["E", "F", "I", "UP", "B", "SIM", "RUF"]
+
+[tool.ruff.lint.per-file-ignores]
+# The experiment sheet genuinely contains full-width commas (Japanese IME);
+# these fixtures reproduce it byte-for-byte on purpose.
+"tests/test_cohort.py" = ["RUF001"]

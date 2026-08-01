@@ -7,7 +7,77 @@ not inherit it. Nothing in this document is an established fact.
 
 ---
 
+## ⚠️ CORRECTIONS — 2026-08-02
+
+Two framing facts below were **wrong**, and both were resolved from the
+experimenter's own records in `experiment_list/` (now under
+`asset_root/catalog/experiment_list/`). Corrections are recorded here rather
+than edited in place, so the original reasoning stays auditable.
+
+### C1. "The three trials may not be three independent females" — resolved: they are ONE trio
+
+Framing fact 2 recorded this as INCONCLUSIVE. It is not. The folder convention
+is `<set_date>_<GROUP>_<trial>_<day>_<paradigm>`, confirmed by the sheet's own
+legend (`ExpStartTime_Group_Times_Day_Procedure`) and by the catalog's
+`experiment.group` / `.trial` / `.day` columns:
+
+| folder | group | trial | day | actual recording date |
+|---|---|---|---|---|
+| `20251225_K_1_1_FCMC` | K | 1 | 1 | 2025-12-25 |
+| `20251225_K_1_2_FCMC` | K | 1 | 2 | 2025-12-26 |
+| `20251225_K_1_3_FCMC` | K | 1 | 3 | 2025-12-27 |
+
+**K_1_1, K_1_2 and K_1_3 are the same three fish on three consecutive days.**
+The date in the folder name is the *set* date, not the recording date — which
+is why an earlier pass reported them as "all recorded 2025-12-25".
+
+Consequence: the headline result in §1.1 — "female mate choice in all 3 trials",
+association 0.61 / 0.71 / 0.80 — is **n=1 trio with three repeated measures**,
+not n=3. Every prior analysis in this repository used this one trio. Reporting
+it as N=3 would not survive review.
+
+The independent unit is the **trial**, not the folder. `medaka3d.cohort.Trial`
+exists to make that a type rather than a convention.
+
+**The dataset is far richer than the prior work used: 24 distinct trials across
+14 groups, 22 of them with all three days.** Generalisation was never tested
+because 23 of 24 trials were never analysed.
+
+### C2. "The two males are not visually distinguishable" — false
+
+Repeated below as justification for treating the M1/M2 letters as provisional.
+The experimenter recorded a physical descriptor for every animal in
+`group_list.csv`:
+
+| group | female | male 1 | male 2 | separating cue |
+|---|---|---|---|---|
+| K | yellow | **white** | **red** | colour |
+| M | smallest | tail yellow | tail red | colour |
+| I | biggest | yellow, small | white, big | colour + size |
+| L | yellow | small | big | size only |
+
+Across all 24 trials: **14 separated by colour + size, 8 by colour, 2 by size
+only** (L_1, L_2). No group has indistinguishable males — enforced as a test in
+`tests/test_cohort.py`.
+
+Consequences:
+
+1. **M1 and M2 are not arbitrary labels.** They denote specific animals. A
+   consistent global relabelling is a real error, so continuity and naming are
+   scored separately (`Scorecard.survival_rate` vs `.naming_accuracy`).
+2. **A learnable appearance signal exists**, and it is colour — not a subtle
+   texture. The prior conclusion that geometry had hit a ceiling and appearance
+   was marginal was reached without using this.
+3. **Size-only groups are weak targets.** Apparent size varies with pose, depth
+   and camera, and the animals grow between days. Prefer colour-separated
+   groups; treat L as a stress test, not a starting point.
+
+---
+
 ## READ THIS FIRST — five framing facts
+
+> Facts 2 and 5 are superseded by the corrections above. Read them as a record
+> of what was believed, not as current state.
 
 1. **Nearly all science rests on 3 experiments.** K_1_1, K_1_2, K_1_3 (all recorded 2025-12-25,
    group "K", all `FCMC`). The corpus is ~71–76 experiments. **Generalization is completely

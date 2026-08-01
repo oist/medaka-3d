@@ -38,7 +38,21 @@ DEFAULT_MATCH_RADIUS_PX = 60.0
 
 @dataclass(frozen=True, slots=True)
 class EncounterOutcome:
-    """How one method fared on one encounter."""
+    """How one method fared on one encounter.
+
+    Two independent failures are recorded, because they are different problems:
+
+    - ``swapped_pairs`` — a *continuity* failure. Two animals exchanged labels
+      across the encounter. This is the tracking failure.
+    - ``misnamed`` — a *naming* failure. The animal is followed correctly but
+      called by the wrong name. M1 and M2 are anchored to the experimenter's
+      physical descriptors (for group K, *white* and *red*), so calling the red
+      male "M1" throughout is wrong even though nothing was ever swapped.
+
+    A method can have perfect continuity and still be entirely misnamed, and
+    the two are fixed by different means — better linking versus a better
+    appearance model.
+    """
 
     experiment: str
     entry_frame: int
@@ -46,11 +60,17 @@ class EncounterOutcome:
     abstained: bool
     swapped_pairs: tuple[tuple[Identity, Identity], ...] = ()
     unmatched: tuple[Identity, ...] = ()
+    misnamed: tuple[Identity, ...] = ()
+    n_named: int = 0
 
     @property
     def is_error(self) -> bool:
-        """A wrong claim. Abstention and unmatched detections are not errors."""
+        """A continuity failure. Abstention and unmatched detections are not."""
         return bool(self.swapped_pairs)
+
+    @property
+    def correctly_named(self) -> bool:
+        return not self.misnamed and not self.abstained
 
 
 @dataclass(slots=True)
@@ -102,6 +122,21 @@ class Scorecard:
     def abstention_rate(self) -> float:
         return self.n_abstained / self.n_encounters if self.n_encounters else float("nan")
 
+    @property
+    def naming_accuracy(self) -> float:
+        """Share of committed identity calls that used the *right* name.
+
+        Independent of ``survival_rate``. A method can follow every animal
+        flawlessly (survival 1.0) while calling the red male "M1" throughout
+        (naming 0.0). Only this metric can see that, and it is the one that
+        decides whether cross-day linkage is possible at all.
+        """
+        total = sum(o.n_named for o in self.outcomes if not o.abstained)
+        if not total:
+            return float("nan")
+        wrong = sum(len(o.misnamed) for o in self.outcomes if not o.abstained)
+        return (total - wrong) / total
+
     def swaps_by_pair(self) -> dict[str, int]:
         """Swap counts keyed by the identity pair involved, never pooled."""
         counter: Counter[str] = Counter()
@@ -122,6 +157,7 @@ class Scorecard:
                 round(self.precision_when_committed, 4) if self.n_adjudicated else None
             ),
             "abstention_rate": round(self.abstention_rate, 4) if self.n_encounters else None,
+            "naming_accuracy": (round(self.naming_accuracy, 4) if self.n_adjudicated else None),
             "swaps_by_pair": self.swaps_by_pair(),
         }
 
@@ -172,17 +208,18 @@ def score_encounter(
     UNKNOWN at either end, or produced nothing within ``match_radius_px``, the
     encounter is an abstention rather than a failure.
 
-    Note what this deliberately does **not** penalise: a method that calls the
-    true M1 "M2" at both entry and exit scores as survived. That is correct.
-    The M1/M2 letters are arbitrary — the findings dossier records the
-    assignment as explicitly provisional — so a consistent global relabelling is
-    a naming difference, not a tracking failure. Only a *change* in assignment
-    across the encounter is a swap.
+    Survival deliberately ignores naming: a method that calls the true M1 "M2"
+    at both entry and exit still *survived*, because it never lost track of the
+    animal. That isolates the tracking failure from the naming failure.
 
-    The same leniency applies to the female, which means sexing errors are
-    invisible here. That is a separate question with a separate metric; do not
-    read a high survival rate as evidence that the female was correctly
-    identified.
+    Naming is not thereby excused. M1 and M2 refer to specific animals — the
+    experimenter recorded them by colour, e.g. *white* and *red* for group K —
+    so a consistent global relabelling is a genuine error, just a different one.
+    It is reported as ``misnamed`` and aggregated as ``Scorecard.naming_accuracy``.
+
+    Read the two together. High survival with low naming accuracy means the
+    linker works and the appearance model does not; the reverse means the
+    opposite. Neither number alone tells you which to fix.
     """
     at_entry = _assign(entry_pred, truth.entry_xy, match_radius_px)
     at_exit = _assign(exit_pred, truth.exit_xy, match_radius_px)
@@ -215,10 +252,17 @@ def score_encounter(
             }
         )
     )
+    # Naming is scored separately from continuity: M1/M2 refer to physical
+    # animals (the experimenter's colour descriptors), so a method that follows
+    # every animal perfectly but calls them by the wrong names has a real error
+    # that swap-counting cannot see.
+    misnamed = tuple(i for i in truth.identities if at_entry[i] is not i or at_exit[i] is not i)
     return EncounterOutcome(
         experiment=truth.experiment,
         entry_frame=truth.entry_frame,
         survived=not swapped,
         abstained=False,
         swapped_pairs=swapped,  # type: ignore[arg-type]
+        misnamed=misnamed,
+        n_named=len(truth.identities),
     )
