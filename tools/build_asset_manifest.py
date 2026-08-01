@@ -24,7 +24,7 @@ from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "src"))
 
-from medaka3d.assets import sha256_file  # noqa: E402
+from medaka3d.assets import sha256_file
 
 BUCKET = Path("Z:/StephensU/medaka")
 
@@ -71,7 +71,10 @@ def sleap_labels() -> dict[str, dict]:
         "labels.round8.combined": (r8 / "combined_labels.pkg.slp", "round8 cumulative superset"),
         "labels.round8.top.train": (r8 / "top" / "train_labels.pkg.slp", "round8 top train split"),
         "labels.round8.top.val": (r8 / "top" / "val_labels.pkg.slp", "round8 top val split"),
-        "labels.round8.side.train": (r8 / "side" / "train_labels.pkg.slp", "round8 side train split"),
+        "labels.round8.side.train": (
+            r8 / "side" / "train_labels.pkg.slp",
+            "round8 side train split",
+        ),
         "labels.round8.side.val": (r8 / "side" / "val_labels.pkg.slp", "round8 side val split"),
         "labels.round7.top": (r7 / "top" / "labels.pkg.slp", "round7 top n=1295"),
         "labels.round7.side": (r7 / "side" / "labels.pkg.slp", "round7 side n=2590"),
