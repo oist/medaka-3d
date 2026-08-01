@@ -1,0 +1,32 @@
+# Machine-specific configuration
+configs/paths.local.toml
+
+# Environments
+.venv/
+.venv-*/
+__pycache__/
+*.py[cod]
+*.egg-info/
+
+# Tooling
+.pytest_cache/
+.ruff_cache/
+
+# ---------------------------------------------------------------------------
+# Large data NEVER enters this repo. It lives under asset_root / work_dir on
+# /bucket, which is backed up. Anything a human made — annotations, labels,
+# ground truth — goes there immediately, never only into a working directory.
+#
+# In the retired repo this rule was not enforced and two Detectron2 COCO
+# training sets plus all hand-made ground truth existed in exactly one place:
+# a gitignored folder on one laptop. Do not repeat that.
+# ---------------------------------------------------------------------------
+*.mp4
+*.slp
+*.pkg.slp
+*.h5
+*.ckpt
+*.pth
+*.pt
+*.joblib
+*.npz
