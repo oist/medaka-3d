@@ -84,9 +84,12 @@ Never hardcode `Z:` or `G:` — they differ per machine.
 
 `/bucket` is read-only from cluster compute nodes. This drives most of the HPC architecture.
 
-## Status
+## Status and what to do next
 
-Foundation only — `paths`, `assets`, `provenance`, and their tests. **No pipeline code yet.**
+**Start here: [docs/ROADMAP.md](docs/ROADMAP.md)** — ordered phases with gates.
+
+Foundation only — `paths`, `assets`, `provenance`, `cohort`, `stages`, `eval`, and their
+tests. **No pipeline code yet.**
 Next milestone per [docs/MIGRATION_PLAN.md](docs/MIGRATION_PLAN.md): calibration, then one
 experiment end-to-end from raw video, compared against the archived prior result. Where the new
 number disagrees with the old, the disagreement is the finding — the old pipeline is not the
