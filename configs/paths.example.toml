@@ -26,7 +26,10 @@ sleap_output_dir = "Z:\\StephensU\\medaka\\sleap_output"
 # Frozen archive of the retired medaka-mating-pipeline repo.
 archive_dir = "Z:\\StephensU\\medaka\\archive\\medaka-mating-pipeline"
 
-# Manual BORIS ethograms, one CSV per experiment. Currently on Google Drive,
-# which is a sync client and not archival storage — prefer the copy under
-# asset_root/groundtruth/boris/ once it exists.
-# boris_events_dir = "G:\\.shortcut-targets-by-id\\...\\boris_events"
+# There is deliberately no key for BORIS ethograms. They moved off Google Drive
+# into the asset root during the migration and are resolved through the
+# checksummed manifest:
+#     catalog.get("ground_truth:groundtruth/boris/<experiment>.csv")
+# Adding a path key back would create a second, unverified route to the same
+# files. Unrecognised keys are a load-time error, so a stale local config that
+# still sets boris_events_dir will fail loudly rather than be ignored.

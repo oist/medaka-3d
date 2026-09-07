@@ -20,10 +20,15 @@ REQUIRED_KEYS: tuple[str, ...] = (
     "work_dir",  # this machine's scratch for pipeline outputs
 )
 
+# Note: there is deliberately no key for BORIS ethograms. They were moved off
+# Google Drive into the asset root during the migration and are resolved through
+# the checksummed manifest instead:
+#     catalog.get("ground_truth:groundtruth/boris/<experiment>.csv")
+# A second, unchecksummed way to reach the same files is exactly the drift this
+# module exists to prevent. One source of truth: MANIFEST.json.
 OPTIONAL_KEYS: tuple[str, ...] = (
     "sleap_output_dir",
     "archive_dir",
-    "boris_events_dir",
 )
 
 
@@ -40,7 +45,6 @@ class Paths:
     work_dir: Path
     sleap_output_dir: Path | None = None
     archive_dir: Path | None = None
-    boris_events_dir: Path | None = None
     source: Path | None = None
 
     def experiment_dir(self, experiment: str) -> Path:
