@@ -89,20 +89,27 @@ Never hardcode `Z:` or `G:` — they differ per machine.
 |---|---|
 | `Z:\StephensU\medaka\medaka_202512` | 71 experiments, 1.05 TB of source recordings. Read-only in practice |
 | `Z:\StephensU\medaka\assets` | Inherited models, training labels, ground truth + `MANIFEST.json` |
-| `Z:\StephensU\medaka\archive\medaka-mating-pipeline` | Frozen output of the retired repo |
+| `Z:\StephensU\medaka\archive\medaka-mating-pipeline` | Frozen output of the retired repo. **Read `report/` before concluding something has never been measured** — it holds a full round-7 vs round-8 evaluator and the 2026-07-27 report naming round 8 production |
+| `Z:\StephensU\medaka\benchmarks\sleap_hitl_v2` | **The locked HITL-v2 benchmark.** 40 source frames × 3 views, 360 human instances, all three K days, frame-disjoint from every training split. **Not in `MANIFEST.json` — register it.** 30% of its instances are verbatim round-8 output, so bracket it |
 | `Z:\StephensU\medaka\medaka_202508` | 535 GB pilot series, **out of scope**, untouched |
 
 `/bucket` is read-only from cluster compute nodes. This drives most of the HPC architecture.
 
 ## Status and what to do next
 
-**Start here: [docs/ROADMAP.md](docs/ROADMAP.md)** — ordered phases with gates.
+**Start here: [docs/NEXT_SESSION.md](docs/NEXT_SESSION.md)**, then
+[docs/TRACKING_PIPELINE.md](docs/TRACKING_PIPELINE.md) for the chain as it stands.
+[docs/ROADMAP.md](docs/ROADMAP.md) holds the phase structure; its Phase C text predates
+the tracking work and the status block at its top says so.
 
-Foundation only — `paths`, `assets`, `provenance`, `cohort`, `stages`, `eval`, and their
-tests. **No pipeline code yet.**
-Next milestone per [docs/MIGRATION_PLAN.md](docs/MIGRATION_PLAN.md): calibration, then one
-experiment end-to-end from raw video, compared against the archived prior result. Where the new
-number disagrees with the old, the disagreement is the finding — the old pipeline is not the
+As of 2026-09-08: one experiment (K_1_2) runs end to end from raw video through a
+tracking chain (`tools/c27 → c28 → c33 → c30 → c34`) whose slot labelling keeps the
+female's identity in 296 of 298 annotated intervals. **Nothing is promoted** — the numbered
+tools under `tools/` are the experiments (a standing tension with design rule 1; promotion
+into `src/medaka3d/` is owed), `c03` still owns the fixed output paths, and every number is
+`n_groups = 1`. Each stage has a decision record under `docs/decisions/` holding its
+pre-registration, its runs and the variants that were rejected. Where a new number disagrees
+with the archived prior result, the disagreement is the finding — the old pipeline is not the
 reference.
 
 ## Work rules
