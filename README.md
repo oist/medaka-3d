@@ -20,13 +20,13 @@ late-discovered bugs.
 
 Almost nothing was inherited. What was:
 
-| Document | Contents |
-|---|---|
-| [docs/HANDOFF.md](docs/HANDOFF.md) | Index of the reset — what survived and what was done |
-| [docs/ASSET_MANIFEST.md](docs/ASSET_MANIFEST.md) | Every inherited data and model asset, with paths and sizes |
-| [docs/OIST_HPC.md](docs/OIST_HPC.md) | The one inherited *skill*: running work on saion and deigo |
-| [docs/PRIOR_FINDINGS.md](docs/PRIOR_FINDINGS.md) | Prior results — **as hypotheses to re-verify**, plus dead ends |
-| [docs/MIGRATION_PLAN.md](docs/MIGRATION_PLAN.md) | Order of operations, and the habits that made the old repo decay |
+| Document                                        | Contents                                                             |
+| ----------------------------------------------- | -------------------------------------------------------------------- |
+| [docs/HANDOFF.md](docs/HANDOFF.md)               | Index of the reset — what survived and what was done                |
+| [docs/ASSET_MANIFEST.md](docs/ASSET_MANIFEST.md) | Every inherited data and model asset, with paths and sizes           |
+| [docs/OIST_HPC.md](docs/OIST_HPC.md)             | The one inherited*skill*: running work on saion and deigo          |
+| [docs/PRIOR_FINDINGS.md](docs/PRIOR_FINDINGS.md) | Prior results —**as hypotheses to re-verify**, plus dead ends |
+| [docs/MIGRATION_PLAN.md](docs/MIGRATION_PLAN.md) | Order of operations, and the habits that made the old repo decay     |
 
 No analysis code was carried over.
 
@@ -66,7 +66,7 @@ Each one exists because its absence caused a specific failure in the old repo.
 ## Setup
 
 ```bash
-uv sync --python 3.11          # or: pip install -e ".[dev]"
+uv sync --python 3.13          # or: pip install -e ".[dev]"
 cp configs/paths.example.toml configs/paths.local.toml   # then edit for your machine
 pytest -q
 ```

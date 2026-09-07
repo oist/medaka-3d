@@ -10,6 +10,37 @@ dependencies = [
     "numpy>=1.26",
     "pandas>=2.1",
     "scipy>=1.11",
+    # Reading and writing .slp, and running inference, are core to this project
+    # rather than optional — hence main dependencies.
+    #
+    # BOTH PINNED EXACTLY, and the pins are load-bearing and coupled.
+    #
+    # sleap-io 0.8.0 silently scrambled camera views on interactive save
+    # (side1<-side2, side2<-top). Keys stayed valid, so there were no orphans and
+    # no error, and auto-resume reloaded and re-saved the corruption, propagating
+    # it. It cost a round of annotation before anyone noticed. See
+    # PRIOR_FINDINGS.md 4.5 and OIST_HPC.md pitfall 25. The retired repo's fix was
+    # `sleap-io==0.7.0`, but it then left `requirements.txt` saying
+    # `>=0.8.0,<0.9.0` and actually trained on 0.9.2 — three answers in one repo.
+    #
+    # 0.7.0 is NOT available to us: sleap-nn 0.3.1 requires sleap-io>=0.9.2,<0.10.
+    # So the version is forced to 0.9.2 — which is precisely the version
+    # PRIOR_FINDINGS 4.5 flags as never having had its round trip re-validated.
+    #
+    # The guard is therefore a test, not a comment: tests/test_sleap_io_roundtrip.py
+    # writes a multi-video labels file, reopens it, and asserts every instance is
+    # still attached to the video it was written against. That test is the reason
+    # this pin may be trusted. BUMPING EITHER PIN MEANS RUNNING IT AGAIN — if it
+    # fails, the version is not usable for writing no matter what else works.
+    "sleap-io==0.9.2",
+    "sleap-nn==0.3.1",
+    # Installed alongside sleap-nn in the experimenter's environment. onnx is
+    # sleap-nn's [export] extra; kornia is not a sleap-nn dependency at all.
+    # Note: ONNX/TensorRT *export* is known-broken on this machine's RTX 5070 Ti
+    # (Blackwell) — PRIOR_FINDINGS.md dead-end D1, `peaks_castOut` has no TRT
+    # tactic. Plain CUDA inference is unaffected; do not chase an export path.
+    "onnx",
+    "kornia",
 ]
 
 [project.optional-dependencies]
