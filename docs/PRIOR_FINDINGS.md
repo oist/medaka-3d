@@ -14,6 +14,14 @@ experimenter's own records in `experiment_list/` (now under
 `asset_root/catalog/experiment_list/`). Corrections are recorded here rather
 than edited in place, so the original reasoning stays auditable.
 
+> **Five further corrections, C3–C7, are recorded at the end of [§1.7](#17-egg-laying--outcome-link-a-corroboration-channel-that-was-found-but-never-written-up).**
+> §1.7's "two independent human record sources", its p = 0.0078, and its 7/7 count
+> do not survive re-derivation: there is **one** annotator pass, not two channels;
+> the egg record cannot discriminate between males; the unit is the group, so
+> **n = 3 trios**; and the one interesting row flips with the choice of metric.
+> Phase 0.5 is answered — the conclusion is **not** reachable without tracking.
+> Full working: [`decisions/2026-08-02-phase05-accept-vs-courtship.md`](decisions/2026-08-02-phase05-accept-vs-courtship.md).
+
 ### C1. "The three trials may not be three independent females" — resolved: they are ONE trio
 
 Framing fact 2 recorded this as INCONCLUSIVE. It is not. The folder convention
@@ -414,6 +422,61 @@ tracking, and either yields a publishable N=7 result or kills a false lead cheap
 2. Confirm the 7 resolved rows and the 7/7 match.
 3. Establish whether the BORIS annotator saw the egg-laying record (independence check).
 4. Expand: chase the 10 `?` and 11 `no` rows for resolvable outcomes.
+
+### ⚠️ CORRECTION — 2026-08-02: this was executed, and §1.7 above is wrong
+
+Recorded here rather than edited in place, so the original reasoning stays auditable.
+Full working: [`decisions/2026-08-02-phase05-accept-vs-courtship.md`](decisions/2026-08-02-phase05-accept-vs-courtship.md).
+Reproduce: `tools/phase05_accept_vs_courtship.py`.
+
+**C3. "A *third*, human-recorded channel" and "two human record sources" — false.
+There is one source.**
+
+- `lay_eggs_table.csv` and `boris_events.csv` carry **identical** courtship counts in
+  **7/7** rows populated in both. The lab sheet is a partial copy of the BORIS
+  aggregation, not a second observation.
+- `female_accept` is defined as *"accept wrap"*, and the wrap events are in the **same
+  BORIS file** as the courtship events. Predicting it by *which male wrapped first*
+  reproduces it in **8/9** rows. It is a second behaviour category from one coding
+  pass, not a second channel.
+- **3 of the 26 BORIS files were coded on the recording day itself** (E_1_1
+  2025-12-20, E_1_2 2025-12-21, K_1_1 2025-12-25); the rest in later waves. For those,
+  coder and sheet-author are the same person on the same occasion.
+
+**Consequence: the p = 0.0078 above does not hold.** It assumes independent channels
+and a fair coin. Neither applies. The concordance measures the internal consistency of
+one coding scheme.
+
+**C4. The independent channel — the physical egg record — cannot discriminate between
+males.** `eggs` / `eggs_after` are per *experiment* (yes/no); `Egg_Laying_by_pair.csv`
+is per *group* percentages despite its name. All nine scorable rows are `eggs = yes`,
+so the field has zero variance within the scored set. Nothing in the sheets records
+*which* male fertilised the eggs. Without paternity data this channel is silent on choice.
+
+**C5. "7 experiments … 7/7" — wrong scope, wrong unit, and metric-dependent.**
+
+- **The unit is the group.** The scorable rows span only groups **E, K and O**:
+  **n = 3 trios**, not 7, 8 or 9. Days within a group are repeated measures.
+- Scope: `boris_events.csv` also resolves O_1_2 and O_1_3, giving 9 scorable rows.
+  K_1_2 is `m2m1`, which the sheet's own legend resolves to **m2**.
+- **E_1_3 flips with the metric.** By event count m1 courted more (6 vs 5) → miss; by
+  duration m2 did (**7.7 s vs 7.4 s**) → match. Per-experiment totals are therefore
+  **8/9 by count, 9/9 by duration**. The ratios quoted in §1.7 (1.41×, 1.75×, 2.67× …)
+  are neither the sheets' counts nor these durations, so the quantity behind the
+  original 7/7 remains unidentified. A 0.3 s margin over 2100 s is undetermined, not
+  a result.
+
+**C6. Preference is not stable within a trio.** Group E accepted **m1 on days 1 and 2,
+then m2 on day 3**. K and O are internally consistent; E is not. One of three trios
+switched — which bears directly on §1.8 ("preference is stable in time"), whose
+evidence is drawn entirely from group K.
+
+**C7. `female_accept` must not be used as ground truth for a tracking method.** It is
+derived from the same video-coding pass a tracker would be scored against. It is a
+label, not a referee.
+
+**Standing: Phase 0.5 is answered — the study's conclusion is NOT reachable without
+tracking.** Proceed with B0.
 
 ---
 
