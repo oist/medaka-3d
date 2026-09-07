@@ -45,6 +45,41 @@ Open Hours (for restricted-partition applications): room B648, 15:30–17:30 dai
 
 ---
 
+## 2a. ⚠️ Unit software modules are withdrawn without notice `[VERIFIED 2026-08-14]`
+
+`sleap-nn/0.3.1` — the module `s16` loaded successfully on **2026-08-11** — no
+longer existed on **2026-08-14**. The modulefile was gone and
+`/apps/unit/ReiterU/sleap-nn/0.3.1/` had been emptied from ~15 GB to 2.5 MB with
+no `bin/`. A job whose script begins `set -euo pipefail` and then does
+`module load sleap-nn/0.3.1` dies before its first line of work, which is how
+this was found.
+
+Three facts, each verified on this account by a probe job:
+
+- **`module avail` is only meaningful from a compute node.** `MODULEPATH` on
+  `saion-login2` does not include `/apps/unit/ReiterU/.modulefiles`, so a login
+  shell reports the module missing whether or not it exists. Probe with a
+  1-minute `sbatch`, not with `ssh`.
+- **`module load sleap-nn/...` does not put `python` on `PATH`.** `s16` worked
+  because it addressed the interpreter absolutely
+  (`/apps/unit/ReiterU/sleap-nn/<v>/tools/sleap-nn/bin/python`); the `module
+  load` line was doing nothing and is now removed. Address the interpreter by
+  absolute path and check that path exists from a compute node.
+- **Versions present 2026-08-14:** `0.2.0`, `0.2.0-cu128`, `0.3.3` (default) as
+  modules; on disk `0.3.2` (15 GB) and `0.3.3` (16 GB) are intact, `0.3.1` is a
+  husk.
+
+**Take the newest version, and control for the change rather than pinning to a
+retired one.** `c05 --control` re-ran three bottom-up chunks — 75,000 frames,
+225,000 instances — under 0.3.3 against the 0.3.1 originals from `s16`, on the
+same A100 class with the same model and batch size. The coordinates are
+**bit-identical: 100.00% exactly-zero delta in all three views**, and the output
+still loads under the local `sleap-io==0.9.2` pin. That measurement is what makes
+the two runs comparable; without it the architecture comparison would have
+confounded model with runtime.
+
+---
+
 ## 2. ⚠️ Partition rename (read this before copying any old script)
 
 `[OFFICIAL]` saion partition names were changed. **Old names still work for
