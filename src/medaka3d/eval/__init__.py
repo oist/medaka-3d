@@ -12,13 +12,27 @@ from medaka3d.eval.encounters import (
     summarise,
 )
 from medaka3d.eval.metrics import EncounterOutcome, Scorecard, score_encounter
+from medaka3d.eval.tracking import (
+    ViewTracks,
+    fragmentation,
+    identity_preservation,
+    modal_agreement,
+    switch_candidates,
+    track_jumps,
+)
 
 __all__ = [
     "EncounterConfig",
     "EncounterOutcome",
     "Scorecard",
+    "ViewTracks",
     "find_encounters",
     "find_pair_encounters",
+    "fragmentation",
+    "identity_preservation",
+    "modal_agreement",
     "score_encounter",
     "summarise",
+    "switch_candidates",
+    "track_jumps",
 ]
