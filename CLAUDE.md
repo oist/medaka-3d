@@ -51,7 +51,17 @@ Do not repeat a prior number as settled. Cite it as a hypothesis and say what wo
 
 ## Facts the old repo got wrong
 
-- **Production SLEAP is split across rounds**: round 7 for **top**, round 8 for **side**.
+- ~~**Production SLEAP is split across rounds**: round 7 for **top**, round 8 for **side**.~~
+  **RETRACTED 2026-08-03. Production is round 8 for BOTH views.** The "split" was a
+  hardcoded constant in `tools/build_asset_manifest.py` that `MANIFEST.json` echoed
+  back, so an assertion read as a measurement. Round-8 top and side both trained
+  2026-07-23; the retained corpus predictions are round 7 only because they were
+  produced 07-07 to 07-13, before round 8 existed — their `.slp` provenance says so.
+  Consequences, because they are large: every B0.3/B0.4/k01 number describes round 7,
+  **93 of the 113 "held-out" frames are inside round-8's training data**, and only
+  **20** frames are held out from both checkpoints. On those 20, round 8 emits
+  **0** false positives and **0** shared tails against round 7's 7 and 3.
+  See [docs/decisions/2026-08-03-k-detection-quality.md](docs/decisions/2026-08-03-k-detection-quality.md).
 - **Saion renamed its partitions**: `largegpu` → `gpu-a100`, `gpu` → `gpu-v100` / `gpu-p100`.
   See [docs/OIST_HPC.md](docs/OIST_HPC.md), which flags provenance on every fact.
 - `medaka_202512` holds **71** experiments, not 76.

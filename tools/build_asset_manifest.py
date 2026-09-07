@@ -33,9 +33,27 @@ SLEAP_ROUNDS = {
     "round8": ("retrain_20260722_round8", "round8_260723_strictmouth", {"top": 1382, "side": 2764}),
 }
 
-# Which round is production for which view. The retired repo never stated this
-# in one place, and the split is the single most confusing thing it left behind.
-PRODUCTION = {"top": "round7", "side": "round8"}
+# Which round is production for which view.
+#
+# CORRECTED 2026-08-03: this said {"top": "round7", "side": "round8"} and that was
+# wrong. **Round 8 is production for both views.** The evidence, none of which is
+# this constant:
+#
+#   * round-7 models trained 2026-07-04; round-8 models, top AND side, 2026-07-23;
+#   * every retained corpus prediction was produced 2026-07-07 to 07-13, and its
+#     `.slp` provenance names `round7_260704.*` — i.e. the corpus is round 7
+#     because round 8 did not exist yet, not because round 7 was chosen for top;
+#   * round-8 top is architecturally identical to round-7 top (filters=24,
+#     max_stride=64, crop_size=512, anchor_part='mouth', 70,755,866 params). Only
+#     the labels differ: 1,382 "strictmouth" frames against 1,295.
+#
+# The earlier value was a hardcoded assertion and `MANIFEST.json` echoed it back,
+# which made a claim look like a measurement. Measured instead, on the 20 frames
+# held out from *both* checkpoints: round 8 emits 0 false positives and 0 shared
+# tails where round 7 emits 7 and 3. See
+# `docs/decisions/2026-08-03-k-detection-quality.md` and
+# `tools/k07_production_baseline.py`.
+PRODUCTION = {"top": "round8", "side": "round8"}
 
 
 def sleap_models() -> dict[str, dict]:
