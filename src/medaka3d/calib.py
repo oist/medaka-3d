@@ -7,12 +7,12 @@ the volume — which is the same order as the distances this project has to reso
 between two fish. The promoted calibration models the refraction explicitly and is
 the only backend used here.
 
-**Only back-projection is implemented, deliberately.** Pixel -> ray in water is
-closed form: unproject, march to the interface, apply Snell twice. The inverse,
-world -> pixel, needs an iterative solve for the refraction point and is not
-needed by anything in this module: the cost that ranks a cross-view correspondence
-is the point-to-ray residual, in mm, which lives entirely on the ray side. That is
-also the unit the calibration itself was validated in
+Pixel -> ray in water is closed form: unproject, march to the interface, apply
+Snell twice. World -> pixel uses the conserved tangential Snell parameter to
+solve one monotone scalar equation through the same parallel interfaces. This
+forward projection lets a 3D hypothesis predict an image observation; it does not
+change the point-to-ray residual used by the existing correspondence method.
+That residual is in mm, which is also the unit the calibration was validated in
 (``heldout_wet10_point_to_ray``, rms 0.237 mm), so a residual computed here is
 directly comparable to the number the calibration claims.
 
@@ -157,6 +157,117 @@ class RefractiveCamera:
             dy = p1 * (r2 + 2.0 * y * y) + 2.0 * p2 * x * y
             xy = (distorted - np.stack([dx, dy], axis=-1)) / radial[..., None]
         return xy
+
+    def project(self, xyz: np.ndarray) -> np.ndarray:
+        """(..., 3) world points in mm -> (..., 2) distorted image pixels.
+
+        For parallel flat interfaces, ``p = n * sin(theta)`` is constant along
+        the optical path. If a layer has normal thickness ``h`` and index ``n``,
+        its tangential travel is ``h*p/sqrt(n*n-p*p)``. Their sum must equal the
+        camera-to-point tangential displacement. A vectorised Newton solve, with
+        a bisection fallback, inverts this strictly increasing function.
+
+        Points before the water-side interface, cameras on the wrong side of
+        the air interface, non-finite points, and paths behind the image plane
+        return NaN. A point on the water interface is allowed. This method
+        models infinite planes: tank walls, image bounds and occlusion must be
+        checked by the caller. The top camera's unused glass thickness is ignored.
+        """
+        xyz = np.asarray(xyz, dtype=float)
+        if xyz.ndim < 1 or xyz.shape[-1] != 3:
+            raise ValueError(f"xyz must have shape (..., 3), got {xyz.shape}")
+        if self.layer_count not in (1, 2):
+            raise CalibrationError("forward projection requires one or two interfaces")
+        normal = self.interface_normal
+        air_depth = float((self.interface_point - self.center) @ normal)
+        glass_depth = self.glass_thickness_mm if self.layer_count == 2 else 0.0
+        indices = np.array([self.index_air, self.index_water])
+        if self.layer_count == 2:
+            indices = np.array([self.index_air, self.index_glass, self.index_water])
+        if not np.isfinite(indices).all() or (indices <= 0).any():
+            raise CalibrationError("refractive indices must be positive and finite")
+        result = np.full((*xyz.shape[:-1], 2), np.nan)
+        if not np.isfinite(air_depth) or air_depth <= 0:
+            return result
+        if not np.isfinite(glass_depth) or glass_depth < 0:
+            raise CalibrationError("glass thickness must be finite and non-negative")
+
+        finite = np.isfinite(xyz).all(axis=-1)
+        offset = np.where(finite[..., None], xyz, self.center) - self.center
+        normal_distance = offset @ normal
+        water_depth = normal_distance - air_depth - glass_depth
+        valid = finite & (water_depth >= 0)
+        if not valid.any():
+            return result
+        # Solve only physical rows; invalid measurements neither emit warnings
+        # nor slow the convergence check for otherwise valid hypotheses.
+        displacement = offset[valid]
+        tangent = displacement - normal_distance[valid, None] * normal
+        radius = np.linalg.norm(tangent, axis=-1)
+        water_depth = water_depth[valid]
+        layers = [np.full_like(radius, air_depth), water_depth]
+        if len(indices) == 3:
+            layers.insert(1, np.full_like(radius, glass_depth))
+        depths = np.stack(layers, axis=-1)
+        active = depths > 0
+        # Each layer individually supplies an upper bound: at that p, this
+        # layer alone accounts for the whole tangential displacement. Starting
+        # above the root makes Newton monotone because the function is convex.
+        distances = np.hypot(radius[:, None], depths)
+        bounds = indices * radius[:, None] / np.where(active, distances, 1.0)
+        bounds = np.where(active, bounds, np.inf)
+        upper = np.minimum(
+            bounds.min(axis=-1),
+            np.nextafter(indices.min(), 0.0),
+        )
+        p = upper.copy()
+
+        def travel_and_slope(parameter):
+            # Zero-thickness layers contribute no travel or derivative.
+            squared = np.where(active, indices * indices - parameter[:, None] ** 2, 1.0)
+            root = np.sqrt(np.maximum(squared, np.finfo(float).tiny))
+            travel = np.sum(depths * parameter[:, None] / root, axis=-1)
+            slope = np.sum(depths * indices * indices / (root * root * root), axis=-1)
+            return travel, slope
+
+        tolerance = 1e-10 * np.maximum(1.0, radius)
+        for _ in range(16):
+            travel, slope = travel_and_slope(p)
+            if np.all(np.abs(travel - radius) <= tolerance):
+                break
+            p = np.clip(p - (travel - radius) / slope, 0.0, upper)
+        travel, _ = travel_and_slope(p)
+        if np.any(np.abs(travel - radius) > tolerance):
+            # The normal camera/tank geometry converges in a few Newton steps.
+            # Retain a bracketed fallback for near-grazing or unusual indices.
+            lower = np.zeros_like(p)
+            for _ in range(56):
+                middle = (lower + upper) / 2
+                travel, _ = travel_and_slope(middle)
+                lower = np.where(travel < radius, middle, lower)
+                upper = np.where(travel >= radius, middle, upper)
+            p = (lower + upper) / 2
+        travel, _ = travel_and_slope(p)
+        solved = np.abs(travel - radius) <= tolerance
+
+        unit_tangent = tangent / np.where(radius > 0, radius, 1.0)[:, None]
+        sin_air = p / self.index_air
+        direction = (
+            sin_air[:, None] * unit_tangent
+            + np.sqrt(np.maximum(1.0 - sin_air * sin_air, 0.0))[:, None] * normal
+        )
+        cam = direction @ self.rotation.T
+        in_front = cam[:, 2] > 1e-12
+        xy = cam[:, :2] / np.where(in_front, cam[:, 2], 1.0)[:, None]
+        x, y = xy[:, 0], xy[:, 1]
+        k1, k2, p1, p2, k3 = self.distortion
+        r2 = x * x + y * y
+        radial = 1.0 + r2 * (k1 + r2 * (k2 + r2 * k3))
+        xd = x * radial + 2.0 * p1 * x * y + p2 * (r2 + 2.0 * x * x)
+        yd = y * radial + p1 * (r2 + 2.0 * y * y) + 2.0 * p2 * x * y
+        pixels = np.stack([self.fx * xd + self.cx, self.fy * yd + self.cy], axis=-1)
+        result[valid] = np.where((solved & in_front)[:, None], pixels, np.nan)
+        return result
 
     def rays(self, uv: np.ndarray) -> tuple[np.ndarray, np.ndarray]:
         """(..., 2) pixels -> (origin, direction) of the corresponding rays *in water*.
