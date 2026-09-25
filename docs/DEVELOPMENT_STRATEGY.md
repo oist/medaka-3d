@@ -293,15 +293,21 @@ point.
 
 ### On 3D Gaussian splatting
 
-Not recommended as a tracking approach. 3DGS reconstructs static scenes from many
-viewpoints; we have three fixed cameras and fast, non-rigidly deforming subjects.
-Dynamic/4D variants need far more view coverage than three cameras give, and none
-of them output identity — it does not address swaps.
+Revised 2026-09-08: the earlier blanket dismissal was too broad.
+[Dynamic 3D Gaussians](https://dynamic3dgaussians.github.io/) explicitly studies
+tracking through persistent Gaussian appearance and locally constrained motion.
+[GaussianObject](https://gaussianobject.github.io/) uses masks and a visual hull
+to initialize static object reconstruction from four images. These are relevant
+mechanisms; neither establishes biological identity preservation for three moving
+fish seen through refractive interfaces by three fixed cameras.
 
-One defensible narrow use: a static splat of the **empty tank** as a background
-and reflection model, feeding the `detector` stage (priority 4 above). That is a
-detector improvement, not a tracking strategy, and it should be scoped and judged
-as such.
+The next experiment should test independent masks and a constrained, per-fish 3D
+representation, using the existing refractive projection. A Gaussian representation
+is a candidate if a simpler body model's limitations justify it. Render quality,
+point persistence and smooth trajectories are not sufficient evidence of correct
+fish identity. See the [mask-volume research plan](MASK_VOLUME_RESEARCH_PLAN.md)
+for comparisons and independent evaluation gates. An empty-tank background model
+remains a separate possible use, not the only defensible use.
 
 ---
 
