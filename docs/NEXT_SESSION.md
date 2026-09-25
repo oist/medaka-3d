@@ -1,5 +1,83 @@
 # Where to start — the current state, 2026-09-08
 
+**2026-09-18 completed comparisons:** Stages A-C of the variable-count plan
+and the subsequent SLEAP adapter comparison are complete. Start with the
+[variable-count result](../labs/20260917_variable_count_tracklets/RESULT.md)
+and [SLEAP adapter result](../labs/20260918_sleap_pipeline_adapter/RESULT.md).
+The adapter separates provisional histories from confirmed fragments and keeps
+every detection. Across the main 20 s, contiguous runs are S2 208, P1 11,615,
+G0 593, history3 417, and margin0.02 397. These are continuity measures, not
+identity accuracy; all 12 evaluated intervals were already known. The adapter
+is parked, not promoted. The planning note below records the earlier handoff
+and no longer describes an unimplemented task.
+
+**2026-09-17 next-session plan (planning only):** Start with the
+[variable-count independent 2D tracklet plan](decisions/2026-09-17-variable-count-2d-tracklet-plan.md).
+The user will execute it in a new session. Three physical fish do not imply
+three detections or three camera-local tracklets: preserve 0/1/2/3/4+ detections,
+reflection candidates, open endpoints and unresolved identities. Continue clear
+pectoral tracks independently of other fish disappearing or mouth/tail absence.
+First implement and compare stages A–C on the current 20 s and known scenes,
+including per-view videos and an HTML report. Separate row-faithful SLEAP,
+OKS-scale repair and independent tracking. Stage D is subsequent 3D/gap joining.
+No implementation or tracking run for this new plan has occurred yet.
+This is the next task; the older next-step lists below are historical context.
+
+**2026-09-17 direct 2D video comparison:** The requested camera-by-camera
+SLEAP/P/N/F comparison is in [the new HTML report](../work/clean2d_video_comparison_v1/comparison_report.html)
+and [lab result](../labs/20260917_clean2d_video_comparison/RESULT.md).
+42 videos compare identical raw frames and detections, with no 3D layer.
+Main20s retains all 29,386 detections; contiguous 2D runs are saved C27 224,
+P 323, N 1,257, F 1,324 (joint numeric relaxation: 1,028). Mouth is absent in
+743 rows while pectoral is present in every row. Several human-clear scenes
+already have identical 2D links; f21232 side2 shows unnecessary N/F splits.
+Current SLEAP's two-node OKS also degenerates for mouth-missing rows and can
+continue zero-score assignments. Cropped history1/5/10 does not solve large
+steps. A C24/C27 returned-row ordering defect was reproduced separately, but
+not established as the cause of the highlighted jumps; no production files or
+prior results were changed. **Parked:** separate pectoral continuity from
+mouth/tail quality; do not claim a validated swap-rate improvement.
+
+**2026-09-17 clean-fragment follow-up:** The user's original architecture is now
+implemented in [a separate lab](../labs/20260917_clean_tracklets/README.md):
+ignore SLEAP temporal IDs, build independent conservative per-view fragments,
+then verify a separate join layer from two other clean views. Pectoral-only,
+node-coherence and node-plus-image-flow conditions retain every detection.
+See [the result](../labs/20260917_clean_tracklets/RESULT.md) and
+[the new HTML report](../work/clean_tracklets_v1/clean_tracklets_report.html).
+Final arrays are `work/clean_tracklets_v2`; the complete v1 is preserved.
+The primary 20 s retains 29,386 detections with 94.7–96.1% incoming clean-edge
+coverage, but the new 3D observation rate is only 47.9% and all three female
+intervals are unscored. Its six core joins are adjacent-fragment connections,
+not six verified swap fixes. 50 focused tests and both six-case audits pass.
+**Parked, not promoted:** improve 3D clean-fragment assignment/reacquisition;
+do not describe gate-induced disappearance of large steps as ID improvement.
+
+**2026-09-17 implementation update:** The custom 2D plan through step 3 is
+implemented and compared in [the isolated lab](../labs/20260917_custom2d_comparison/RESULT.md).
+The [HTML report](../work/custom2d_comparison_v1/comparison_report.html) compares
+saved SLEAP (A), bidirectional link cuts (B), and custom bidirectional tracking
+with short deferred hypotheses (C), with videos and native-frame graphs.
+Main 20 s final steps >10 mm are 3 / 4 / 3; all methods retain the same female
+endpoint change at 76698→77285. f31479 improves, while the human no-swap control
+f323819 worsens in C (4→6 large steps). Final results are `analysis_v3`,
+not the preserved first attempt or conservative v2 ablation. No production
+promotion: all-three-fish ID superiority is unproven. The bounded deferred
+check adds two 2D links at 90576→90578 without changing 3D coordinates/sources.
+
+**2026-09-16 review update:** The experimenter reviewed eight clips from the
+20-second / known-failure multiview review. Four have reported ID swaps, three
+have no ID swap, and one has a transient side2 jump. See the
+[verbatim review](reviews/2026-09-16_multiview_identity_review.json) and
+[custom 2D tracking investigation and comparison plan](decisions/2026-09-16-custom-2d-tracking-plan.md).
+The review and provenance are archived under configured `asset_root/groundtruth/swap_event_gt/`
+and registered in MANIFEST (3303 entries; all previous entries retained).
+Reviewed left/right panel and exact event intervals remain unspecified.
+No node proposal or new 2D tracker has been promoted. In particular, f323819
+is human-reviewed **no ID swap**, and f76988 is **S1/S0**, not the S1/S2 pair
+examined by the earlier tail-node proposal. The older status below is retained
+as the 2026-09-08 record.
+
 **Read first:** [`TRACKING_PIPELINE.md`](TRACKING_PIPELINE.md) — the chain as
 it stands, its numbers, its instruments, and what is still wrong. Then the two
 decision records that carry every pre-registration and verdict of the
