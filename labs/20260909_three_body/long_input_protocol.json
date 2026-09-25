@@ -1,0 +1,52 @@
+{
+  "schema": "medaka_independent_mask_protocol_v1",
+  "created_utc": "2026-09-08T18:49:21Z",
+  "experiment": "20251225_K_1_2_FCMC",
+  "source_frame_range": [49800, 348600],
+  "source_total_frames": 348600,
+  "fps": 166,
+  "image_shape_hw": [1200, 1200],
+  "views": ["top_cam", "side1_cam", "side2_cam"],
+  "chunk_frames": 1660,
+  "background_frames": [5000, 10000, 15000, 20000, 25000, 30000, 35000, 40000, 45000],
+  "background_exclusion_frames": 332,
+  "background_rule": "pixelwise median of the same nine fixed native frames before the full target interval, no fallback or image-dependent selection",
+  "detector": {
+    "batch_size": 1,
+    "score_threshold": 0.5,
+    "device": "cuda",
+    "parameter_dtype": "float32",
+    "autocast": false,
+    "cuda_matmul_allow_tf32": false,
+    "cudnn_allow_tf32": true,
+    "cudnn_benchmark": false,
+    "retained_detectron2_models": true,
+    "all_detections_retained": true
+  },
+  "source_cache_manifest_sha256": "8d8cba5c2feda9bbc948651d424e8f804d32ff6ff8bb97f920bfe686cb5f9b8d",
+  "asset_manifest_sha256": "561d969b9afdc1dc50166e630bdff057eda6f4310e904416b7fc50f025ea370d",
+  "source_videos_sha256": {
+    "top_cam": "d769ba8a550292f0869ccd6d75a2f425b4408c2f188e3c684db825a1e1870186",
+    "side1_cam": "c003aa3055734f6022402106999672b6444b1786f16b1ab806c659cee6a41e8d",
+    "side2_cam": "e477889e78327f4a14e67b70895ace9788c83c3cdc640a7a1864ff96ac1430a3"
+  },
+  "model_assets_sha256": {
+    "top_weights": "665e0b2834e9fe7af1810d9e20c457592d7b0c8de23e454667d40ef8b094a7ee",
+    "top_config": "64574b9580f1570510557b195b37f2ad5bdfb6f9a95dbfc77604432fb2994542",
+    "side_weights": "ea2154060e33a4231de031885808399279ad02ad263c8fa81650b9bf73140e13",
+    "side_config": "76a81336dbd7a28e8980291581c0c07bf128373fb09593e41d7dab9879e7d6d5"
+  },
+  "independence": {
+    "sleap_input": false,
+    "seed_or_pose_input": false,
+    "identity_or_human_label_input": false,
+    "temporal_subsampling": false,
+    "resume_scope": "independent per-image detector preprocessing only; no tracking is performed"
+  },
+  "limitations": [
+    "This registers input preprocessing, not a chosen long-window tracker or an identity verdict.",
+    "The full target interval includes opened development material and is not an identity holdout.",
+    "Background sampling differs from the frozen one-minute run and requires separate validation.",
+    "Native camera synchronization and refractive geometry remain inherited from the original experiment."
+  ]
+}

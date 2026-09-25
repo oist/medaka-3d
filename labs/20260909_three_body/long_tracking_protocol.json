@@ -1,0 +1,116 @@
+{
+  "schema": "three_body_long_tracking_protocol_v1",
+  "experiment": "20251225_K_1_2_FCMC",
+  "source_frame_range": [
+    49800,
+    348600
+  ],
+  "fps": 166,
+  "seed_registration_sha256": "34da64c0c61a4c4e589b3e38a01627baff0e934b1d1a4325a280645e8a132b40",
+  "input_protocol_sha256": "78e9b832393acbe0297a6fc9122cbbed24d07e779f23542919a97e719cc19330",
+  "initial_operational_pilot_end_exclusive": 51460,
+  "settings_source_provenance_sha256": "795c1acd754fa5a876af49f8e28e8addb6c3f62ebd9385b2bc4ab584435a0560",
+  "frozen_tracker_sources_sha256": {
+    "labs/20260909_three_body/tracker.py": "f481e2d4105a0223cf24719482e1d057ba4e68094ff9df74af0a826a88d31c20",
+    "labs/20260909_three_body/persistent_node_tracker.py": "841ff2e3a67e174a7ea3205da17368730c47432eff7e8a79cf13000302ea148e",
+    "labs/20260909_three_body/accelerated_tracker.py": "107974f9cb05dc0b21ddc555e8b858dbbb25a44192ea2621e408d045c545d310",
+    "labs/20260909_three_body/graph_fit.py": "807151e664ed8658f291c4d49eaff69ae71feff0f9a1f9cc9fca00292845edc0",
+    "labs/20260909_three_body/graph_union.py": "43fcadf2e684da6fdf9d161800035d7468914217a8ddde10be3dbb810689bc21",
+    "labs/20260909_three_body/continuous_tracker.py": "91a811cab27a8a26e605aa00159fdb2a2b450bbcca1a2505e49543f58ef7c7e2",
+    "labs/20260909_three_body/tracker_checkpoint.py": "39272a664d3f2056d4d876b75e9241ae1a775d19f7352a0423a3e1c76125a32b",
+    "labs/20260909_three_body/resumable_observations.py": "0d133eb77a45c27a4d17869c98dbb1608eb3c00d1f4e1e01ca8065f0db4267b2",
+    "labs/20260909_three_body/source_sequence.py": "9db0e992768d54369d1431f82280c1b1b22d324d7a66daa35aa94dc4296a5cfe",
+    "labs/20260909_three_body/observations.py": "f1efcd27b31e63ce693229c9e765152acfc7984b3b8839f1792bcc2efd9cb5df",
+    "labs/20260909_three_body/node_geometry.py": "c7bea7333d5a20704e67c2283e8dc925a70e2f05c4520353d74b18c64b5aff69",
+    "labs/20260909_three_body/node_recovery.py": "814f91f0e2638ec63222f976f87dcdd9fba6f27808d3c77d7a5e3dda457bbbc8",
+    "labs/20260909_three_body/motion.py": "3ed3c4fbfa39a7c1df5804453423a76dd9d9ff064e66ab45a5beda1696852f85",
+    "labs/20260909_three_body/renderer.py": "dfb585e9d51214a2a3c9447d4bc81da8af80d3451e8fc3ef7a44b1a841732e1c",
+    "labs/20260909_three_body/fast_union.py": "248e5af87927ab5f4221efe3b2db9ada6fa623466a3b9d99708c226c1f4a7236",
+    "src/medaka3d/calib.py": "60849004cb53febe69f437e7afa8b18cb2b65213ba76ce7c921f7022d2be4274"
+  },
+  "tracker_config": {
+    "mode": "detectron2",
+    "device": "cuda",
+    "beam_size": 6,
+    "max_hypotheses": 18,
+    "opt_steps": 14,
+    "learning_rate_mm": 0.25,
+    "ray_sigma_mm": 0.7,
+    "missing_cost": 9.0,
+    "mask_weight": 3.0,
+    "motion_weight": 0.2,
+    "shape_weight": 0.3,
+    "repulsion_weight": 0.15,
+    "width_ratio": 0.06,
+    "motion_sigma_mm": 0.8,
+    "swap_distance_mm": 15.0,
+    "ambiguity_margin": 1.0,
+    "review_gap_frames": 4,
+    "positive_samples": 384,
+    "near_samples": 384,
+    "global_samples": 256,
+    "flow_proposals": true
+  },
+  "node_recovery_config": {
+    "ray_rms_mm": 1.5,
+    "minimum_length_ratio": 0.5,
+    "maximum_length_ratio": 1.5,
+    "proposals_per_fish": 2,
+    "maximum_combinations_per_fish": 4096,
+    "lower_mm": [
+      0.0,
+      0.0,
+      -6.0
+    ],
+    "upper_mm": [
+      192.0,
+      192.0,
+      186.0
+    ]
+  },
+  "persistence_config": {
+    "enabled": true,
+    "minimum_missing_frames": 4,
+    "minimum_pectoral_frames": 4
+  },
+  "flow_config": {
+    "body_radius_px": 8,
+    "search_padding_px": 28,
+    "max_corners": 64,
+    "corner_quality": 0.02,
+    "corner_spacing_px": 3.0,
+    "window_size": 21,
+    "pyramid_levels": 2,
+    "min_eigenvalue": 0.0001,
+    "max_fb_error_px": 1.0,
+    "max_lk_error": 35.0,
+    "max_feature_step_px": 20.0,
+    "node_radius_px": 22.0,
+    "node_max_features": 12,
+    "node_min_features": 3,
+    "min_node_quality": 0.08,
+    "maximum_ray_residual_mm": 1.0,
+    "maximum_reprojection_px": 3.0,
+    "maximum_node_step_mm": 6.0
+  },
+  "package_versions": {
+    "numpy": "2.5.1",
+    "scipy": "1.18.0",
+    "opencv": "5.0.0",
+    "torch": "2.13.0+cu130",
+    "cuda": "13.0",
+    "cuda_device_name": "NVIDIA GeForce RTX 5070 Ti"
+  },
+  "torch_cpu_threads": 2,
+  "limitations": [
+    "The first 1660 frames are an operational pilot, not a completed thirty-minute run.",
+    "One optimistic initial correspondence derives from a whole-recording C34 result; the long tracker reads only the registered first pose and no later baseline coordinates or human truth.",
+    "The initial mouth at z=-0.413303 mm is inside the inherited engineering box [-6,186] in z; the physical tank floor is not newly surveyed or corrected.",
+    "Nine fixed pre-window background frames differ from the old one-minute preparation, so input-dependent results are not an identical-input algorithm comparison.",
+    "All ordered beams and their complete history are retained; checkpoint storage, validation and restoration grow with processed duration.",
+    "A prefix backtrace may change when more observations arrive; a checkpoint retains all alternatives, not only its provisional winning path.",
+    "Direct geometry and unflagged acceptance are engineering availability measures, not independent biological ID accuracy or a zero-swap guarantee.",
+    "No all-three independent human identity truth has been supplied; ambiguous identities remain flagged and require the permitted human review.",
+    "Tracking time excludes detector preprocessing, input hash validation, reader preparation, checkpoint serialization and final result validation."
+  ]
+}
