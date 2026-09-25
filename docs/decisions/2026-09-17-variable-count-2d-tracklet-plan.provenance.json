@@ -1,0 +1,280 @@
+{
+  "stage": "variable_count_2d_tracklet_plan",
+  "status": "ok",
+  "started_at": "2026-09-17T08:49:27.476028+00:00",
+  "finished_at": "2026-09-17T08:49:27.616787+00:00",
+  "inputs": {
+    "comparison_protocol": {
+      "path": "C:\\Users\\machi\\Documents\\GitHub\\medaka-3d\\work\\clean2d_video_comparison_v1\\protocol.json",
+      "size": 12444,
+      "mtime": "2026-09-17T00:54:06.722427+00:00",
+      "sha256": "3272418c75f4544780121c10157741f8d97bf7ef1bd15a128a8120f88c4f0f99"
+    },
+    "comparison_result": {
+      "path": "C:\\Users\\machi\\Documents\\GitHub\\medaka-3d\\labs\\20260917_clean2d_video_comparison\\RESULT.md",
+      "size": 7147,
+      "mtime": "2026-09-17T01:17:15.561991+00:00",
+      "sha256": "194fdc37bf5b24584fa5684bd1be268faef49ad265a27176110fa432ff56158f"
+    },
+    "comparison_readme": {
+      "path": "C:\\Users\\machi\\Documents\\GitHub\\medaka-3d\\labs\\20260917_clean2d_video_comparison\\README.md",
+      "size": 3104,
+      "mtime": "2026-09-17T01:17:14.602692+00:00",
+      "sha256": "3720729334a94b0fa58d4a3b1befae61a222338ea5571a9b13be2f00482ea13b"
+    },
+    "sleap_parameter_audit": {
+      "path": "C:\\Users\\machi\\Documents\\GitHub\\medaka-3d\\work\\clean2d_video_comparison_v1\\parameter_audit.md",
+      "size": 10652,
+      "mtime": "2026-09-17T01:07:26.888862+00:00",
+      "sha256": "d18618482d367205a5639b9e7460965cf735f3c497b0eeb066d68802a518b098"
+    },
+    "human_review": {
+      "path": "C:\\Users\\machi\\Documents\\GitHub\\medaka-3d\\docs\\reviews\\2026-09-16_multiview_identity_review.json",
+      "size": 5121,
+      "mtime": "2026-09-16T08:36:27.505764+00:00",
+      "sha256": "2c7821912c9fa602a4cd4039c69cd7a508cd7e99bb9af19e59f6e55bc68354a8"
+    },
+    "previous_multiview_result": {
+      "path": "C:\\Users\\machi\\Documents\\GitHub\\medaka-3d\\labs\\20260917_clean_tracklets\\RESULT.md",
+      "size": 5873,
+      "mtime": "2026-09-16T17:20:51.780664+00:00",
+      "sha256": "5bd707fc02883b596853f1a393b28e45fafb1833f951fbc47b17fb332bcd605a"
+    },
+    "count_source_cg20s_top_cam": {
+      "path": "C:\\Users\\machi\\Documents\\GitHub\\medaka-3d\\work\\clean2d_video_comparison_v1\\cg20s\\tracking_F_top_cam.npz",
+      "size": 283173,
+      "mtime": "2026-09-17T00:48:17.731121+00:00",
+      "sha256": "63b33a208adfe276e0609b1289b5d07f0262b8aefa2febb8f9c7dbbeba7b4826"
+    },
+    "count_source_cg20s_side1_cam": {
+      "path": "C:\\Users\\machi\\Documents\\GitHub\\medaka-3d\\work\\clean2d_video_comparison_v1\\cg20s\\tracking_F_side1_cam.npz",
+      "size": 280708,
+      "mtime": "2026-09-17T00:48:53.695000+00:00",
+      "sha256": "ebcc86d69898e098c4f9675c1348074877f97b80fb0ead79a88e02d6a4cfdef4"
+    },
+    "count_source_cg20s_side2_cam": {
+      "path": "C:\\Users\\machi\\Documents\\GitHub\\medaka-3d\\work\\clean2d_video_comparison_v1\\cg20s\\tracking_F_side2_cam.npz",
+      "size": 277312,
+      "mtime": "2026-09-17T00:48:53.735593+00:00",
+      "sha256": "74a9c0e9c708b361f118ca495a2abd6f880ace873c1a54c16ff1caecfb90b662"
+    },
+    "count_source_known_21232_top_cam": {
+      "path": "C:\\Users\\machi\\Documents\\GitHub\\medaka-3d\\work\\clean2d_video_comparison_v1\\known_21232\\tracking_F_top_cam.npz",
+      "size": 71411,
+      "mtime": "2026-09-17T00:49:15.875815+00:00",
+      "sha256": "15d9769f7a2fad871dc9ebd9a511c94b75855beb66f5fd51ac4a29ed0cd70af4"
+    },
+    "count_source_known_21232_side1_cam": {
+      "path": "C:\\Users\\machi\\Documents\\GitHub\\medaka-3d\\work\\clean2d_video_comparison_v1\\known_21232\\tracking_F_side1_cam.npz",
+      "size": 71468,
+      "mtime": "2026-09-17T00:49:51.171907+00:00",
+      "sha256": "aebb712a3e76d96cdde944993cc4f9b31879af309f62fb2707c21af9ff09b591"
+    },
+    "count_source_known_21232_side2_cam": {
+      "path": "C:\\Users\\machi\\Documents\\GitHub\\medaka-3d\\work\\clean2d_video_comparison_v1\\known_21232\\tracking_F_side2_cam.npz",
+      "size": 68631,
+      "mtime": "2026-09-17T00:49:51.059193+00:00",
+      "sha256": "83199e5bf52f8ba7b7ee2d00b7f36f99e04a7269a3d81b61807aceb7f47f0d49"
+    },
+    "count_source_known_30735_top_cam": {
+      "path": "C:\\Users\\machi\\Documents\\GitHub\\medaka-3d\\work\\clean2d_video_comparison_v1\\known_30735\\tracking_F_top_cam.npz",
+      "size": 69838,
+      "mtime": "2026-09-17T00:49:27.504438+00:00",
+      "sha256": "a7284f948fb77979fbc1510a7aa0595c60b5efade280007a00b700b798d4381e"
+    },
+    "count_source_known_30735_side1_cam": {
+      "path": "C:\\Users\\machi\\Documents\\GitHub\\medaka-3d\\work\\clean2d_video_comparison_v1\\known_30735\\tracking_F_side1_cam.npz",
+      "size": 73518,
+      "mtime": "2026-09-17T00:50:02.301665+00:00",
+      "sha256": "d2eae9ab4f0aee209e37c75314e11e6b1b59ce23922a91960aa9dd81ee3e3e0f"
+    },
+    "count_source_known_30735_side2_cam": {
+      "path": "C:\\Users\\machi\\Documents\\GitHub\\medaka-3d\\work\\clean2d_video_comparison_v1\\known_30735\\tracking_F_side2_cam.npz",
+      "size": 61578,
+      "mtime": "2026-09-17T00:50:01.855829+00:00",
+      "sha256": "04cff1d380d05a71c7e906145cba1be31f82a6a2a72ea20f938a43bae43cbd7d"
+    },
+    "count_source_known_31479_top_cam": {
+      "path": "C:\\Users\\machi\\Documents\\GitHub\\medaka-3d\\work\\clean2d_video_comparison_v1\\known_31479\\tracking_F_top_cam.npz",
+      "size": 63435,
+      "mtime": "2026-09-17T00:49:38.814897+00:00",
+      "sha256": "c68f0f388612928e29368ee008472cacf638f0195a18e2e92c4eddcb51e8376b"
+    },
+    "count_source_known_31479_side1_cam": {
+      "path": "C:\\Users\\machi\\Documents\\GitHub\\medaka-3d\\work\\clean2d_video_comparison_v1\\known_31479\\tracking_F_side1_cam.npz",
+      "size": 73983,
+      "mtime": "2026-09-17T00:50:13.182155+00:00",
+      "sha256": "928d7fb684202fa3f28768be14fe0f37f916365b595bef718f43d61c45d3365b"
+    },
+    "count_source_known_31479_side2_cam": {
+      "path": "C:\\Users\\machi\\Documents\\GitHub\\medaka-3d\\work\\clean2d_video_comparison_v1\\known_31479\\tracking_F_side2_cam.npz",
+      "size": 71985,
+      "mtime": "2026-09-17T00:50:11.087239+00:00",
+      "sha256": "226a1813a31f51ac091c7bd325842aa4ebc3dc2b40609eda27a38e0f96ed986e"
+    },
+    "count_source_known_105541_top_cam": {
+      "path": "C:\\Users\\machi\\Documents\\GitHub\\medaka-3d\\work\\clean2d_video_comparison_v1\\known_105541\\tracking_F_top_cam.npz",
+      "size": 75015,
+      "mtime": "2026-09-17T00:50:02.448421+00:00",
+      "sha256": "dab92e6be38195e66f34885af1f661fed86704a32384f23f49039946cfd5a349"
+    },
+    "count_source_known_105541_side1_cam": {
+      "path": "C:\\Users\\machi\\Documents\\GitHub\\medaka-3d\\work\\clean2d_video_comparison_v1\\known_105541\\tracking_F_side1_cam.npz",
+      "size": 71669,
+      "mtime": "2026-09-17T00:50:38.108419+00:00",
+      "sha256": "cff7be3c2f37ddeb5c4c502a05a035ae1d6a21d4d276623d3f7f139737497946"
+    },
+    "count_source_known_105541_side2_cam": {
+      "path": "C:\\Users\\machi\\Documents\\GitHub\\medaka-3d\\work\\clean2d_video_comparison_v1\\known_105541\\tracking_F_side2_cam.npz",
+      "size": 73977,
+      "mtime": "2026-09-17T00:50:35.716057+00:00",
+      "sha256": "802a9454b1ce110488b10a01236a37e2b4d8182ba8677b0244e918e504ff7b45"
+    },
+    "count_source_known_260434_top_cam": {
+      "path": "C:\\Users\\machi\\Documents\\GitHub\\medaka-3d\\work\\clean2d_video_comparison_v1\\known_260434\\tracking_F_top_cam.npz",
+      "size": 72119,
+      "mtime": "2026-09-17T00:50:27.075551+00:00",
+      "sha256": "48b9148c140312bffbd322ab787ca4650db98acdbb47b7287e05b6f1382cd882"
+    },
+    "count_source_known_260434_side1_cam": {
+      "path": "C:\\Users\\machi\\Documents\\GitHub\\medaka-3d\\work\\clean2d_video_comparison_v1\\known_260434\\tracking_F_side1_cam.npz",
+      "size": 72069,
+      "mtime": "2026-09-17T00:51:03.413773+00:00",
+      "sha256": "b47d47a922a51295f19457137301999692c78da20a95c6082cc605f1578d71df"
+    },
+    "count_source_known_260434_side2_cam": {
+      "path": "C:\\Users\\machi\\Documents\\GitHub\\medaka-3d\\work\\clean2d_video_comparison_v1\\known_260434\\tracking_F_side2_cam.npz",
+      "size": 72123,
+      "mtime": "2026-09-17T00:51:01.518193+00:00",
+      "sha256": "855f5bde23a70541bc9a606f13e8f15646cf95aeac2c1f604f6e8e4c34421c47"
+    },
+    "count_source_known_302762_top_cam": {
+      "path": "C:\\Users\\machi\\Documents\\GitHub\\medaka-3d\\work\\clean2d_video_comparison_v1\\known_302762\\tracking_F_top_cam.npz",
+      "size": 74285,
+      "mtime": "2026-09-17T00:50:52.403458+00:00",
+      "sha256": "79cfbf793bc723bf5cee5546eea85e6c2868627c22bc400b3df8d6b860a3f817"
+    },
+    "count_source_known_302762_side1_cam": {
+      "path": "C:\\Users\\machi\\Documents\\GitHub\\medaka-3d\\work\\clean2d_video_comparison_v1\\known_302762\\tracking_F_side1_cam.npz",
+      "size": 73131,
+      "mtime": "2026-09-17T00:51:29.996231+00:00",
+      "sha256": "6787fcf3dd5ecfe2acaebb34461145d5013e60bb08a8109313184a362f5addae"
+    },
+    "count_source_known_302762_side2_cam": {
+      "path": "C:\\Users\\machi\\Documents\\GitHub\\medaka-3d\\work\\clean2d_video_comparison_v1\\known_302762\\tracking_F_side2_cam.npz",
+      "size": 72894,
+      "mtime": "2026-09-17T00:51:27.965803+00:00",
+      "sha256": "20cf097647b07651e9c58e99da87af4b55b7f001f02af05ff7ac8a2371a22af7"
+    },
+    "count_source_known_323819_top_cam": {
+      "path": "C:\\Users\\machi\\Documents\\GitHub\\medaka-3d\\work\\clean2d_video_comparison_v1\\known_323819\\tracking_F_top_cam.npz",
+      "size": 72737,
+      "mtime": "2026-09-17T00:51:04.497809+00:00",
+      "sha256": "dd55373cbd1439adb16d70cda4a20750f6033a40d231a47031c194bb9974acc9"
+    },
+    "count_source_known_323819_side1_cam": {
+      "path": "C:\\Users\\machi\\Documents\\GitHub\\medaka-3d\\work\\clean2d_video_comparison_v1\\known_323819\\tracking_F_side1_cam.npz",
+      "size": 72578,
+      "mtime": "2026-09-17T00:51:41.259937+00:00",
+      "sha256": "a76c831b30b596785eb2119da32f102c9ab10b34990cd849a08a6dc8db5e716d"
+    },
+    "count_source_known_323819_side2_cam": {
+      "path": "C:\\Users\\machi\\Documents\\GitHub\\medaka-3d\\work\\clean2d_video_comparison_v1\\known_323819\\tracking_F_side2_cam.npz",
+      "size": 74777,
+      "mtime": "2026-09-17T00:51:39.333953+00:00",
+      "sha256": "b50f7c742b6bc3fcc57c27f0caf6a177ca8d0e3fe9b938c3c2160908a3dba1cc"
+    },
+    "count_source_known_333619_top_cam": {
+      "path": "C:\\Users\\machi\\Documents\\GitHub\\medaka-3d\\work\\clean2d_video_comparison_v1\\known_333619\\tracking_F_top_cam.npz",
+      "size": 73456,
+      "mtime": "2026-09-17T00:51:30.603335+00:00",
+      "sha256": "9fd71a50229f71dceb511f57317a1c8dec078442d0a1d9e974818cd3b51dfa35"
+    },
+    "count_source_known_333619_side1_cam": {
+      "path": "C:\\Users\\machi\\Documents\\GitHub\\medaka-3d\\work\\clean2d_video_comparison_v1\\known_333619\\tracking_F_side1_cam.npz",
+      "size": 72725,
+      "mtime": "2026-09-17T00:52:05.780351+00:00",
+      "sha256": "1efe34e28bb14e6743ec5c116862f88a114aa0bab9ab142065747f0854235a44"
+    },
+    "count_source_known_333619_side2_cam": {
+      "path": "C:\\Users\\machi\\Documents\\GitHub\\medaka-3d\\work\\clean2d_video_comparison_v1\\known_333619\\tracking_F_side2_cam.npz",
+      "size": 74564,
+      "mtime": "2026-09-17T00:52:04.465060+00:00",
+      "sha256": "50f3202f3ae7bb0b7db5ce4a6f25f155227a1638ba3ea61de9bdbeb5ddcdd23d"
+    },
+    "count_source_control_50000_top_cam": {
+      "path": "C:\\Users\\machi\\Documents\\GitHub\\medaka-3d\\work\\clean2d_video_comparison_v1\\control_50000\\tracking_F_top_cam.npz",
+      "size": 72656,
+      "mtime": "2026-09-17T00:51:41.764962+00:00",
+      "sha256": "6516464168e195fc74ec31b5277e9357f2bcc6cb86f1bcba9c6010de76810710"
+    },
+    "count_source_control_50000_side1_cam": {
+      "path": "C:\\Users\\machi\\Documents\\GitHub\\medaka-3d\\work\\clean2d_video_comparison_v1\\control_50000\\tracking_F_side1_cam.npz",
+      "size": 79670,
+      "mtime": "2026-09-17T00:52:17.068248+00:00",
+      "sha256": "bc1fc1043df130c7eca25e0ce2824c491842f4c24314c3de3416e74276140d61"
+    },
+    "count_source_control_50000_side2_cam": {
+      "path": "C:\\Users\\machi\\Documents\\GitHub\\medaka-3d\\work\\clean2d_video_comparison_v1\\control_50000\\tracking_F_side2_cam.npz",
+      "size": 73912,
+      "mtime": "2026-09-17T00:52:15.817781+00:00",
+      "sha256": "c7569c657549894bbf04a52a22efd15584fb0ca2cbe4e27b18ab2c7a2cc7e9db"
+    },
+    "count_source_holdout20s_top_cam": {
+      "path": "C:\\Users\\machi\\Documents\\GitHub\\medaka-3d\\work\\clean2d_video_comparison_v1\\holdout20s\\tracking_F_top_cam.npz",
+      "size": 286900,
+      "mtime": "2026-09-17T00:51:54.607907+00:00",
+      "sha256": "8d0f4eff1013fb30047df78f1086cf285795185a5c804ec11ec090e45289e3b1"
+    },
+    "count_source_holdout20s_side1_cam": {
+      "path": "C:\\Users\\machi\\Documents\\GitHub\\medaka-3d\\work\\clean2d_video_comparison_v1\\holdout20s\\tracking_F_side1_cam.npz",
+      "size": 285068,
+      "mtime": "2026-09-17T00:52:28.979965+00:00",
+      "sha256": "56545149eb34c207b9f1de052f45120f846f954138e528e4ba132c751c48a862"
+    },
+    "count_source_holdout20s_side2_cam": {
+      "path": "C:\\Users\\machi\\Documents\\GitHub\\medaka-3d\\work\\clean2d_video_comparison_v1\\holdout20s\\tracking_F_side2_cam.npz",
+      "size": 285780,
+      "mtime": "2026-09-17T00:52:27.901542+00:00",
+      "sha256": "b199583613eaa7fb1e7538ec44cce8f3f6468604fe7fbb7f9794a3846eeb296b"
+    }
+  },
+  "outputs": {
+    "execution_plan": {
+      "path": "C:\\Users\\machi\\Documents\\GitHub\\medaka-3d\\docs\\decisions\\2026-09-17-variable-count-2d-tracklet-plan.md",
+      "size": 21873,
+      "mtime": "2026-09-17T08:48:15.161862+00:00",
+      "sha256": "621976ae97aed70a1f14143fbdbfeba20a7151a093fe25dec3492621c5581acf"
+    },
+    "next_session_pointer": {
+      "path": "C:\\Users\\machi\\Documents\\GitHub\\medaka-3d\\docs\\NEXT_SESSION.md",
+      "size": 9556,
+      "mtime": "2026-09-17T08:48:16.027812+00:00",
+      "sha256": "9b83e720f187f2c9ca6608acb232ad9ff9d1dd48b00479d9a672a43013b86f1e"
+    }
+  },
+  "params": {
+    "status": "planning_only; no tracking implementation or run",
+    "next_session_required_scope": "stages A-C; stage D is subsequent",
+    "user_requirements": "three physical fish; no forced three 2D IDs; retain reflection candidates and variable observations; allow occlusion and unresolved identity",
+    "validation": {
+      "local_markdown_links": 5,
+      "missing_links": 0,
+      "core_view_frames_counted": 28962,
+      "zero_detection_frames_in_core": 0,
+      "representative_count_examples_verified": true,
+      "independent_design_review": "no required corrections"
+    },
+    "human_annotations_created": false
+  },
+  "environment": {
+    "argv": [
+      "-"
+    ],
+    "python": "3.13.11",
+    "platform": "Windows-11-10.0.26200-SP0",
+    "hostname": "AMD3995x",
+    "git_rev": "f5da5941bfcb6a0c2e9063ca1a98e847977b15c1",
+    "git_dirty": true
+  }
+}
