@@ -1,0 +1,124 @@
+{
+  "schema_version": 1,
+  "experiment": "20251225_K_1_2_FCMC",
+  "review_date_local": "2026-09-16",
+  "timezone": "Asia/Tokyo",
+  "annotation_source": "User's verbatim visual review in this conversation",
+  "annotator_role": "human_experimenter",
+  "review_question": "Whether an individual identity swap occurred; distinct from node correspondence quality",
+  "reviewed_artifact_directory": "work/multiview_node_review_v1/review",
+  "reviewed_panel": "unspecified_pending_clarification",
+  "panel_definitions": {
+    "left": "Frozen original C34 baseline",
+    "right": "Unaccepted local multiview/node reassignment proposal"
+  },
+  "baseline": {
+    "path": "work/generative_tracking_inputs/work/c34_microflip/20251225_K_1_2_FCMC__chain-c28-c33-c30v4-c34/C34-label__20251225_K_1_2_FCMC__lam0.767.npz",
+    "sha256": "a025af23eab568620ca1e2ae5f2e2fa941a788a17c881c70de94936e56930de0"
+  },
+  "interpretation_limits": [
+    "Frame numbers are review anchors, not human-annotated exact swap onset/offset frames.",
+    "Slots name displayed C34 slots, not independently named biological identities.",
+    "Unspecified camera and panel scope must not be inferred as all cameras or both panels.",
+    "These selected scenes are development/review data, not an independent accuracy benchmark.",
+    "f75398 was not reviewed in this message and remains unlabelled.",
+    "No source detections, tracking outputs or candidate acceptance decisions are changed by recording this review."
+  ],
+  "intended_asset_relative_directory": "groundtruth/swap_event_gt/20251225_K_1_2_FCMC/20260916_multiview_node_review_v1",
+  "events": [
+    {
+      "frame": 76791,
+      "kind": "no_id_swap",
+      "slots": [],
+      "view": null,
+      "human_exact_interval": null,
+      "verbatim_note": "f76791 no swap",
+      "video": "cg20s_f76791_native_slow.mp4",
+      "video_sha256": "39184fbd5a4bb4a728a2028cfa3cf1e367855fa6d47d81901bb2e91e9ca3c977",
+      "displayed_slots": [1, 2]
+    },
+    {
+      "frame": 76988,
+      "kind": "id_swap",
+      "slots": [1, 0],
+      "view": null,
+      "human_exact_interval": null,
+      "verbatim_note": "f76988 S1とS0（マークされていない個体）がスワップ",
+      "video": "cg20s_f76988_native_slow.mp4",
+      "video_sha256": "8b5dda6e0b1147389e023538aa6bfdd839e17ae395827d1157225020f41d8c7c",
+      "displayed_slots": [1, 2],
+      "user_identified_unmarked_slot": 0
+    },
+    {
+      "frame": 76235,
+      "kind": "id_swap",
+      "slots": [0, 2],
+      "view": null,
+      "human_exact_interval": null,
+      "verbatim_note": "f76235 S0とS2がスワップ",
+      "video": "cg20s_f76235_native_slow.mp4",
+      "video_sha256": "044be9cb3f0a501556a6ef9bd66e7b7698f04a94ece733f6c1918c76e350fe04",
+      "displayed_slots": [0, 2]
+    },
+    {
+      "frame": 76930,
+      "kind": "id_swap",
+      "slots": [0, 1],
+      "view": null,
+      "human_exact_interval": null,
+      "verbatim_note": "f76930 S0とS1（マークされていない個体）がスワップ",
+      "video": "cg20s_f76930_native_slow.mp4",
+      "video_sha256": "cf2e5e39bbb59f28802bd1ad8916fb9d04c08d432e94767c58c7c71695a197ae",
+      "displayed_slots": [0, 2],
+      "user_identified_unmarked_slot": 1
+    },
+    {
+      "frame": 30735,
+      "kind": "view_local_transient_jump",
+      "slots": [0, 1],
+      "view": "side2_cam",
+      "human_exact_interval": null,
+      "verbatim_note": "f30735 side2でS0がS1にジャンプでのちに戻る",
+      "video": "known_30735_f30735_native_slow.mp4",
+      "video_sha256": "4b2fdbc49da200a250fd91a5b443ddac4c5da6c29928bfa60b9a0e54552bf4ed",
+      "displayed_slots": [0, 1],
+      "returns_later": true,
+      "global_id_swap_verdict": "not_specified"
+    },
+    {
+      "frame": 31479,
+      "kind": "id_swap",
+      "slots": [0, 1],
+      "view": null,
+      "human_exact_interval": null,
+      "verbatim_note": "f31479 S0とS1がビッグジャンプスワップ、3次元後再検出ステップでなぜここが訂正できないかがわからない",
+      "video": "known_31479_f31479_native_slow.mp4",
+      "video_sha256": "c0f1789fdeacd0f33397fe0449ff74bb565f361a6aa94aa5489f14b9448c1f84",
+      "displayed_slots": [0, 1, 2],
+      "large_jump_reported": true
+    },
+    {
+      "frame": 323819,
+      "kind": "no_id_swap",
+      "slots": [],
+      "view": null,
+      "human_exact_interval": null,
+      "verbatim_note": "f323819 スワップない、パーフェクト",
+      "video": "known_323819_f323819_native_slow.mp4",
+      "video_sha256": "c7ff6df3cda3dc16523f927155f0587cb19e3b7787830768382cab1d72c01a92",
+      "displayed_slots": [0, 1, 2]
+    },
+    {
+      "frame": 77415,
+      "kind": "no_id_swap_with_node_exchange",
+      "slots": [1, 2],
+      "view": null,
+      "human_exact_interval": null,
+      "verbatim_note": "f77415 S1とS2間でノードの交換など多少あるが、IDスワップはない",
+      "video": "cg20s_f77415_native_slow.mp4",
+      "video_sha256": "b207e97add34bfbfd79236b6c49eaef1578c2691b345a26d9a096008bfb3b04f",
+      "displayed_slots": [0, 1, 2],
+      "node_exchange_reported": true
+    }
+  ]
+}

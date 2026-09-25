@@ -1,0 +1,85 @@
+{
+  "stage": "record_human_identity_review",
+  "status": "ok",
+  "started_at": "2026-09-16T08:37:23.579551+00:00",
+  "finished_at": "2026-09-16T08:37:23.715181+00:00",
+  "inputs": {
+    "reviewed_f76791": {
+      "path": "work\\multiview_node_review_v1\\review\\cg20s_f76791_native_slow.mp4",
+      "size": 2679302,
+      "mtime": "2026-09-16T03:13:33.308144+00:00",
+      "sha256": "39184fbd5a4bb4a728a2028cfa3cf1e367855fa6d47d81901bb2e91e9ca3c977"
+    },
+    "reviewed_f76988": {
+      "path": "work\\multiview_node_review_v1\\review\\cg20s_f76988_native_slow.mp4",
+      "size": 1614208,
+      "mtime": "2026-09-16T03:07:41.553313+00:00",
+      "sha256": "8b5dda6e0b1147389e023538aa6bfdd839e17ae395827d1157225020f41d8c7c"
+    },
+    "reviewed_f76235": {
+      "path": "work\\multiview_node_review_v1\\review\\cg20s_f76235_native_slow.mp4",
+      "size": 1811881,
+      "mtime": "2026-09-16T03:07:28.729562+00:00",
+      "sha256": "044be9cb3f0a501556a6ef9bd66e7b7698f04a94ece733f6c1918c76e350fe04"
+    },
+    "reviewed_f76930": {
+      "path": "work\\multiview_node_review_v1\\review\\cg20s_f76930_native_slow.mp4",
+      "size": 1439636,
+      "mtime": "2026-09-16T03:07:35.066499+00:00",
+      "sha256": "cf2e5e39bbb59f28802bd1ad8916fb9d04c08d432e94767c58c7c71695a197ae"
+    },
+    "reviewed_f30735": {
+      "path": "work\\multiview_node_review_v1\\review\\known_30735_f30735_native_slow.mp4",
+      "size": 2487660,
+      "mtime": "2026-09-16T03:07:14.408683+00:00",
+      "sha256": "4b2fdbc49da200a250fd91a5b443ddac4c5da6c29928bfa60b9a0e54552bf4ed"
+    },
+    "reviewed_f31479": {
+      "path": "work\\multiview_node_review_v1\\review\\known_31479_f31479_native_slow.mp4",
+      "size": 1205710,
+      "mtime": "2026-09-16T03:07:21.804183+00:00",
+      "sha256": "c0f1789fdeacd0f33397fe0449ff74bb565f361a6aa94aa5489f14b9448c1f84"
+    },
+    "reviewed_f323819": {
+      "path": "work\\multiview_node_review_v1\\review\\known_323819_f323819_native_slow.mp4",
+      "size": 3021493,
+      "mtime": "2026-09-16T03:07:56.656637+00:00",
+      "sha256": "c7ff6df3cda3dc16523f927155f0587cb19e3b7787830768382cab1d72c01a92"
+    },
+    "reviewed_f77415": {
+      "path": "work\\multiview_node_review_v1\\review\\cg20s_f77415_native_slow.mp4",
+      "size": 1918111,
+      "mtime": "2026-09-16T03:07:47.796866+00:00",
+      "sha256": "b207e97add34bfbfd79236b6c49eaef1578c2691b345a26d9a096008bfb3b04f"
+    },
+    "frozen_baseline": {
+      "path": "work\\generative_tracking_inputs\\work\\c34_microflip\\20251225_K_1_2_FCMC__chain-c28-c33-c30v4-c34\\C34-label__20251225_K_1_2_FCMC__lam0.767.npz",
+      "size": 16080617,
+      "mtime": "2026-09-03T02:44:11+00:00",
+      "sha256": "a025af23eab568620ca1e2ae5f2e2fa941a788a17c881c70de94936e56930de0"
+    }
+  },
+  "outputs": {
+    "human_review": {
+      "path": "docs\\reviews\\2026-09-16_multiview_identity_review.json",
+      "size": 5121,
+      "mtime": "2026-09-16T08:36:27.505764+00:00",
+      "sha256": "2c7821912c9fa602a4cd4039c69cd7a508cd7e99bb9af19e59f6e55bc68354a8"
+    }
+  },
+  "params": {
+    "review_date_local": "2026-09-16",
+    "reviewed_panel": "unspecified_pending_clarification",
+    "source": "verbatim user message; no automatic ID correction"
+  },
+  "environment": {
+    "argv": [
+      "-"
+    ],
+    "python": "3.13.11",
+    "platform": "Windows-11-10.0.26200-SP0",
+    "hostname": "AMD3995x",
+    "git_rev": "f5da5941bfcb6a0c2e9063ca1a98e847977b15c1",
+    "git_dirty": true
+  }
+}

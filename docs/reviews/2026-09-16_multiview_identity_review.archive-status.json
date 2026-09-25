@@ -1,0 +1,15 @@
+{
+  "status": "archived_and_registered",
+  "time_utc": "2026-09-16T08:38:59.451404+00:00",
+  "asset_root": "Z:\\StephensU\\medaka\\assets",
+  "copied": [
+    "Z:\\StephensU\\medaka\\assets\\groundtruth\\swap_event_gt\\20251225_K_1_2_FCMC\\20260916_multiview_node_review_v1\\2026-09-16_multiview_identity_review.json",
+    "Z:\\StephensU\\medaka\\assets\\groundtruth\\swap_event_gt\\20251225_K_1_2_FCMC\\20260916_multiview_node_review_v1\\2026-09-16_multiview_identity_review.provenance.json"
+  ],
+  "added_count": 2,
+  "all_3301_previous_asset_entries_preserved": true,
+  "manifest_before_sha256": "561d969b9afdc1dc50166e630bdff057eda6f4310e904416b7fc50f025ea370d",
+  "manifest_after_sha256": "11d8221b691159c64f1ab7d6e8fadc6df8630adedbd269376432366c894ae324",
+  "manifest_asset_count": 3303,
+  "reviewed_panel": "unspecified_pending_clarification"
+}

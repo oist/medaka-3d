@@ -1,0 +1,20 @@
+{
+  "status": "archived_and_registered",
+  "assets": {
+    "ground_truth:groundtruth/swap_event_gt/20251225_K_1_2_FCMC/20260916_multiview_node_review_v1/2026-09-16_multiview_identity_review.json": {
+      "path": "groundtruth/swap_event_gt/20251225_K_1_2_FCMC/20260916_multiview_node_review_v1/2026-09-16_multiview_identity_review.json",
+      "size": 5121,
+      "sha256": "2c7821912c9fa602a4cd4039c69cd7a508cd7e99bb9af19e59f6e55bc68354a8",
+      "kind": "ground_truth",
+      "provenance": "Human experimenter visual review supplied in conversation on 2026-09-16; preserved verbatim with reviewed video SHA256; panel scope not yet specified."
+    },
+    "ground_truth:groundtruth/swap_event_gt/20251225_K_1_2_FCMC/20260916_multiview_node_review_v1/2026-09-16_multiview_identity_review.provenance.json": {
+      "path": "groundtruth/swap_event_gt/20251225_K_1_2_FCMC/20260916_multiview_node_review_v1/2026-09-16_multiview_identity_review.provenance.json",
+      "size": 3530,
+      "sha256": "2699e4261b0f68a1b8ac2c689ba2551126cad9e08d254b4a5588fe36f63c0598",
+      "kind": "ground_truth",
+      "provenance": "Human experimenter visual review supplied in conversation on 2026-09-16; preserved verbatim with reviewed video SHA256; panel scope not yet specified."
+    }
+  },
+  "registered_manifest_sha256": "11d8221b691159c64f1ab7d6e8fadc6df8630adedbd269376432366c894ae324"
+}
