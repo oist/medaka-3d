@@ -1,0 +1,114 @@
+<!-- Origin: review_truth.html SHA256 4b74d6036623cc987f2ecfb0e7849ca0f9d1a2798e7070c075e48247c8ecfdef.
+Only import validation was changed: source/schema/ranges/three in-clip chronological anchors. -->
+<!doctype html><html lang="ja"><meta charset="utf-8">
+<title>原画像による匿名 3 個体の対応確認</title>
+<style>
+body{font:16px system-ui;margin:18px;background:#17191c;color:#eee}button,input,select{font:inherit}
+.views{display:flex;gap:8px;flex-wrap:wrap}.panel{flex:1;min-width:300px}
+canvas{width:100%;height:auto;cursor:crosshair}p{max-width:1100px;line-height:1.5}
+video{max-width:100%;width:1200px}.row{margin:12px 0}textarea{width:90%;height:60px}
+</style><h1>原画像による匿名 3 個体の対応確認</h1>
+<p>追跡線・モデルの ID・マスクは表示していません。まず動画を前後に見て、入口の魚に
+任意の A・B・C を付け、各確認時点で同じ魚の<strong>口</strong>をクリックしてください。
+最低限、3 匹 × 3 時点を各 1 つの見やすい視点で記録します。他の視点の追加も可能です。
+分からない対応は「曖昧」のまま保存できます。A・B・C はこの区間内の匿名名で、オスの白／赤ではありません。</p>
+<p>初期の 3 時点は既知の短時間の追跡異常を挟む確認候補です。物理的な接触が起きたという意味ではありません。
+必要ならスライダーで別のフレームを選び「このフレームを採用」してください。
+経路を目で追うことは認めますが、求愛の多寡・優位行動を ID の根拠にはしないでください。</p>
+<video controls loop src="raw_three_views_slow.mp4"></video>
+<p>動画は全入力フレームを 20 fps で再生します（元映像 166 fps、約 8.3 倍のスロー）。
+正確な 1 フレーム送りとクリックには下の原画像を使ってください。クリック表示は自分の入力だけです。</p>
+<div class="row">記録者 <input id="reviewer" placeholder="名前または研究内 ID">
+確認時点 <select id="phase"><option value="0">入口</option><option value="1">異常報告の直後</option>
+<option value="2">出口</option></select> 匿名魚 <select id="animal"><option>A</option><option>B</option><option>C</option></select></div>
+<div class="row"><button id="prev">−1 frame</button> <button id="next">+1 frame</button>
+<input id="slider" type="range" min="0" max="__LAST__" value="0" style="width:45%">
+<span id="frameLabel"></span> <button id="adopt">このフレームを採用</button>
+<label><input id="marks" type="checkbox" checked>自分のクリックを表示</label></div>
+<div class="views" id="views"></div>
+<div class="row">選択した魚の表示状態 <select id="visibility"><option value="unreviewed">未確認</option>
+<option value="visible">見える</option><option value="occluded">隠れている</option><option value="ambiguous">曖昧</option></select>
+<button id="clear">この時点・この魚のクリックを消す</button></div>
+<div class="row">選択した魚の対応: 入口→直後 <select id="edge0"></select> 直後→出口 <select id="edge1"></select>
+根拠 <select id="basis"><option value="unreviewed">未確認</option>
+<option value="direct_visual_continuity">映像を前後に見た連続性</option>
+<option value="morphology_and_continuity">形態と映像の連続性</option></select></div>
+<div class="row">選択した魚の性別 <select id="sex"><option value="unknown">未確定</option>
+<option value="female">メス</option><option value="male">オス</option></select>（映像から判断できる場合だけ）</div>
+<div class="row">全体のメモ <textarea id="notes"></textarea></div>
+<button id="save">判断 JSON をダウンロード</button>
+<p>保存は下書きです。研究用の確定正解や全自動精度には、そのまま算入しません。
+ページを閉じる前に JSON を保存してください。結果をこちらに読み戻す場合は
+<input type="file" id="load" accept=".json">を使えます。</p><pre id="status"></pre>
+<script>
+let truth=__TRUTH__; const frames=__FRAMES__, viewNames=__VIEWS__, started=Date.now();
+const q=id=>document.getElementById(id), canvases={}, images={}; let serial=0;
+const currentAnchor=()=>truth.anchors[Number(q('phase').value)];
+const currentAnimal=()=>currentAnchor().animals[q('animal').value];
+for(const id of ['edge0','edge1']) for(const [v,t] of [['unreviewed','未確認'],['confirmed','同じ魚と確認'],['ambiguous','曖昧'],['not_visible','見えない']]) q(id).add(new Option(t,v));
+for(const view of viewNames){
+ const box=document.createElement('div');box.className='panel';box.append(document.createTextNode(view));
+ const canvas=document.createElement('canvas');canvas.width=1200;canvas.height=1200;box.append(canvas);
+ q('views').append(box);canvases[view]=canvas;
+ canvas.onclick=e=>{
+  if(frames[Number(q('slider').value)]!==currentAnchor().frame){alert('先にこのフレームを採用してください');return;}
+  const r=canvas.getBoundingClientRect(); currentAnimal().points[view]=[(e.clientX-r.left)*1200/r.width,(e.clientY-r.top)*1200/r.height];
+  currentAnimal().visibility='visible'; currentAnchor().frame_choice='human_selected'; sync();draw();
+ };
+}
+function sync(){
+ const c=truth.continuity[q('animal').value];q('edge0').value=c.entry_to_after;q('edge1').value=c.after_to_exit;
+ q('basis').value=c.basis;q('sex').value=truth.biological_naming[q('animal').value].sex;
+ q('visibility').value=currentAnimal().visibility;
+ q('status').textContent=JSON.stringify({anchors:truth.anchors.map(a=>({phase:a.phase,frame:a.frame,marked:Object.fromEntries(Object.entries(a.animals).map(([k,v])=>[k,Object.keys(v.points)]))})),continuity:truth.continuity},null,2);
+}
+function draw(){for(const view of viewNames){const c=canvases[view],ctx=c.getContext('2d');if(images[view])ctx.drawImage(images[view],0,0);
+ if(q('marks').checked&&frames[Number(q('slider').value)]===currentAnchor().frame)for(const [id,a] of Object.entries(currentAnchor().animals))if(a.points[view]){
+  const [x,y]=a.points[view];ctx.strokeStyle='#ffffff';ctx.lineWidth=3;ctx.beginPath();ctx.arc(x,y,9,0,7);ctx.stroke();ctx.fillStyle='#fff';ctx.font='26px sans-serif';ctx.fillText(id,x+13,y-8);
+ }
+}}
+async function show(){const token=++serial, frame=frames[Number(q('slider').value)];q('frameLabel').textContent=`source ${frame} loading`;
+ for(const canvas of Object.values(canvases))canvas.style.pointerEvents='none';
+ const loaded=await Promise.all(viewNames.map(view=>new Promise((ok,no)=>{const img=new Image();img.onload=()=>ok([view,img]);img.onerror=no;img.src=`frames/f${frame}_${view}.jpg`;})));
+ if(token!==serial)return;for(const [v,img] of loaded)images[v]=img;draw();q('frameLabel').textContent=`source ${frame}`;
+ for(const canvas of Object.values(canvases))canvas.style.pointerEvents='auto';}
+q('slider').oninput=show;q('marks').onchange=draw;
+q('prev').onclick=()=>{q('slider').value=Math.max(0,Number(q('slider').value)-1);show();};
+q('next').onclick=()=>{q('slider').value=Math.min(frames.length-1,Number(q('slider').value)+1);show();};
+q('phase').onchange=()=>{q('slider').value=frames.indexOf(currentAnchor().frame);sync();show();};
+q('animal').onchange=()=>{sync();draw();};
+q('adopt').onclick=()=>{const a=currentAnchor(),f=frames[Number(q('slider').value)];if(a.frame!==f&&Object.values(a.animals).some(x=>Object.keys(x.points).length)&&!confirm('この時点のクリックを消してフレームを変更しますか'))return;
+ if(a.frame!==f)for(const x of Object.values(a.animals)){x.points={};x.visibility='unreviewed';}a.frame=f;a.frame_choice='human_selected';sync();draw();};
+q('clear').onclick=()=>{currentAnimal().points={};currentAnimal().visibility='unreviewed';sync();draw();};
+q('visibility').onchange=()=>{currentAnimal().visibility=q('visibility').value;sync();};
+for(const [id,key] of [['edge0','entry_to_after'],['edge1','after_to_exit'],['basis','basis']])q(id).onchange=()=>{truth.continuity[q('animal').value][key]=q(id).value;sync();};
+q('sex').onchange=()=>{truth.biological_naming[q('animal').value].sex=q('sex').value;};
+q('save').onclick=()=>{truth.reviewer=q('reviewer').value||null;truth.notes=q('notes').value;
+ truth.reviewed_utc=new Date().toISOString();truth.elapsed_review_seconds=(Date.now()-started)/1000;
+ truth.status='human_draft_requires_adjudication';const a=document.createElement('a');
+ a.href=URL.createObjectURL(new Blob([JSON.stringify(truth,null,2)],{type:'application/json'}));
+ a.download=`raw_review_${frames[0]}_${Date.now()}.json`;a.click();URL.revokeObjectURL(a.href);};
+/* REVIEW_IMPORT_GUARD_BEGIN */
+function reviewImportIssue(incoming, expected, displayedFrames){
+ if(!incoming||typeof incoming!=='object'||Array.isArray(incoming))return 'JSON の形式が不正です';
+ if(incoming.schema!==expected.schema||incoming.source_manifest_sha256!==expected.source_manifest_sha256)return '別の元動画・形式です';
+ const sameRange=(a,b)=>Array.isArray(a)&&Array.isArray(b)&&a.length===2&&b.length===2&&a.every((v,i)=>Number.isInteger(v)&&v===b[i]);
+ if(!sameRange(incoming.source_frame_range,expected.source_frame_range))return '元動画のフレーム範囲が異なります';
+ if(!sameRange(incoming.review_clip_range,expected.review_clip_range))return '別の確認区間の JSON です';
+ if(!Array.isArray(incoming.anchors)||incoming.anchors.length!==3||incoming.anchors.some(a=>!a||!Number.isInteger(a.frame)||!displayedFrames.includes(a.frame)))return '3 つの確認時点は現在の区間内である必要があります';
+ const anchors=incoming.anchors.map(a=>a.frame);
+ if(!(anchors[0]<anchors[1]&&anchors[1]<anchors[2]))return '確認時点は異なる 3 フレームを時系列順に指定してください';
+ return null;
+}
+/* REVIEW_IMPORT_GUARD_END */
+q('load').onchange=async()=>{
+ try{
+  if(!q('load').files.length)return;
+  const incoming=JSON.parse(await q('load').files[0].text()),issue=reviewImportIssue(incoming,truth,frames);
+  if(issue){alert(issue);q('load').value='';return;}
+  truth=incoming;q('reviewer').value=truth.reviewer||'';q('notes').value=truth.notes||'';q('phase').onchange();
+ }catch(error){alert('JSON を読み込めません: '+error.message);q('load').value='';}
+};
+sync();show();
+</script></html>
+
