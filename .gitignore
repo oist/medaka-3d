@@ -1,5 +1,6 @@
 # Machine-specific configuration
 configs/paths.local.toml
+.claude/settings.local.json
 
 # Environments
 .venv/
@@ -30,3 +31,8 @@ __pycache__/
 *.pt
 *.joblib
 *.npz
+
+# Reproducible local experiment inputs and outputs; source assets stay on bucket.
+# Historical helper sources needed by tests are explicitly tracked under work/.
+# Keep new implementation in src/ or labs/; do not add generated run directories.
+work/
