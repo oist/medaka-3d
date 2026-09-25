@@ -1,0 +1,89 @@
+{
+  "date": "2026-09-08",
+  "floor_policy": "tolerance6",
+  "tracker_config": {
+    "local": {
+      "beam_width": 4,
+      "proposals_per_parent": 3,
+      "candidates_per_node": 3,
+      "pixel_sigma": 4.0,
+      "gate_px": 60.0,
+      "missing_cost": 6.0,
+      "motion_sigma_mm": 1.0,
+      "shape_sigma_mm": 2.0,
+      "max_segment_ratio": 2.0,
+      "image_weight": 0.7,
+      "appearance_weight": 4.0,
+      "flow_weight": 0.5,
+      "velocity_update": 0.5,
+      "max_velocity_mm_per_frame": 4.0,
+      "max_nfev": 10,
+      "review_margin": 2.0,
+      "unresolved_separation_mm": 4.0,
+      "overlap_px": 14.0,
+      "max_reprojection_px": 12.0,
+      "lower_mm": [
+        0.0,
+        0.0,
+        -6.0
+      ],
+      "upper_mm": [
+        192.0,
+        192.0,
+        186.0
+      ]
+    },
+    "missing_before_recovery": 2,
+    "recovery_proposals_per_parent": 3,
+    "node_candidate_limit": 24,
+    "ray_rms_mm": 1.5,
+    "support_px": 8.0,
+    "initial_connection_sigma_mm": 2.0,
+    "uncertainty_growth_mm_per_frame": 1.5,
+    "maximum_connection_sigma_mm": 80.0,
+    "recovery_cost": 6.0,
+    "recovery_fit_sigma_mm": 3.0,
+    "confirmation_frames": 3
+  },
+  "evidence_config": {
+    "difference_threshold": 12.0,
+    "minimum_component_area": 6,
+    "maximum_foreground_fraction": 0.35,
+    "distance_scale_px": 5.0,
+    "maximum_distance_px": 25.0,
+    "histogram_bins": 8,
+    "body_radius_fraction": 0.1,
+    "flow_max_side": 320,
+    "flow_consistency_px": 1.5,
+    "motion_scale_px": 3.0
+  },
+  "raw_source_hashes": {
+    "reacquisition.py": "87cc88f17db3753d92eaa5acd606b8cc2470f7e6675dbb45696eb7db32c24c93",
+    "tracker.py": "c4bc66b650fe753914c29afce82c5f44b4390fd7a89fa5608862ff3fb146fab8",
+    "fast_fit.py": "aa79d0beff7ff039b9558bab43359226b25fff48dbe0bcc42854d592d4639768",
+    "observations.py": "42e11c6607ed2bd57e88e882765eda399eba1ba05319226ddc7189ddbcb958a4",
+    "accelerated_observations.py": "f67af740798e9b8ff84628d34c80015bc2463a897a4abeca4e759d496821c7ba",
+    "ordered_prefetch.py": "ab06cfae3db2f8daa3c02dcea276a81870c0c1ae565586e13f83e3d5d799c660",
+    "benchmark_reacquisition.py": "72affc8d1a276a8d52775440aa205ba1c56ffd71f8ae8b6320ed77b89c0eb341",
+    "reacquisition_windows.json": "ea752603a8088b461bbca0fcf6f310ea181ab10769f3694bc7510a4635d2822b"
+  },
+  "validation_results_sealed_until_postpass_freeze": true,
+  "selection_data": "two known development windows only",
+  "record_timing": {
+    "raw_decision_and_source_edits": "before minute process startup",
+    "minute_process_started_jst": "2026-09-08 11:47:36",
+    "addendum_and_json_written": "immediately after minute process startup, while outcomes remained unopened",
+    "contemporaneous_evidence": "run startup code_snapshot and code_hashes"
+  },
+  "initial_addendum_before_timing_clarification_sha256": "ea7e8e9a1c59874afc361a3ac9dafee580632c7078eeae70f33a82d6d79f3d99",
+  "addendum_record": {
+    "path": "REACQUISITION_V2_FREEZE.md",
+    "hash_before_postpass_metadata_note": "4c699edddc6b2db97c07d3737a05d3df8dbe4da6d1e11047bd487617714f0a88",
+    "hash_after_postpass_metadata_note": "6d1d9770c80654f47d87e5d4209a8d402411b560a81e779d3fd490ce7b231235",
+    "scope": "amendable decision record, not raw inference source",
+    "hash_after_wrapper_storage_note": "6f73a3711726ca874bb45d0252f8e0caf149d4cc23c88cf4a98c8d4a6236b264"
+  },
+  "postpass_final_sha256": "8bb6f013ba9cb1f86bc1e78c84054f6e5f69ecca838921410e955ba5904157db",
+  "postpass_wrapper_final_sha256": "9c86fd51c47c8f96f5cc1b6bb447f32525d2f042cf7fd5cfba3f66bff81b6213",
+  "postpass_wrapper_correction_scope": "storage and snapshot dependencies only, while standard postpasses idle; raw inference/core unchanged"
+}
