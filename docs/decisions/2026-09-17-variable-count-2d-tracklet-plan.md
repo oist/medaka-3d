@@ -1,284 +1,403 @@
-# 検出数の変動・反射・遮蔽を扱う独立2Dトラックレット計画
+# Plan: independent 2D tracklets that handle varying detection counts, reflection and occlusion
 
-日付：2026-09-17。状態：**次セッション用の計画。今回、この計画の実装・追跡実験は行っていない。**
+Date: 2026-09-17. Status: **a plan for the next session. Neither the implementation of this plan
+nor any tracking experiment was done in this session.**
 
-## 1. 目的と次回の到達点
+## 1. Purpose and target for the next session
 
-SLEAPの時間方向のIDを入力に使わず、各カメラで、確かな接続だけからなる2Dトラックレットを作る。
-離れていて対応が明瞭な魚は長く追跡し、交差・遮蔽・反射との競合では未確定の接続を残す。
-その後、確かなビューを手掛かりに、他のビューの断片を3D対応の過程で補う。
+Without using SLEAP's temporal IDs as input, build 2D tracklets in each camera made only of
+confident links.
+Fish that are apart and whose correspondence is clear are tracked for long stretches; where
+crossings, occlusion or competition with reflections occur, links are left uncommitted.
+Afterwards, using the reliable views as cues, fragments in the other views are filled in during
+3D correspondence.
 
-**次セッションの必須範囲は、下記の工程A〜C：2D方式の実装、同条件の比較、各ビューの動画を含むHTML報告まで。**
-3Dでの再接続は工程Dとして分け、2Dの問題が減ったことを確認してから進める。
-今回の20秒と既知場面を優先し、全録画の再処理、検出器の再学習、CG制作はこの比較に含めない。
+**The required scope for the next session is stages A–C below: implementation of the 2D method,
+comparison under the same conditions, and an HTML report including videos of each view.**
+Reconnection in 3D is separated out as stage D and proceeds only after the 2D problems are
+confirmed to have decreased.
+The present 20 s and the known scenes take priority; reprocessing the whole recording,
+retraining the detector, and producing CG are not part of this comparison.
 
-## 2. 固定する前提：実魚3匹と、2Dの検出数・ID数を分ける
+## 2. Fixed premise: separate the three physical fish from 2D detection counts and ID counts
 
-水槽内の実魚は3匹でも、あるビューの検出数は **0、1、2、3、4個以上**になり得る。
-壁や水面の反射、見逃し、交差時の遮蔽、複数個体が一つにまとまった検出を許容する。
-「4個目だから反射」「2個だから遮蔽」と原因まで自動決定しない。
+Even though the tank holds three physical fish, the detection count in a view can be **0, 1, 2,
+3, or 4 or more**.
+Reflections off the walls and water surface, misses, occlusion during crossings, and detections
+in which several individuals merge into one are allowed for.
+The cause is not decided automatically, as in "it is the 4th, so it is a reflection" or "there
+are 2, so it is occlusion".
 
-| 層 | IDの意味 | 数・扱い |
+| layer | meaning of the ID | count / handling |
 |---|---|---|
-| 検出 | `(view, native_frame, C01のglobal_row)`。元の点・欠損・scoreを保持 | 全行を保存。3個に制限しない |
-| 2Dトラックレット | 一つのビューで連続性が確かな観測断片 | 個数無制限。未接続行も単独断片／未確定観測として保持 |
-| 実魚への対応 | 断片と実際の3匹との対応仮説 | 未割当を許容。観測される実魚は0〜3匹でよく、余剰断片を強制統合しない |
+| detection | `(view, native_frame, C01 global_row)`. Retains the original points, dropouts and score | All rows stored. Not capped at 3 |
+| 2D tracklet | an observation fragment whose continuity within one view is certain | Unlimited count. Unlinked rows are also retained, as single fragments / uncommitted observations |
+| correspondence to physical fish | a correspondence hypothesis between fragments and the actual three fish | Unassigned allowed. 0–3 physical fish may be observed; surplus fragments are not forcibly merged |
 
-したがって、上位3検出への切り詰め、全トラックレットを常時S0/S1/S2にまとめる処理、
-欠けた魚の架空の検出、検出数変化による全IDのリセットを入れない。
-既存P/N/Fも全検出行を保持しており、以前の方式が3行に制限していたという意味ではない。
-今回はこの契約を明文化し、欠損・競合・再出現時にも守る。
+Therefore none of the following is introduced: truncation to the top 3 detections, processing
+that always folds all tracklets into S0/S1/S2, fictitious detections for missing fish, or
+resetting all IDs on a change in detection count.
+The existing P/N/F also retain every detection row; this does not mean the earlier methods capped
+at 3 rows.
+This time the contract is written down and is upheld also at dropouts, competition and
+reappearance.
 
-出力は少なくとも以下を別々に保持する。
+The output keeps at least the following separately.
 
-- 元検出、ノードごとの観測マスク、検出score。ノード別scoreが元データにない場合は作らない。
-- 確定した隣接フレーム接続とその根拠、保留／不接続の理由、カメラ内トラックレットID。
-- 口・胸びれ・尾のまとまりの評価。時間的な接続の確かさと混同しない。
-- 実魚／反射の解釈。初期値は未判定とし、反射疑いには根拠と出典を付ける。
-- 途切れた端点と再接続候補。予測位置は観測点と別配列にし、予測で元の欠損を埋めない。
+- Source detections, per-node observation masks, detection score. Per-node scores are not
+  invented where the source data lack them.
+- Committed adjacent-frame links and their grounds, reasons for hold / no-link, within-camera
+  tracklet ID.
+- Assessment of mouth / pectoral fin / tail coherence. Not to be confused with the certainty of
+  temporal links.
+- Physical-fish / reflection interpretation. The initial value is undetermined; a suspected
+  reflection carries its grounds and source.
+- Broken endpoints and reconnection candidates. Predicted positions go in a separate array from
+  observed points; predictions do not fill in the original dropouts.
 
-**滑らかで長いトラックレットでも反射であり得る。接続への確信は、実魚である確率ではない。**
+**Even a long, smooth tracklet can be a reflection. Confidence in a link is not the probability
+of being a physical fish.**
 
-## 3. 2D追跡の設計
+## 3. Design of the 2D tracking
 
-### 3.1 明瞭な区間を継続する
+### 3.1 Continue through clear intervals
 
-胸びれ（P）を接続の基準とし、同一フレーム内は一対一の割当とする。
-接続しない選択肢、新規断片、未確定観測を明示的に扱う。
-口（M）や尾（T）が欠けただけでは、Pが観測され対応が一意な接続を切らない。
-有効なM/Tは補助情報として段階的に追加するが、欠損や別個体のノード混入の疑いを
-魚全体のID変更へ直結させない。P自体が欠ける場合は、P主体の確定接続を保留する。
-M/Tだけでの代替追跡は別条件として後に検討し、今回のP条件に混ぜない。
+The pectoral fin (P) is the basis for linking, with one-to-one assignment within a frame.
+The options of not linking, a new fragment, and an uncommitted observation are handled
+explicitly.
+A missing mouth (M) or tail (T) alone does not cut a link where P is observed and the
+correspondence is unique.
+Valid M/T are added step by step as auxiliary information, but a dropout or a suspected mix-in of
+a node from another individual is not tied directly to an ID change for the whole fish. Where P
+itself is missing, the P-based committed link is held.
+Substitute tracking on M/T alone is considered later as a separate condition and is not mixed
+into the present P condition.
 
-「離れている」は現在フレームの個体間距離だけで決めない。
-候補までの予測誤差、フレーム間の移動量、位置の不確かさに対し、他候補が十分離れていることを確認する。
-各検出から見た候補と、各トラックレットから見た候補の両方の競合を評価する。
-見失った端点の短期予測も競合候補に含めるため、**現在の検出が1個でも自動的に安全とはしない。**
-反射か未判定の検出も、根拠なく候補集合から除かない。
+"Apart" is not decided from the inter-individual distance in the current frame alone.
+Confirm that other candidates are far enough away relative to the prediction error to the
+candidate, the inter-frame movement, and the position uncertainty.
+Evaluate competition both among the candidates seen from each detection and among the candidates
+seen from each tracklet.
+Short-term predictions of lost endpoints are also included as competing candidates, so **a single
+current detection is not automatically safe.**
+Detections whose reflection status is undetermined are not removed from the candidate set without
+grounds either.
 
-距離・予測誤差の上限と次善候補との差を記録し、単に3匹へ最小コストで配る方式にしない。
-魚が互いに遠くても、直前位置からの大きなジャンプを距離の一意性だけで許可しない。
-近接は詳しく調べるきっかけとし、近いという理由だけで双方の接続を必ず切る現行ルールを見直す。
-近接していない第三の魚の追跡は独立に継続する。
+Record the upper bounds on distance and prediction error and the margin over the next-best
+candidate; do not simply distribute detections to three fish at minimum cost.
+Even when the fish are far from one another, a large jump from the previous position is not
+permitted on distance uniqueness alone.
+Proximity is a trigger for closer examination; the current rule that always cuts both links just
+because fish are close is to be revisited.
+Tracking of a third fish that is not in proximity continues independently.
 
-### 3.2 前後方向から疑わしい接続を判定する
+### 3.2 Judge suspect links from both temporal directions
 
-既存のP方式にも順方向・逆方向の接続合意がある。これを新機能として二重に数えない。
-同じ前後コンテキストで、両方向の予測誤差・候補順位・競合・ノード支持を保存する。
-まず隣接フレームの合意判定を検証し、複雑な長区間探索を同時に追加しない。
+The existing P method already has forward/backward link agreement. It is not double-counted as a
+new feature.
+With the same before/after context, save the prediction error, candidate ranking, competition and
+node support in both directions.
+Validate adjacent-frame agreement first; do not add a complex long-interval search at the same
+time.
 
-進行方向に対して約80度以上の移動は再評価の手掛かりとするが、それ単独では切断しない。
-小移動時の方向の不安定さ、実際の急旋回、投影の影響を考慮し、移動距離や候補の競合と併せて判定する。
-順逆で食い違う場合や候補差が小さい場合は、無理に一つのIDへ決めない。
-同点を行順で解消できても、接続が確かになったとは扱わない。
+A movement about 80° or more off the heading is a cue for re-evaluation but does not by itself
+cut a link.
+Taking into account directional instability during small movements, genuine sharp turns and
+projection effects, judge it together with movement distance and candidate competition.
+When forward and backward disagree, or the candidate margin is small, do not force a single ID.
+Even if a tie can be broken by row order, the link is not treated as having become certain.
 
-### 3.3 見えなくなったとき・再出現したとき
+### 3.3 When a fish disappears and when it reappears
 
-| 状況 | 基本動作 |
+| situation | default behaviour |
 |---|---|
-| 3検出から2検出になる | 見えている魚の接続を続け、消えた観測断片の端点を開いたまま保存 |
-| 1検出／0検出になる | 観測のない魚を描き足さない。短期予測は別に保持し、経過時間とともに不確かさを増やす |
-| 二つの魚に対し一つの検出が競合する | その行を二つの確定トラックへ複製しない。個体の合流とも決めず、関係を保留 |
-| 4個以上に増える | 全検出を保存し、対応根拠のないものは新規／未確定断片として扱う |
-| 交差後に再び離れる | 新たな明瞭区間の断片を作る。交差前との同一性は別途評価 |
+| 3 detections become 2 | Continue linking the visible fish; save the endpoint of the vanished observation fragment as open |
+| 1 detection / 0 detections | Do not draw in fish that are not observed. Keep short-term predictions separately, with uncertainty growing with elapsed time |
+| one detection contested by two fish | Do not duplicate that row into two committed tracks. Do not decide it is a merger of individuals either; hold the relation |
+| rises to 4 or more | Store all detections; treat those without correspondence grounds as new / uncommitted fragments |
+| separate again after a crossing | Create a fragment for the new clear interval. Identity with the pre-crossing fragments is evaluated separately |
 
-初回の確定トラックレットは隣接フレームの接続を基本とする。
-欠測を越える関係は、元断片を変更しない**再接続候補の表**として分ける。
-候補には前後の端点、経過時間、順逆予測誤差、他の競合端点、採用／保留理由を残す。
-端点の有効期間は秒とnative frameの両方で明示し、無期限の古い位置への接続を避ける。
-端点を候補から外しても元観測や断片を消さない。
-「検出が3個に戻った」「出口で互いに離れた」だけでは、入口と出口のID対応を確定しない。
+The first-pass committed tracklets are based on adjacent-frame links.
+Relations across a gap are kept apart as a **table of reconnection candidates** that does not
+modify the original fragments.
+Each candidate records the endpoints before and after, elapsed time, forward/backward prediction
+errors, other competing endpoints, and the reason for adoption / hold.
+The validity period of an endpoint is stated both in seconds and in native frames, avoiding links
+to stale positions with no expiry.
+Dropping an endpoint from the candidates does not delete the original observations or fragments.
+"The detections returned to 3" or "they separated at the exit" alone does not commit the
+entry-to-exit ID correspondence.
 
-### 3.4 反射の扱い
+### 3.4 Handling reflections
 
-最初の2D実装では、反射を完全分類することを前提にしない。
-実魚と反射が同時に滑らかに追跡できるなら、別々の断片として残すことが正しい場合がある。
-壁への近さだけで除外すると壁際の実魚も失うため、壁付近の判定は診断情報にとどめる。
-他ビューに見つからないことも、単独では反射の証拠にしない。
+The first 2D implementation does not presuppose complete classification of reflections.
+If a physical fish and a reflection can both be tracked smoothly at the same time, keeping them
+as separate fragments may be correct.
+Excluding by proximity to a wall alone would also lose physical fish near the wall, so near-wall
+judgements stay diagnostic information.
+Not being found in another view is not, on its own, evidence of a reflection either.
 
-後段では、校正に基づく3D位置・再投影・時間的整合性を使って実魚対応を絞る。
-鏡像の幾何モデルを使う場合は、既存の反射関連実装と校正・検証状況を先に調べる。
-未検証の鏡像モデルを今回の2D判定へ持ち込まない。
+Later stages narrow down the physical-fish correspondence using calibration-based 3D position,
+reprojection and temporal consistency.
+If a mirror-image geometric model is used, first examine the existing reflection-related
+implementations and their calibration and validation status.
+An unvalidated mirror-image model is not brought into the present 2D judgement.
 
-## 4. 比較を分ける：実装修正、スコア、追跡方式、パラメータ
+## 4. Keep comparisons separate: implementation fixes, score, tracking method, parameters
 
-[直前の結果](../../labs/20260917_clean2d_video_comparison/RESULT.md)では、
-主20秒の全29,386検出が保持される一方、連続区間数は保存SLEAP 224、P 323、N 1,257、F 1,324だった。
-Pは全行で見えているがMは743行で欠けており、N/Fの必須ノード条件が不要な分断を作る場面があった。
-断片が多いことと検出欠損は別であり、大ジャンプを切ったことだけでスワップ改善とはしない。
+In [the immediately preceding result](../../labs/20260917_clean2d_video_comparison/RESULT.md),
+all 29,386 detections in the main 20 s were retained, while the number of contiguous intervals
+was stored SLEAP 224, P 323, N 1,257, F 1,324.
+P is visible in every row but M is missing in 743 rows, and there were scenes where the
+required-node condition of N/F created unnecessary splits.
+Many fragments and missing detections are different things, and cutting large jumps is not by
+itself a swap improvement.
 
-また[パラメータ監査](../../work/clean2d_video_comparison_v1/parameter_audit.md)で、
-現在のSLEAPにおけるM欠損時のOKSの縮退と、C24/C27の戻り行順の書き戻し問題を確認した。
-保存された全区間結果と短い再実行は履歴・実行環境が異なるため、同一再現と呼ばない。
+The [parameter audit](../../work/clean2d_video_comparison_v1/parameter_audit.md) also confirmed
+the degeneration of OKS in the current SLEAP when M is missing, and the write-back problem with
+the returned row order in C24/C27.
+The stored full-length results and the short re-runs differ in history and runtime environment,
+so they are not called an identical reproduction.
 
-| 比較条件 | 変更・役割 |
+| comparison condition | change / role |
 |---|---|
-| 保存C27 | 以前の全録画SLEAP結果。変更せず参考表示 |
-| S1 | 現環境で同じ局所入力・履歴を使うSLEAP。入力行と戻り値の対応のみ正しく保存 |
-| S2 | S1からOKSのスケールのみ変更。M欠損や姿勢でゼロになる面積を、正で方向に依存しない尺度へ交換 |
-| P0 | 凍結済みの胸びれのみの独立追跡。既存の順逆合意を含む |
-| P1 | 本計画のP主体方式。相対的な候補競合、部分ノード欠損、可変検出数、開いた端点を扱う |
-| P1＋補助ノード | P1に有効なM/Tの支持を追加する独立条件。欠損を一律の切断理由にしない |
+| stored C27 | Earlier whole-recording SLEAP result. Shown unchanged for reference |
+| S1 | SLEAP in the current environment using the same local input and history. Only the correspondence between input rows and return values is stored correctly |
+| S2 | Only the OKS scale changed from S1. The area, which becomes zero with a missing M or with certain postures, is replaced by a positive, orientation-independent scale |
+| P0 | Frozen pectoral-fin-only independent tracking. Includes the existing forward/backward agreement |
+| P1 | The P-based method of this plan. Handles relative candidate competition, partial node dropouts, variable detection count and open endpoints |
+| P1 + auxiliary nodes | A separate condition adding valid M/T support to P1. A dropout is not a blanket reason to cut |
 
-S2はまずビュー別の固定スケールを既存のP条件の尺度を参考に宣言し、結果を見る前に固定する。
-過去の信頼できる体長からの適応スケールは必要なら別条件とし、複数変更を隠さない。
-ゼロ面積を微小値に置くだけ／方向依存のM/P矩形面積を過去へ移すだけの変更にはしない。
-S2で未接続ペナルティ等も一緒に変更すると機序を分離できないため、変更する場合は別条件にする。
+For S2, first declare a fixed per-view scale with reference to the scale of the existing P
+condition, and fix it before looking at results.
+An adaptive scale from past reliable body lengths, if needed, is a separate condition; multiple
+changes are not hidden.
+The change is not merely replacing zero area with a tiny value, nor merely moving the
+orientation-dependent M/P box area to the past.
+Changing the no-link penalty and the like together with S2 would make the mechanisms
+inseparable, so such changes, if made, are separate conditions.
 
-S1/S2/P0/P1は同じC01検出行・評価区間・前後332フレームのコンテキストを使う。
-過去だけを使うSLEAPと前後を使う方式の差は明記する。いずれにも同じ入力区間を提供し、中心区間で評価する。
-P1の特徴追加と数値閾値変更を別に記録する。小さな事前指定の感度比較を行い、全設定を報告する。
-場面ごとに都合のよい設定を選ばず、ビュー別設定は全対象区間へ同じように適用する。
-フローは必須化せず、P1の結果で追加の価値が必要と分かった場合の独立比較に回す。
+S1/S2/P0/P1 use the same C01 detection rows, evaluation intervals, and 332 frames of context
+before and after.
+The difference between past-only SLEAP and the methods that use past and future is stated
+explicitly. All are given the same input interval and are evaluated on the central interval.
+P1's feature additions and numeric-threshold changes are recorded separately. Run a small
+pre-specified sensitivity comparison and report every setting.
+Do not pick a convenient setting per scene; per-view settings are applied identically to all
+target intervals.
+(Optical) flow is not made mandatory; it goes to a separate comparison if P1's results show that
+its added value is needed.
 
-## 5. 対象データと既知場面
+## 5. Target data and known scenes
 
-実験は `20251225_K_1_2_FCMC`、166 fps、`top_cam / side1_cam / side2_cam`。
-同じ3匹の1群であり、複数の独立実験とは扱わない。区間は開始を含み終了を含まない。
-全11ケースの正本は[既存protocol.json](../../work/clean2d_video_comparison_v1/protocol.json)。
+Experiment `20251225_K_1_2_FCMC`, 166 fps, `top_cam / side1_cam / side2_cam`.
+It is one group of the same three fish and is not treated as multiple independent experiments.
+Intervals include the start and exclude the end.
+The canonical copy of all 11 cases is the
+[existing protocol.json](../../work/clean2d_video_comparison_v1/protocol.json).
 
-- 主20秒：`[75270, 78590)`。レビュー位置は76235、76791、76930、76988、77415。
-- 既知場面：21232、30735、31479、105541、260434、302762、323819、333619。
-- `control_50000` と `holdout20s [240000,243320)` は既に調査済みなので回帰確認用。
-  後者を新規の未見テストと呼ばない。
+- Main 20 s: `[75270, 78590)`. Review positions 76235, 76791, 76930, 76988, 77415.
+- Known scenes: 21232, 30735, 31479, 105541, 260434, 302762, 323819, 333619.
+- `control_50000` and `holdout20s [240000,243320)` have already been investigated, so they serve
+  as regression checks.
+  The latter is not to be called a new unseen test.
 
-検出数が変わる具体例も、保存NPZの読み取りで確認済み。
+Concrete examples of changing detection counts were also confirmed by reading the stored NPZ
+files.
 
-| ケース・ビュー | native frameと検出行数 | 評価上の注意 |
+| case / view | native frame and detection-row count | evaluation note |
 |---|---|---|
-| known_30735 / side2 | 30734〜30736：各1、30746〜30747：各2 | 同じ2D断片の3Dへの割当変更と、2D自体の切替を分ける |
-| cg20s / 3視点 | 76930：top=2、side1=2、side2=3 | 視点ごとに可視数が異なる例 |
-| known_31479 / side1 | 31479：4、31486・31488・31499：各5 | 余剰行が反射かは未判定。3個へ縮めない |
-| known_260434 | 260434：side1=2、side2=4 | 旧注記にside1の3フレーム融合。side2の余剰原因は未判定 |
-| known_323819 / side1 | 323819：3、323820：2、323821〜323824：各3、323825：1 | 後の人手判定はIDスワップなし。誤修正を防ぐ対照 |
+| known_30735 / side2 | 30734–30736: 1 each; 30746–30747: 2 each | Separate a change in the 3D assignment of the same 2D fragment from a switch in 2D itself |
+| cg20s / 3 views | 76930: top=2, side1=2, side2=3 | Example of the visible count differing per view |
+| known_31479 / side1 | 31479: 4; 31486, 31488, 31499: 5 each | Whether the surplus rows are reflections is undetermined. Do not shrink to 3 |
+| known_260434 | 260434: side1=2, side2=4 | An old note records a 3-frame fusion in side1. Cause of the side2 surplus undetermined |
+| known_323819 / side1 | 323819: 3; 323820: 2; 323821–323824: 3 each; 323825: 1 | Later human judgement: no ID swap. A control against mis-repair |
 
-上表の出典は `work/clean2d_video_comparison_v1/{case}/tracking_F_{view}.npz` の検出行数。
-FのID判断を正解には使っていない。11ケース×3ビューのcore計28,962 view-framesには0検出がなく、
-0検出とそこからの復帰は合成テストで検証する。
-旧注記に遮蔽・反射の記載があっても、今回の各検出行への反射ラベルとは読み替えない。
+The source of the table above is the detection-row counts in
+`work/clean2d_video_comparison_v1/{case}/tracking_F_{view}.npz`.
+F's ID decisions are not used as ground truth. The core of 11 cases × 3 views, 28,962 view-frames
+in total, contains no 0-detection frames, so 0 detections and recovery from them are validated
+with synthetic tests.
+Even where old notes mention occlusion or reflection, this is not read as a reflection label on
+individual detection rows here.
 
-入力の場所（リポジトリ基準）：
+Input locations (relative to the repository):
 
 ```text
-C01検出：
+C01 detections:
 work/generative_tracking_inputs/work/c01_s16_predictions/bottomup/
   20251225_K_1_2_FCMC__{view}.npz
 
-保存SLEAP：
+Stored SLEAP:
 work/custom2d_comparison_v1/inputs/c27_uncapped_tracklets_any/
   20251225_K_1_2_FCMC/mouth-pectoral_oks_serial/track2d__{view}.npy
 
-動画：
+Videos:
 work/three_body/source_cache/medaka_202512/20251225_K_1_2_FCMC/
   top_cam/cam0_top.mp4
   side1_cam/cam1_side.mp4
   side2_cam/cam2_side.mp4
 ```
 
-C01にはノードのインスタンス内の組み合わせは残るが、独立方式はSLEAP時間IDを読まない。
-比較用SLEAPラベルの読込と新方式の推定を分離する。
-検出・入力順を変えた検証も行い、対応を元のglobal_rowに戻して接続を比較する。
+C01 retains the grouping of nodes within an instance, but the independent method does not read
+SLEAP temporal IDs.
+Loading the SLEAP labels for comparison is kept separate from estimation by the new method.
+Validation with the detection / input order permuted is also run, mapping back to the original
+global_row to compare links.
 
-## 6. 評価と目視確認
+## 6. Evaluation and visual checks
 
-### 必須の構造テスト
+### Required structural tests
 
-1. 0/1/2/3/4/5検出、および3→2→1→0→2→4→3で、行の保持、一対一、他個体の継続が守られる。
-2. M/T欠損でもPが明瞭な接続、P欠損、ノード混入の疑いを区別できる。
-3. 二つの軌跡が一つの検出に競合してもIDを合流させず、同じ観測を複製しない。
-4. 安定した余剰像、壁際の実魚、検出1個に複数の過去端点が競合する例を扱える。
-5. 遠く離れた現在候補への大ジャンプを一意性だけで許可せず、交差後の分離だけで入口IDを決めない。
-6. 行順の変更で確定接続が変わらず、同点・順逆不一致・欠測を根拠なく確定しない。
-7. 予測点が観測点や検出率に混入せず、元points・欠損マスク・global_rowが一致する。
+1. With 0/1/2/3/4/5 detections, and with the sequence 3→2→1→0→2→4→3, row retention, one-to-one
+   assignment and continuity of the other individuals are upheld.
+2. Distinguishes a link with a clear P despite missing M/T, a missing P, and a suspected node
+   mix-in.
+3. When two trajectories compete for one detection, IDs are not merged and the same observation
+   is not duplicated.
+4. Handles a stable surplus image, a physical fish near the wall, and cases where several past
+   endpoints compete for one detection.
+5. Does not permit a large jump to a distant current candidate on uniqueness alone, and does not
+   decide the entry ID from separation after a crossing alone.
+6. Committed links do not change when row order changes, and ties, forward/backward disagreement
+   and missing observations are not committed without grounds.
+7. Predicted points do not leak into observed points or detection rates, and the original points,
+   dropout mask and global_row match.
 
-### 比較する量
+### Quantities compared
 
-検出数（0/1/2/3/4以上）、離隔／近接、ノード欠損の有無で層別する。
-全体値だけで、容易な区間の改善と交差時の悪化を相殺しない。
+Stratify by detection count (0/1/2/3/4 or more), separated / close, and presence of node dropout.
+Do not let improvement in easy intervals offset deterioration at crossings in overall values
+alone.
 
-- 元検出の保持率、未接続／未確定観測、連続区間数、隣接接続と欠測越しの接続を別々に集計。
-- 正解がある範囲で、正しい継続、誤接続、保留、明瞭区間の不要な切断を別々に集計。
-- 入出口の対応が確認できる場合のID継続。ノード交換と個体ID交換を分ける。
-- 反射ラベルが確認できた範囲での実魚・反射間の誤接続。それ以外は未判定事例として提示。
-- 各指標の分母、評価対象フレーム、注釈のある範囲を明記。
+- Tally separately: retention rate of source detections, unlinked / uncommitted observations,
+  number of contiguous intervals, adjacent links and links across a gap.
+- Where ground truth exists, tally separately: correct continuation, wrong links, holds, and
+  unnecessary cuts in clear intervals.
+- ID continuity where the entry-exit correspondence can be confirmed. Separate node exchanges
+  from individual-ID exchanges.
+- Wrong links between physical fish and reflections, within the range where reflection labels
+  were confirmed. Anything else is presented as undetermined cases.
+- State the denominator of each metric, the evaluated frames, and the annotated range.
 
-採用条件は、全行保持などの契約を満たし、確認済みの明瞭区間で新たな誤接続を作らず、
-不要な分断を減らすこと。断片数・ジャンプ数の減少だけを成功条件にしない。
-全接続を保留すれば誤接続が減るため、正しい継続率と保留率も必ず併記する。
-未注釈区間の滑らかさをID正解率へ置き換えない。
+Adoption conditions: satisfy the contract (all rows retained, etc.), create no new wrong links in
+confirmed clear intervals, and reduce unnecessary splits.
+A decrease in fragment count or jump count alone is not a success condition.
+Holding every link would reduce wrong links, so the correct-continuation rate and the hold rate
+are always reported alongside.
+Smoothness in unannotated intervals is not substituted for ID accuracy.
 
-既存の女性個体GTと[今回の人手レビュー](../reviews/2026-09-16_multiview_identity_review.json)は
-全3匹のフレーム単位2D正解ではない。古いC30のslot名も2Dの正解IDへ流用しない。
-不明な対応は未判定とし、具体的な入出口画像・動画を準備した上で、人が回答できる項目として報告する。
-追加注釈待ちの項目と、自動試験で確認できた項目を分け、実装・描画は先に完了する。
+The existing female GT and [the recent human review](../reviews/2026-09-16_multiview_identity_review.json)
+are not frame-level 2D ground truth for all three fish. The old C30 slot names are not reused as
+2D ground-truth IDs either.
+Unknown correspondences are left undetermined and, with concrete entry/exit images and videos
+prepared, reported as items a human can answer.
+Items awaiting additional annotation are kept apart from items confirmed by automated tests, and
+implementation and rendering are completed first.
 
-### HTMLと動画
+### HTML and videos
 
-- 各ビューについて同じフレーム・同じ全検出を並べたSLEAP／P0／P1比較。S1/S2も選択可能にする。
-- 水槽全体の20秒動画と、既知イベントの拡大・低速動画、前後の静止画を付ける。
-- 検出数、ローカルな断片ID、観測されたM/P/T、接続の採用・保留理由を表示する。
-  異なる方式の同じ色を同一個体の証拠にしない。表示上の対応付けを行うなら推定用IDとは分けて明記する。
-- 実魚への対応が未確定の断片にS0/S1/S2を付けない。反射疑いも未判定表示を許容する。
-- 観測点は実線・実点、表示する予測は破線等で区別。不可視の魚を観測済みのように描かない。
-- native frameと時間、検出数、候補距離・予測誤差、順逆不一致、ノード欠損の時系列グラフを用意。
-- 全設定と比較表を掲載し、2D改善、未判定、3D側に残る問題を場面別に記載する。
-- 生成動画をデコードし、HTMLの切替・再生・リンク・掲載数値を確認してから渡す。
+- For each view, a SLEAP / P0 / P1 comparison side by side on the same frames and the same full
+  set of detections. S1/S2 are also selectable.
+- Include a 20 s whole-tank video, zoomed slow-motion videos of known events, and stills from
+  before and after.
+- Display detection count, local fragment ID, observed M/P/T, and the reason each link was
+  adopted / held.
+  The same colour in different methods is not evidence of the same individual. If a display-level
+  matching is applied, it is labelled explicitly and kept separate from the IDs used for
+  estimation.
+- Fragments whose correspondence to physical fish is uncommitted are not labelled S0/S1/S2.
+  Suspected reflections may also be displayed as undetermined.
+- Observed points are drawn with solid lines and filled dots; displayed predictions are
+  distinguished with dashed lines or similar. Invisible fish are not drawn as if observed.
+- Provide time-series plots of native frame and time, detection count, candidate distance and
+  prediction error, forward/backward disagreement, and node dropout.
+- Publish all settings and comparison tables, and describe per scene the 2D improvements, the
+  undetermined items, and the problems remaining on the 3D side.
+- Decode the generated videos and check the HTML's toggles, playback, links and displayed numbers
+  before handing over.
 
-## 7. 実行順序
+## 7. Execution order
 
-### 工程A：入力契約と比較条件を固定
+### Stage A: fix the input contract and comparison conditions
 
-既存protocol・保存結果・コードのSHAを記録し、新しい実験ディレクトリを作る。
-S1の行対応、S2のスケール変更、P0の再現を検証する。
-可変検出数の合成例と、上表の実データを回帰試験に登録する。
-SLEAPを修正した条件の改善と独立方式の改善を別々に報告する。
+Record the SHAs of the existing protocol, stored results and code, and create a new experiment
+directory.
+Verify S1's row correspondence, S2's scale change, and the reproduction of P0.
+Register synthetic variable-detection-count examples and the real data in the table above as
+regression tests.
+Report improvements from the conditions that modify SLEAP separately from improvements from the
+independent method.
 
-### 工程B：P主体の可変検出数トラックレットを実装
+### Stage B: implement P-based variable-detection-count tracklets
 
-P1を実装し、候補競合に応じた隣接接続と、ノード品質の分離を試す。
-見失った端点の短期状態を競合評価に使い、再出現はまず別断片として保存する。
-M/T支持を追加した比較条件も作り、Pのみから何が変わるか確認する。
-再接続候補の記録は可能にするが、欠測越しの確定統合や3D推定を基本2D結果へ混ぜない。
+Implement P1 and try adjacent linking that responds to candidate competition, and separation of
+node quality.
+Use the short-term state of lost endpoints in the competition evaluation, and first save a
+reappearance as a separate fragment.
+Also build the comparison condition with M/T support added, and check what changes relative to P
+only.
+Recording reconnection candidates is made possible, but committed merges across a gap and 3D
+estimation are not mixed into the basic 2D result.
 
-### 工程C：20秒・既知場面を比較して報告
+### Stage C: compare and report on the 20 s and known scenes
 
-上記11ケースと3視点で実行し、人が明瞭と述べた区間とno-swap対照を重点確認する。
-HTML、各ビューの動画、静止画、グラフ、設定、機械可読の検出／接続／集計を保存する。
-ここまでが次セッションの必須成果物。改善しない場合も結果と原因を報告し、優位と結論しない。
-設定を固定した後の検証には、既に調査した区間と重ならない20〜30秒を選び、選定根拠を記録する。
-未見区間の結果を使って設定を変えた場合は、新しい検証区間を必要とする。
-同じ3匹の別区間であることは明記し、独立群への一般化とはしない。
+Run on the 11 cases above and all 3 views, with particular attention to the intervals a human
+described as clear and to the no-swap controls.
+Save the HTML, per-view videos, stills, plots, settings, and machine-readable detections / links /
+summaries.
+Everything up to here is the required deliverable for the next session. If there is no
+improvement, report the result and the cause, and do not conclude superiority.
+For validation after the settings are fixed, choose 20–30 s that do not overlap
+already-investigated intervals, and record the selection rationale.
+If the settings are changed using results from the unseen interval, a new validation interval is
+required.
+State explicitly that it is a different interval of the same three fish, and do not treat it as
+generalisation to independent groups.
 
-### 工程D：2Dの確認後、欠測越し・ビュー間の対応を評価
+### Stage D: after the 2D check, evaluate correspondence across gaps and across views
 
-再接続候補を短い前後区間で評価し、確かなビューの断片をIDの手掛かりとして使う。
-他ビューで途切れていても、同時刻に利用できる観測と校正によって対応を検証する。
-全3視点で連続していることは要求しない。利用可能な2視点の幾何を活用する。
-連続した1ビューは手掛かりになり得るが、それだけで曖昧な他ビュー対応や新しい3D深度を確定しない。
-1ビューしか観測がない時間の3D予測は、観測による3Dとは区別する。
+Evaluate reconnection candidates over short before/after intervals, using fragments from reliable
+views as ID cues.
+Even where a track is broken in another view, verify the correspondence using the observations
+available at the same instant and the calibration.
+Continuity in all 3 views is not required; make use of the geometry of the 2 available views.
+One continuous view can be a cue, but it alone does not commit an ambiguous correspondence in
+another view or a new 3D depth.
+3D predictions for times when only one view has observations are distinguished from
+observation-based 3D.
 
-既存の[clean_trackletsの実装・結果](../../labs/20260917_clean_tracklets/RESULT.md)には
-2視点の合意や別ビューの支持による接続が既にある。再利用前にその入出力条件を確認する。
-2D自身による接続と3D支持による接続を別出力にし、3Dで付けたIDを独立2Dの根拠へ循環させない。
-f30735、f31479、f302762など、2Dが既に連続していた場面の3D割当失敗を改めて調べる。
-実魚3匹という条件はこの対応層で使い、反射・未割当・不可視の状態を残す。
+The existing [clean_tracklets implementation and result](../../labs/20260917_clean_tracklets/RESULT.md)
+already has links by two-view agreement and by support from another view. Check its input and
+output conditions before reuse.
+Links made by 2D itself and links supported by 3D go to separate outputs; IDs assigned in 3D are
+not circulated back as grounds for the independent 2D.
+Re-examine the 3D assignment failures in scenes where 2D was already continuous, such as f30735,
+f31479 and f302762.
+The condition of three physical fish is used in this correspondence layer, retaining reflection,
+unassigned and invisible states.
 
-## 8. 実装・保存先と再開手順
+## 8. Implementation, storage locations, and how to resume
 
-- 新規実験：`labs/<実行日>_variable_count_tracklets/`。READMEに仮説、stage、期限、判定基準を記載し、RESULTを残す。
-- 新規出力：`work/variable_count_tracklets_v1/` を候補とし、既存なら上書きせず次の未使用名を選ぶ。
-- 比較コードの参考：`labs/20260917_clean2d_video_comparison/` の `tracking.py`、`c27_replay.py`、
-  `parameter_audit.py`、描画・集計処理。既存コード・結果を凍結したまま実験を分離する。
-- lab間の直接importや本番からlabへのimportを追加しない。再利用する凍結実装には出典とSHAを残す。
-- `.venv/Scripts/python.exe` を使用。関連する契約・追跡・描画テストとRuffを実行し、変更に必要な範囲を検証する。
-- 入力、コード、設定、出力に `medaka3d.provenance.provenance` とSHAの記録を付ける。
-  本計画や推測を、新規の人手正解ラベルとして登録しない。
-- 既存の未コミット変更、本番パイプライン、以前のHTML・NPZを保持する。
+- New experiment: `labs/<run_date>_variable_count_tracklets/`. The README states the hypothesis,
+  stage, expiry and criteria, and a RESULT is left.
+- New output: `work/variable_count_tracklets_v1/` as the candidate; if it already exists, do not
+  overwrite it, choose the next unused name.
+- Reference comparison code: `tracking.py`, `c27_replay.py`, `parameter_audit.py` and the
+  rendering and aggregation code in `labs/20260917_clean2d_video_comparison/`. Keep the existing
+  code and results frozen and keep the experiment separate.
+- Do not add direct imports between labs, or make production code import lab code. Record the
+  source and SHA of any frozen implementation that is reused.
+- Use `.venv/Scripts/python.exe`. Run the relevant contract, tracking and rendering tests and
+  Ruff, verifying the scope needed for the change.
+- Attach `medaka3d.provenance.provenance` and SHA records to inputs, code, settings and outputs.
+  This plan and any inferences are not registered as new human ground-truth labels.
+- Keep existing uncommitted changes, the production pipeline, and earlier HTML and NPZ files.
 
-次セッションに渡す指示：
+Instruction to hand to the next session:
 
-> `docs/decisions/2026-09-17-variable-count-2d-tracklet-plan.md` を読み、工程A〜Cを実装・実行してください。
-> 実魚は3匹ですが、各ビューの検出・トラックレット数は0〜4個以上を許容し、反射・遮蔽・未割当を扱ってください。
-> SLEAP時間IDを使わないP主体の独立2D追跡を、同条件のSLEAPと比較してください。
-> 今回の20秒、既知の明瞭区間・失敗例・no-swap対照について、各ビューの比較動画・画像・グラフを含むHTMLを完成させてください。
-> 3Dへの統合は工程Dとして分け、今回の2D改善と混同しないでください。
+> Read `docs/decisions/2026-09-17-variable-count-2d-tracklet-plan.md` and implement and run stages A–C.
+> There are three physical fish, but allow 0 to 4-or-more detections and tracklets per view, and handle reflection, occlusion and non-assignment.
+> Compare P-based independent 2D tracking that does not use SLEAP temporal IDs against SLEAP under the same conditions.
+> For the present 20 s, the known clear intervals, the failure cases and the no-swap controls, complete an HTML report containing per-view comparison videos, images and plots.
+> Keep integration into 3D separate as stage D, and do not conflate it with the present 2D improvement.

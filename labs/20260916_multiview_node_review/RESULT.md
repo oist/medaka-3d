@@ -4,77 +4,135 @@ expires: 2026-11-13
 blocker: Human swap/no-swap review received for eight clips on 2026-09-16; reviewed panel and exact identity intervals remain unspecified, and node-candidate safety is not established.
 ---
 
-# 3視点・部位対応の再評価（2026-09-16）
+# Re-evaluation of three-view and body-part correspondence (2026-09-16)
 
-**人手レビュー受領後の追記（2026-09-16）：** IDスワップありは76235、76930、76988、31479。
-76791、323819、77415はIDスワップなし。30735はside2で一時的にS0がS1へ飛んで戻るとの判定。
-特に76988の相手はS1/S0であり、下記のS1/S2の尾残差の改善はそのID問題の修復を示さない。
-以下の幾何評価は当初の測定結果として保持する。レビューは
-[原文・対象動画の記録](../../docs/reviews/2026-09-16_multiview_identity_review.json)と
-[2D追跡の調査・比較計画](../../docs/decisions/2026-09-16-custom-2d-tracking-plan.md)へ反映した。
-候補の自動採用は行っていない。
+**Addendum after the human review was received (2026-09-16):** ID swap: 76235, 76930, 76988,
+31479. No ID swap: 76791, 323819, 77415. 30735 was judged as S0 temporarily jumping to S1 in
+side2 and returning. In particular, the counterpart at 76988 is S1/S0, so the improvement in the
+S1/S2 tail residual below does not indicate a repair of that ID problem. The geometric
+evaluation below is kept as the original measurement. The review was reflected in the
+[record of the verbatim text and reviewed videos](../../docs/reviews/2026-09-16_multiview_identity_review.json)
+and the
+[2D tracking investigation and comparison plan](../../docs/decisions/2026-09-16-custom-2d-tracking-plan.md).
+No candidate was accepted automatically.
 
-依頼された再評価と、元画像・動画・グラフによる比較資料の作成を完了した。今回の20秒、既知12例、対照6区間を対象とし、前回の前後方向診断で指定された区間だけ候補を探索した。元のC34と並行作業の出力を変更していない。
+The requested re-evaluation and the comparison material built from source images, videos and
+graphs are complete. The scope was the current 20 s, the 12 known cases and 6 control
+intervals, and candidates were searched only in the intervals designated by the previous
+forward-backward diagnosis. The original C34 and the outputs of parallel work were not changed.
 
-本番への適用は`parked`。当初は独立した画像判定・短区間ID注釈が未取得だった。現在は上記8場面のIDレビューを受領したが、候補の部位対応の安全性は未確定である。再評価期限は2026-11-13。候補を採用済みの追跡としては出力していない。
+Application to production is `parked`. Initially, independent image judgement and short-interval
+ID annotation had not been obtained. The ID review of the 8 scenes above has now been received,
+but the safety of the candidates' body-part correspondence is not confirmed. The re-evaluation
+deadline is 2026-11-13. The candidates are not output as accepted tracking.
 
-## 主結果
+## Main result
 
-20秒の55候補区間、348 nativeフレームを再評価。重なる区間を和集合にすると51窓となる。129フレームで元と異なる検出対応が選ばれた。事前の幾何・体節長・3D支持等の確認条件を通過したのは24フレーム。
+Re-evaluated the 55 candidate intervals of the 20 s, 348 native frames. Taking the union of
+overlapping intervals gives 51 windows. A detection correspondence different from the original
+was chosen in 129 frames. 24 frames passed the pre-specified check conditions on geometry,
+segment length, 3D support and so on.
 
-部位別の支持視点数を追加で監査すると、24のうち18フレームはある魚の尾が3視点から2視点に減少していた。魚全体の観測数は保存されていても、別の魚に観測を移すとこの問題が隠れる。**各部位の支持視点数を減らさずに条件を満たすのは6フレーム**：f75398、75399、76791、76989、76990、76992。
+An additional audit of supporting views per body part found that in 18 of the 24 frames one
+fish's tail dropped from 3 supporting views to 2. Even when the whole-fish observation count is
+preserved, moving an observation to another fish hides this problem. **6 frames meet the
+conditions without reducing the supporting-view count of any body part**: f75398, 75399, 76791,
+76989, 76990, 76992.
 
-この6件は事後の目視優先集合であり、事前条件を変更した採用数・正解数ではない。f76791では両方向の参照が全slotで有効。他の5フレームは一方の参照が不十分で、前後のID維持を保証しない。
+These 6 are a post-hoc priority set for visual inspection, not an accepted count or a correct
+count under modified pre-specified conditions. At f76791 the references in both directions are
+valid for all slots. In the other 5 frames one of the references is insufficient, and ID
+retention across before and after is not guaranteed.
 
-20秒全体の10 mm超の胸びれ移動は元も候補も3件。スワップ低減やテレポート解消を実証していない。候補はフレームごとの局所探索結果であり、連結時の対応切り替わり・境界・IDを別途確認する必要がある。
+Over the whole 20 s, pectoral-fin moves over 10 mm number 3 in both the original and the
+candidates. Neither a swap reduction nor removal of teleports has been demonstrated. The
+candidates are per-frame local search results; correspondence switches on linking, boundaries
+and IDs need to be checked separately.
 
-## 何を試したか
+## What was tried
 
-- 3視点それぞれの魚全体の対応：6^3=216通り。
-- 4匹以上等のとき、現在使っていない検出への1視点・1個体の置換。
-- 元対応と最良の全体対応から、1視点の魚ペア間で口、胸びれ、尾、口＋胸びれを交換する局所候補。
-- 各候補の共通の屈折三角測量、光線残差、再投影、1視点を除外した予測、体節長、利用できる前後の運動予測を評価。
-- 生物学的IDの正解は候補選択に使用しない。同じ検出ノードを複数の魚に使う候補や、総観測支持を減らして見かけの残差を下げる候補は無効にする。
+- Whole-fish correspondence in each of the 3 views: 6^3=216 combinations.
+- When there are 4 or more fish and similar cases, substitution of one individual in one view by
+  a detection not currently used.
+- Local candidates, starting from the original correspondence and the best whole correspondence,
+  that exchange the mouth, pectoral fin, tail, or mouth + pectoral fin between a pair of fish in
+  one view.
+- Each candidate evaluated by the shared refractive triangulation, ray residual, reprojection,
+  leave-one-view-out prediction, segment length, and the available past and future motion
+  prediction.
+- Biological ID ground truth is not used for candidate selection. Candidates that use the same
+  detected node for more than one fish, or that lower the apparent residual by reducing total
+  observation support, are invalidated.
 
-全ての同時ノード交換を網羅する探索ではない。各視点の2D検出自体が反射・欠測・部位混在を含む場合には、割当変更だけで解決しない。
+The search does not exhaust all simultaneous node exchanges. Where the 2D detections in a view
+themselves contain reflections, missing observations or mixed body parts, reassignment alone
+does not resolve them.
 
-## 具体例
+## Examples
 
-| frame | 結果と残る問題 |
+| frame | Result and remaining problem |
 |---|---|
-| 75398 | 上面のS1/S2の尾対応を交換。部位の支持を維持し、画像では側面投影と魚体のずれが小さく見える。過去側参照は不十分。 |
-| 76791 | 側面2のS1/S2の胸びれ対応を交換。支持を維持、前後参照は有効。側面で重なるため元画像での判定は曖昧。 |
-| 76988 | S1の尾残差8.29→0.69 mmだが、尾の支持が3→2視点。S2は2→3となり尾残差0.32→1.21 mm。3視点一致の回復とは解釈しない。 |
-| 76989–76992 | 使っていなかった2D検出を使う別候補があり、支持視点数は減らない。f76988の欠測移動と分けて確認する。 |
-| 76235 | 側面1の口・尾の変更で一部残差が低下するが、胸びれの飛びと水槽外ノードが残る。条件未通過。 |
-| 76930 | 欠測だった尾を補う候補の胸びれ–尾長が約37.29 mm。低い合成コストでも、魚体のまとまりの条件で保留。 |
-| 30735 | 尾の3D欠測が別slotへ移る候補。個別部位のカバレッジが失われ、条件未通過。 |
-| 31479 | 一部の口・胸びれの残差が悪化し、前後参照も不足。条件未通過。 |
-| 323819 | 中心フレームで元対応が残り、口・胸びれ・尾の約13–14 mmの光線不整合も残る。検出自体・反射等の再確認対象。 |
+| 75398 | Exchanges the S1/S2 tail correspondence in the top view. Body-part support kept; in the images the offset between the side-view projection and the fish body looks smaller. Past-side reference insufficient. |
+| 76791 | Exchanges the S1/S2 pectoral-fin correspondence in side 2. Support kept, past and future references valid. The fish overlap in the side view, so judgement from the source images is ambiguous. |
+| 76988 | S1 tail residual 8.29→0.69 mm, but tail support 3→2 views. S2 goes 2→3, tail residual 0.32→1.21 mm. Not interpreted as recovery of three-view agreement. |
+| 76989–76992 | A different candidate uses a previously unused 2D detection, and the supporting-view count does not drop. To be checked separately from the missing-observation shift at f76988. |
+| 76235 | Changing mouth and tail in side 1 lowers some residuals, but the pectoral-fin jump and an out-of-tank node remain. Conditions not passed. |
+| 76930 | The candidate that fills the missing tail has a pectoral fin–tail length of about 37.29 mm. Despite the low combined cost, held on the fish-body coherence condition. |
+| 30735 | A candidate that moves the 3D tail dropout to another slot. Per-part coverage is lost; conditions not passed. |
+| 31479 | Some mouth and pectoral-fin residuals worsen, and past and future references are also insufficient. Conditions not passed. |
+| 323819 | At the centre frame the original correspondence remains, as does a ray inconsistency of about 13–14 mm on mouth, pectoral fin and tail. Target for re-checking the detections themselves, reflections and so on. |
 
-画像所見はアシスタントによる定性的な確認で、独立したID正解ではない。
+The image observations are qualitative checks by the assistant, not independent ID ground truth.
 
-## 比較上の注意と追加監査
+## Comparison caveats and additional audits
 
-`support_audit.json`は全19ケースの部位別支持数を保存。主区間の「元の確認条件を通過した24フレーム」で、同じ3視点を保つ134の対応ノードだけを比較すると、平均光線残差は0.842→0.478 mm（12改善、4悪化、118不変）。同じ2視点を保つ46ノードは全て不変。これは選択済み候補上の当てはまりの比較であり、未使用データでの精度評価ではない。
+`support_audit.json` stores per-part support counts for all 19 cases. Comparing only the 134
+corresponding nodes that keep the same 3 views in the main interval's "24 frames that passed the
+original check conditions", the mean ray residual is 0.842→0.478 mm (12 improved, 4 worse, 118
+unchanged). The 46 nodes that keep the same 2 views are all unchanged. This compares fit on
+already-selected candidates and is not an accuracy evaluation on unused data.
 
-f76988のS1尾では、元の1視点除外予測の最大誤差116.36 pxが候補では未定義になる。比較グラフで欠測を0や補間に置き換えていない。総2D観測数だけでなく、各部位の支持数を読む必要がある。
+For the S1 tail at f76988, the original leave-one-view-out prediction's maximum error of
+116.36 px becomes undefined under the candidate. The comparison graphs do not replace missing
+values with 0 or with interpolation. The per-part support counts need to be read, not only the
+total 2D observation count.
 
-`refit_audit.json`で再三角測量の影響も確認した。変更していないsource-nodeの座標差は最大0.0000105 mm、可用性の変化は0。保存C34と全ノード再構成の差はこの比較では数値的に微小だが、共通三角測量による残差と保存座標の投影を明確に区別して記録した。
+`refit_audit.json` also checks the effect of re-triangulation. For unchanged source nodes the
+coordinate difference is at most 0.0000105 mm and the availability change is 0. The difference
+between the saved C34 and the all-node reconstruction is numerically tiny in this comparison,
+but residuals from the shared triangulation and projections of the saved coordinates were
+recorded as clearly distinct.
 
-## 人が確認する成果物
+## Artifacts for human review
 
-- [比較ページ](../../work/multiview_node_review_v1/index.html)：優先6フレーム、比較動画、支持の減少、全画像・グラフを順に確認できる。
-- 81比較画像：主55候補区間の代表、逆方向の追加14件、既知12場面、重点場面の補足。重複した代表frameは共有。
-- 9本のスロー動画：各166 nativeフレーム、実時間1秒を30 fpsの約5.53秒で再生。原画像を上下左右の比較に使用し、フレームを間引かない。
-- 29グラフ画像：19ケース全体、9局所動画区間、f76988の尾の支持数専用図。
-- 全19ケースのNPZ/JSONには各部位の検出行、元・候補の2D/3D座標、全コスト成分、上位候補、参照有効性、欠測、原判定を保存。
-- 元データ・コード・出力のハッシュ、全動画フレームの読戻し、PNGの読戻し、HTML参照先の検査を記録。
+- [Comparison page](../../work/multiview_node_review_v1/index.html): the 6 priority frames,
+  comparison videos, support reductions, and all images and graphs can be reviewed in order.
+- 81 comparison images: representatives of the 55 main candidate intervals, the 14 additional
+  backward-direction candidates, the 12 known scenes, and supplements for focus scenes.
+  Duplicate representative frames are shared.
+- 9 slow-motion videos: 166 native frames each, 1 s of real time played as about 5.53 s at
+  30 fps. Raw images are used for the top/bottom and left/right comparisons, with no frames
+  skipped.
+- 29 graph images: all 19 cases, the 9 local video intervals, and a dedicated figure for the
+  tail support count at f76988.
+- The NPZ/JSON for all 19 cases store per-part detection rows, original and candidate 2D/3D
+  coordinates, all cost components, top candidates, reference validity, missing observations
+  and the original verdicts.
+- Hashes of source data, code and outputs, read-back of all video frames, read-back of PNGs, and
+  checks of HTML reference targets are recorded.
 
-元の条件を通過した24件を一括自動適用することは推奨しない。特に支持視点を他の魚へ移す18件は、低残差だけで修正根拠にできない。まず支持を保つ6フレームと、f76988の対照例を同じ原画像で比較できる構成にした。
+Applying the 24 that passed the original conditions automatically in bulk is not recommended. In
+particular, the 18 that move supporting views to another fish cannot be justified as corrections
+by low residual alone. The material is arranged so that the 6 support-preserving frames and the
+f76988 control example can first be compared on the same raw images.
 
-## 実装検証
+## Implementation verification
 
-屈折幾何10件、候補生成・棄却15件、baselineを保持するAssociator9件、計34テストが通過。加えてlabの構造・隔離を確認する。Associatorはフレーム内の診断だけを行い元オブジェクトを返す。前後参照を使う探索は本labのrunnerに隔離し、productionに導入していない。
+34 tests pass in total: 10 for refractive geometry, 15 for candidate generation and rejection,
+and 9 for the baseline-preserving Associator. The lab's structure and isolation are also checked.
+The Associator performs only within-frame diagnostics and returns the original object. The
+search that uses past and future references is isolated in this lab's runner and has not been
+introduced into production.
 
-ブラウザー上のフィルター操作は自動検証していない。画像・動画・グラフは直接開け、ローカルのリンク先は検証する。
+Filter interaction in the browser was not verified automatically. Images, videos and graphs can
+be opened directly, and local link targets are verified.

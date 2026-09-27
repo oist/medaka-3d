@@ -4,61 +4,117 @@ expires: 2026-10-30
 blocker: Independent current-C34 short-interval identity annotations are unavailable for the added directional candidates and the unresolved historical failures; assistant image inspection cannot establish repair precision or safe promotion.
 ---
 
-# 前後方向のjump検出・局所接続テスト（2026-09-16）
+# Forward-backward jump detection and local linking test (2026-09-16)
 
-今回の20秒と既知の12場面で開発テストを完了した。前後方向で追加の候補を抽出したが、事前条件をすべて満たす接続提案は0件、自動修正の採用も0件。スワップ減少は実証していない。既存のC34出力を保存し、analysis-by-synthesisの実装・実行には変更を加えていない。
+The development test was completed on the current 20 s and the 12 known scenes. The
+forward-backward direction check extracted additional candidates, but 0 link proposals met all
+pre-specified conditions and 0 automatic corrections were accepted. A reduction in swaps has not
+been demonstrated. The existing C34 output was preserved, and the analysis-by-synthesis
+implementation and runs were not changed.
 
-`parked` は本番昇格に対する判定。今回の実装・解析・確認用成果物の作成は完了している。追加候補の独立した短区間ID注釈が外部の未充足条件であり、AIによる元画像の所見をその代わりにはしない。再評価期限は2026-10-30とする。
+`parked` is the verdict on promotion to production. The implementation, the analysis and the
+review artifacts for this round are complete. Independent short-interval ID annotation of the
+additional candidates is an unmet external condition, and AI observations of the source images
+are not used in its place. The re-evaluation deadline is 2026-10-30.
 
-## 対象と結果
+## Scope and results
 
-- 主区間：f75270–78589、166 fps、20秒。
-- 既知12例：f21232、30735、31479、67142、72143、76930、99209、105541、260434、302762、323819、333619の前後約1秒。
-- 過去の誤修正の対照：f82121–83265、90200–90687、212276–213061。
-- 未注釈の対照：f50000、150000、280000からそれぞれ2秒。正常と断定した正解データではない。
+- Main interval: f75270–78589, 166 fps, 20 s.
+- 12 known cases: about 1 s before and after f21232, 30735, 31479, 67142, 72143, 76930, 99209,
+  105541, 260434, 302762, 323819, 333619.
+- Controls for past erroneous corrections: f82121–83265, 90200–90687, 212276–213061.
+- Unannotated controls: 2 s each from f50000, 150000 and 280000. These are not ground-truth data
+  asserted to be normal.
 
-| 主区間の検出方法 | 個体×隣接フレームの候補 | まとめた候補区間 |
+| Detection method (main interval) | Candidates (individual × adjacent frame) | Merged candidate intervals |
 |---|---:|---:|
-| 距離のみ | 21 | 12 |
-| 距離＋過去の方向 | 96 | 47 |
-| 距離＋前後の方向 | 110 | 55 |
+| Distance only | 21 | 12 |
+| Distance + past direction | 96 | 47 |
+| Distance + past and future direction | 110 | 55 |
 
-主条件は17フレームの参照、80°、方向判定の対象は1 mm超の移動、距離単独では4 mm超。追加14件のうち6件は過去の参照方向が未定義。候補数はスワップ数でも検出正解数でもない。17/33/50フレーム×60/80/100°の全9条件を保存し、結果を見て主閾値を選び直していない。
+The main condition is a 17-frame reference and 80°; the direction test applies to moves over
+1 mm, and distance alone to moves over 4 mm. For 6 of the 14 additional candidates the past
+reference direction is undefined. The candidate count is neither a swap count nor a count of
+correct detections. All 9 conditions (17/33/50 frames × 60/80/100°) were saved, and the main
+threshold was not re-chosen after seeing the results.
 
-主区間の55候補の永続的な接続判定は、元の対応を選好37、参照区間が不十分15、曖昧3。元の対応を選好したこともID正解の証明にはならない。1–3フレームの一時的交換を含め、全19区間の接続検査で条件を通過した提案は0件。
+Persistent link verdicts for the 55 main-interval candidates: original correspondence preferred
+37, reference interval insufficient 15, ambiguous 3. Preferring the original correspondence is
+not proof of correct ID either. Including temporary 1–3-frame exchanges, 0 proposals passed the
+conditions in the link checks over all 19 intervals.
 
-f76930ではS0↔S1を両方向で選好した。3匹の境界誤差合計は、元対応の順10.93 / 逆10.77 mmに対し、交換対応は順8.07 / 逆6.59 mm。ただし次点との差2.86 / 4.18 mmは必要な5 mm未満で、交換時の個体最大誤差5.68 / 3.46 mmも上限3 mmを超える。正確な交換時刻の決定にも至らず、採用していない。
+At f76930, S0↔S1 was preferred in both directions. The summed boundary error over the three fish
+was 10.93 forward / 10.77 mm backward for the original correspondence, against 8.07 forward /
+6.59 mm backward for the exchanged correspondence. However, the margins over the runner-up,
+2.86 / 4.18 mm, are below the required 5 mm, and the per-individual maximum errors under the
+exchange, 5.68 / 3.46 mm, exceed the 3 mm limit. The exact exchange time was not determined
+either, and the exchange was not accepted.
 
-## 元画像の確認
+## Source-image check
 
-追加14件と既知12例について、3カメラの元画像・ノード投影を並べた比較シートを作成して確認した。各シートは5つのnativeフレームであり、連続画像による人のID注釈ではない。
+For the 14 additional candidates and the 12 known cases, comparison sheets placing the three
+cameras' source images and node projections side by side were made and inspected. Each sheet
+holds 5 native frames and is not a human ID annotation from consecutive images.
 
-- 追加候補には、近接・旋回・ノードの位置揺れ・部分的な対応混在が疑われる場面が含まれる。追加14件を新しい確定スワップとは数えない。
-- f31479の側面画像には魚全体のslot交換を疑う所見がある。
-- f30735、323819では、上面で同じ魚付近にある投影が側面では魚体からずれ、視点間の対応・奥行き復元の異常が疑われる。
-- f76235、77415付近には口・胸びれと尾の対応が混在する可能性がある。
-- 以前のC30で指摘された一部の場面は、現在のC34画像では明らかな個体全体の交換を再現していない。旧注記への近接検出率を現在の再現率にしていない。
+- The additional candidates include scenes where proximity, turning, node position jitter or
+  partially mixed correspondence is suspected. The 14 additional candidates are not counted as
+  new confirmed swaps.
+- The side images at f31479 contain an observation suggesting a whole-fish slot exchange.
+- At f30735 and 323819, projections that lie near the same fish in the top view are offset from
+  the fish body in the side views; an anomaly in cross-view correspondence or depth
+  reconstruction is suspected.
+- Around f76235 and 77415, the correspondence of mouth/pectoral fin and tail may be mixed.
+- Some scenes flagged under the earlier C30 do not reproduce an obvious whole-individual exchange
+  in the current C34 images. The rate of detections near the old notes is not used as the
+  current recall.
 
-これらはすべてアシスタントによる定性的な所見で、独立したID正解ラベルとしては使用しない。元の注記のslot名もC34にそのまま引き継がない。
+All of these are qualitative observations by the assistant and are not used as independent ID
+ground-truth labels. Slot names from the original notes are not carried over to C34 as they are
+either.
 
-## 独立した既存の雌注釈
+## Existing independent female annotation
 
-300注釈の隣接299区間を固定し、共有評価関数と元C34の可用性で採点：**295維持 / 2スワップ / 2判定不能**。採用修正がないため修正前後は同じ。
+The 299 adjacent intervals of the 300 annotations were fixed and scored with the shared
+evaluation function and the original C34 availability: **295 kept / 2 swapped / 2
+undeterminable**. No correction was accepted, so before and after are identical.
 
-スワップが確認される注釈間はf76698–77285とf130760–138892。これらは交換時刻の真値ではない。欠測注釈を削除して隣の区間をつなぐ旧集計の298区間とは分母が違うため混同しない。幾何支持での可用性による評価は別フィールドに保存した。
+The annotation intervals where a swap is confirmed are f76698–77285 and f130760–138892. These
+are not the true exchange times. The denominator differs from the 298 intervals of the old
+tally, which deletes missing annotations and joins the neighbouring intervals, so the two are
+not to be confused. The evaluation by availability under geometric support was saved in a
+separate field.
 
-## 成果物・検証
+## Artifacts and verification
 
-- [確認ページ](../../work/bidirectional_reconnect_v1/index.html)：動画、全候補画像、全19区間と感度分析へのリンク。
-- [20秒の元動画＋CG](../../work/bidirectional_reconnect_v1/review/cg20s_raw_and_measured_cg.mp4)：600フレーム、30 fps、20.000秒。
-- f76235とf76930の[スロー映像](../../work/bidirectional_reconnect_v1/review/manifest.json)：各332 nativeフレーム、30 fps、11.067秒。元の2秒を約5.53倍に伸ばし、途中フレームを省略していない。
-- [最終集計](../../work/bidirectional_reconnect_v1/analysis_v2/summary.json)、各区間の全6対応の誤差と棄却理由、元データ・コードのハッシュ付きprovenance。
-- 方向・接続・Linkerアダプター・集計の33テストと、新規labの構造・隔離チェック。動画は全フレームの読み戻し、PNGは画素一致を検証。HTMLの参照先はローカルファイルの存在を検証し、ブラウザーでの操作検証は未実施。
+- [Review page](../../work/bidirectional_reconnect_v1/index.html): links to the videos, all
+  candidate images, all 19 intervals and the sensitivity analysis.
+- [20 s source video + CG](../../work/bidirectional_reconnect_v1/review/cg20s_raw_and_measured_cg.mp4):
+  600 frames, 30 fps, 20.000 s.
+- [Slow-motion videos](../../work/bidirectional_reconnect_v1/review/manifest.json) of f76235 and
+  f76930: 332 native frames each, 30 fps, 11.067 s. The original 2 s is stretched about 5.53×,
+  with no intermediate frames omitted.
+- [Final tally](../../work/bidirectional_reconnect_v1/analysis_v2/summary.json), the errors and
+  rejection reasons for all 6 correspondences in each interval, and provenance with hashes of the
+  source data and code.
+- 33 tests covering direction, linking, the Linker adapter and the tally, plus structure and
+  isolation checks for the new lab. Videos were verified by reading back every frame, PNGs by
+  pixel equality. HTML reference targets were verified for local file existence; interactive
+  verification in a browser was not performed.
 
-レビューで見つかった実装上の3点を修正し、`analysis_v2`を生成した：50ステップの境界参照用に前後53姿勢、パディングの重なる確認時間を和集合で集計、元の三角測量の残差を保存済みC34胸びれ座標の残差と区別。主閾値は変更せず、映像に使った`analysis`と最終版の全core姿勢・source・主診断値が完全一致することを確認ページ生成時に検査する。初回の記録は保存している。
+Three implementation issues found in review were fixed and `analysis_v2` was generated: 53 poses
+before and after for the 50-step boundary reference; review time with overlapping padding
+tallied as a union; the residual of the original triangulation distinguished from the residual
+of the saved C34 pectoral-fin coordinates. The main threshold was not changed, and generating the
+review page checks that all core poses, sources and main diagnostic values of the `analysis`
+used for the videos match the final version exactly. The first-run record is retained.
 
-## 次の検証対象
+## Next verification targets
 
-方向判定で区間を絞り、そこで3視点の検出対応と口・胸びれ・尾のまとまりを再評価する。前後の安定区間を境界条件にして、個体IDの交換とノード・視点の取り違えを別々に扱う。胸びれ3D座標の全個体入れ替えだけでは解消できない誤りを、再投影の画像根拠を使って検証する必要がある。
+Narrow the intervals with the direction test, and there re-evaluate the three-view detection
+correspondence and the grouping of mouth, pectoral fin and tail. Using the stable intervals
+before and after as boundary conditions, treat individual-ID exchanges separately from node and
+view mix-ups. Errors that cannot be resolved by swapping whole individuals' pectoral-fin 3D
+coordinates alone need to be verified using reprojection image evidence.
 
-本番昇格には独立した短区間ID注釈と未調整区間での評価が必要。jumpを減らしただけで修正成功とは判定しない。
+Promotion to production requires independent short-interval ID annotation and evaluation on
+untuned intervals. Reducing jumps alone is not judged a successful correction.

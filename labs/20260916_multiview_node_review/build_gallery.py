@@ -1,6 +1,6 @@
 """Index the exported scientific figures and raw-pixel correspondence comparisons."""
 
-# Japanese artifact text and embedded HTML keep natural punctuation/line lengths.
+# Embedded HTML keeps its natural line lengths; typographic dashes and signs are intentional.
 # ruff: noqa: E501, RUF001
 from __future__ import annotations
 
@@ -76,20 +76,20 @@ def main():
     if len(priority_frames) != 6:
         raise ValueError("Primary no-view-loss audit differs from reviewed6frame result")
     parts = [
-        """<!doctype html><html lang="ja"><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
-<title>メダカ：3視点と部位対応の再評価</title><style>
+        """<!doctype html><html lang="en"><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Medaka: re-evaluating 3-view and body-part correspondence</title><style>
 :root{color-scheme:light}*{box-sizing:border-box}body{margin:0;color:#24333f;background:#f4f6f8;font:16px/1.8 system-ui,sans-serif}main{max-width:1180px;margin:auto;padding:28px}h1{font-size:28px}h2{font-size:23px;margin-top:38px}h3{font-size:18px}a{color:#145d8b}video{display:block;background:#111;width:100%;max-height:78vh}img{width:100%;height:auto;display:block}.lead{padding:20px;background:#e8f0f5;border-left:5px solid #28678c}.warn{padding:14px;background:#fff3d7;border-left:4px solid #b77400}.muted{color:#586c79;font-size:14px}.scroll{overflow-x:auto}table{width:100%;border-collapse:collapse;font-size:14px}th,td{border-bottom:1px solid #cbd7de;padding:8px 12px;vertical-align:top;text-align:left}th{background:#e3eaf0}details{padding:12px;margin:12px 0;background:white;border:1px solid #d7e0e7;border-radius:5px}summary{cursor:pointer;font-weight:600}nav a{display:inline-block;margin:6px 18px 6px 0}select,input{font:inherit;padding:6px;border:1px solid #7892a2;border-radius:4px}video,img{border-radius:5px}.grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(320px,1fr));gap:20px}section{scroll-margin-top:20px}.pill{font-size:13px;padding:3px 8px;background:#e8edf0;border-radius:4px}.supportloss{font-weight:700;color:#895600}[hidden]{display:none!important}:focus-visible{outline:3px solid #bd7100}code{overflow-wrap:anywhere}
-</style><main><h1>3視点の検出対応と、口・胸びれ・尾のまとまりを再評価</h1>
-<p class="muted">2026-09-16 · C34 λ0.767 · native 166 fps · 元の追跡を保存した比較</p>
-<div class="lead"><strong>20秒の55候補区間、計348フレームを再評価しました。</strong>
-<p>129フレームで元とは異なる対応候補が選ばれ、事前の幾何・体節長などの条件を24フレームが通過しました。
-さらに各部位の支持視点数を確認すると、<strong>視点数を減らさずに条件を満たすのは6フレーム</strong>でした。これらを優先して目視確認できるようにしています。</p>
-<p>既知の12場面と対照6区間も同じ方法で評価しました。候補はすべて未採用で、個体IDの修正やスワップの減少を確定した結果ではありません。</p></div>
-<nav><a href="#priority">優先確認6フレーム</a><a href="#videos">比較動画</a><a href="#support">視点数の注意点</a><a href="#images">全比較画像</a><a href="#graphs">グラフ</a><a href="#numbers">数値・詳細</a></nav>
-<h2>見方</h2><p>画像は各カメラについて元の対応と再評価候補を上下に、動画では左右に並べています。
-色はS0・S1・S2の追跡slotです。<strong>丸＝選んだ2D検出点、×と線＝3Dから画像に戻した位置、白枠＝変更した検出点</strong>です。
-口→胸びれ→尾の順に線で結んでいます。投影位置に×があっても丸がなければ、その視点からの実際の観測はありません。
-動画は1秒166フレームを約5.53秒に伸ばしたスローで、途中フレームを省略していません。</p>"""
+</style><main><h1>Re-evaluating 3-view detection correspondence and the grouping of mouth, pectoral fin and tail</h1>
+<p class="muted">2026-09-16 · C34 λ0.767 · native 166 fps · comparison with the original tracking retained</p>
+<div class="lead"><strong>55 candidate intervals in the 20 s, 348 frames in total, were re-evaluated.</strong>
+<p>In 129 frames a correspondence candidate different from the original was selected, and 24 frames passed the prespecified conditions on geometry, segment length and so on.
+Checking the number of supporting views for each body part further, <strong>6 frames meet the conditions without reducing the number of views</strong>. These are set up for priority visual review.</p>
+<p>The 12 known scenes and 6 control intervals were evaluated the same way. No candidate was accepted; this is not a result confirming individual-ID correction or fewer swaps.</p></div>
+<nav><a href="#priority">6 priority frames</a><a href="#videos">Comparison videos</a><a href="#support">Caution on view counts</a><a href="#images">All comparison images</a><a href="#graphs">Graphs</a><a href="#numbers">Numbers and details</a></nav>
+<h2>How to read</h2><p>For each camera, images show the original correspondence and the re-evaluated candidate one above the other; videos show them side by side.
+Colours are the S0, S1, S2 tracking slots. <strong>Circle = selected 2D detection point, × and line = position projected from 3D back into the image, white box = changed detection point</strong>.
+Lines join mouth → pectoral fin → tail in that order. If a projected position has an × but no circle, there is no actual observation from that view.
+Videos are slow motion stretching 1 s of 166 frames to about 5.53 s, with no frames omitted.</p>"""
     ]
 
     def detail_at(name, frame):
@@ -100,10 +100,14 @@ def main():
         t = int(np.searchsorted(a["frames"], frame))
         d = detail_at(name, frame)
         if not d or not a["changed"][t]:
-            return "対応変更なし"
+            return "no correspondence change"
         if loss[name][t]:
-            return "部位の支持視点が減少：残差低下に注意"
-        return "支持視点数を維持・優先目視" if a["supported"][t] else "条件未通過・未採用"
+            return "supporting views for a body part decrease: treat the residual drop with caution"
+        return (
+            "supporting-view count kept; priority visual review"
+            if a["supported"][t]
+            else "conditions not passed; not accepted"
+        )
 
     def source_table(name, frame):
         a = arrays[name]
@@ -113,11 +117,11 @@ def main():
             np.isfinite(a[key][t]).all(-1).sum(axis=1) for key in ("original_uv", "candidate_uv")
         ]
         for slot in range(3):
-            for node, label in enumerate(("口", "胸びれ", "尾")):
+            for node, label in enumerate(("mouth", "pectoral fin", "tail")):
                 old, new = int(counts[0][slot, node]), int(counts[1][slot, node])
                 support = f"{old} → {new}"
                 if new < old:
-                    support = f'<span class="supportloss">{support} 減少</span>'
+                    support = f'<span class="supportloss">{support} decrease</span>'
                 own = a["original_source"][t, slot, :, node].tolist()
                 cand = a["candidate_source"][t, slot, :, node].tolist()
                 rows.append(
@@ -129,12 +133,18 @@ def main():
                     ]
                 )
         return table(
-            ["部位", "支持視点数", "光線残差 mm", "検出行［上面,側面1,側面2］（−1=なし）"], rows
+            [
+                "Body part",
+                "Supporting views",
+                "Ray residual mm",
+                "Detection rows [top, side1, side2] (-1 = none)",
+            ],
+            rows,
         )
 
     parts.append(
-        '<h2 id="priority">支持視点数を減らさない6フレーム</h2><p>24件の元の確認条件に対する追加の診断です。事前条件や解析結果を書き換えていません。'
-        "支持が減らないことはID正解の保証ではなく、同じ観測量で比べるための確認です。</p>"
+        '<h2 id="priority">The 6 frames that do not reduce supporting views</h2><p>This is an additional diagnostic applied to the 24 frames that passed the original review conditions. The prespecified conditions and analysis results were not rewritten. '
+        "Not losing support is not a guarantee of correct ID; it is a check so that comparisons use the same amount of observation.</p>"
     )
     rows = []
     for frame in priority_frames:
@@ -153,25 +163,32 @@ def main():
         )
     parts.append(
         table(
-            ["frame", "変えた対応", "合成コスト（低いほど整合）", "過去／未来の参照が有効なslot"],
+            [
+                "frame",
+                "Changed correspondence",
+                "Combined cost (lower = more consistent)",
+                "Slots with a valid past / future reference",
+            ],
             rows,
         )
     )
     parts.append(
-        "<p>f76791は両方向の参照が使える胸びれ対応の候補です。f75398–75399とf76989–76992では一方向の参照が不十分なため、前後のID維持は別途確認が必要です。</p>"
+        "<p>f76791 is a pectoral-fin correspondence candidate with usable references in both directions. At f75398–75399 and f76989–76992 the reference in one direction is insufficient, so ID retention before and after needs separate checking.</p>"
     )
 
-    parts.append('<h2 id="videos">元の対応／再評価候補のスロー比較</h2>')
+    parts.append(
+        '<h2 id="videos">Slow-motion comparison: original correspondence / re-evaluated candidate</h2>'
+    )
     captions = {
-        75398: "上面の部位対応を見直す候補。支持視点数は減りませんが、過去側の参照は不十分です。",
-        76791: "側面2のS1・S2の胸びれ対応を交換する候補。支持視点数を維持し、前後の参照が使えます。",
-        76988: "尾の残差は低下しますが、S1の尾が3視点から2視点になります。3視点一致の回復とは解釈できません。隣の76989以降には未使用の検出を使う別候補もあります。",
-        76235: "側面1の口・尾の対応を変える候補。胸びれの飛びや水槽外のノードが残り、条件を満たしません。",
-        76930: "欠けた尾を再構成する候補が選ばれますが、胸びれ–尾が約37 mmとなり、体節長の条件を満たしません。",
-        30735: "尾の観測を別のslotへ移す候補で、元のslotの3D部位が欠けます。確認条件を満たしません。",
-        31479: "対応変更で合成コストは下がりますが、一部の口・胸びれの光線残差は悪化します。前後参照も不足し、条件を満たしません。",
-        323819: "大きな3視点不整合が残り、中心フレームでは対応変更が選ばれません。2D検出や反射の影響を再確認する場面です。",
-        77415: "中心フレームでは元の対応が残ります。近接中の部位対応の正しさを、幾何条件だけで確定できません。",
+        75398: "Candidate revising the body-part correspondence in the top view. Supporting views do not decrease, but the past-side reference is insufficient.",
+        76791: "Candidate exchanging the S1 and S2 pectoral-fin correspondence in side 2. Supporting views are kept, and references before and after are usable.",
+        76988: "The tail residual drops, but S1's tail goes from 3 views to 2. This cannot be interpreted as restored 3-view agreement. From the neighbouring 76989 onward there are also other candidates that use unused detections.",
+        76235: "Candidate changing the mouth and tail correspondence in side 1. A pectoral-fin jump and out-of-tank nodes remain, and it does not meet the conditions.",
+        76930: "A candidate that reconstructs the missing tail is selected, but pectoral fin–tail becomes about 37 mm, which does not meet the segment-length condition.",
+        30735: "Candidate moving the tail observation to another slot, which leaves the original slot's 3D body part missing. It does not meet the review conditions.",
+        31479: "The correspondence change lowers the combined cost, but some mouth and pectoral-fin ray residuals worsen. References before and after are also insufficient, and it does not meet the conditions.",
+        323819: "A large 3-view inconsistency remains, and no correspondence change is selected at the centre frame. This scene calls for re-checking the effect of 2D detection and reflections.",
+        77415: "The original correspondence remains at the centre frame. Whether body-part correspondence during close approach is correct cannot be confirmed from geometric conditions alone.",
     }
     videos = [e for e in entries if e["kind"] == "video"]
     order = {
@@ -189,7 +206,7 @@ def main():
         frame, name = e["center_frame"], e["case"]
         path = "review/" + e["path"]
         parts.append(
-            f'<section><h3>f{frame} · {esc(status_at(name, frame))}</h3><p>{esc(captions.get(frame, "未採用の再評価候補を比較しています。"))}</p><video controls preload="metadata" src="{esc(path)}"></video>'
+            f'<section><h3>f{frame} · {esc(status_at(name, frame))}</h3><p>{esc(captions.get(frame, "Compares a re-evaluated candidate that was not accepted."))}</p><video controls preload="metadata" src="{esc(path)}"></video>'
         )
         plots = [
             p
@@ -202,28 +219,28 @@ def main():
         if plots:
             p = "review/" + plots[0]["path"]
             parts.append(
-                f'<details><summary>この1秒の誤差・体節長グラフ</summary><a href="{esc(p)}"><img loading="lazy" src="{esc(p)}" alt="f{frame}の局所診断グラフ"></a></details>'
+                f'<details><summary>Error and segment-length graph for this 1 s</summary><a href="{esc(p)}"><img loading="lazy" src="{esc(p)}" alt="Local diagnostic graph for f{frame}"></a></details>'
             )
         parts.append(
-            f"<details><summary>中心フレームの部位ごとの観測と残差</summary>{source_table(name, frame)}</details></section>"
+            f"<details><summary>Per-body-part observations and residuals at the centre frame</summary>{source_table(name, frame)}</details></section>"
         )
 
-    parts.append("""<h2 id="support">残差の低下と、支持視点数の減少を区別する</h2>
-<div class="warn">f76988のS1の尾では、光線残差8.29→0.69 mmと同時に支持視点数が3→2に減っています。
-S2は2→3に増え、尾の残差は0.32→1.21 mmに悪化します。全体の観測数だけを数えると、この入れ替わりを見落とします。</div>
-<p>2視点で再構成した点は、その2視点に合いやすくなります。3つ目の視点を除いて予測する検査も、この候補のS1の尾では実施不能になります。
-したがって、この残差低下を3視点の整合性改善として数えていません。</p>""")
+    parts.append("""<h2 id="support">Distinguishing a residual drop from a loss of supporting views</h2>
+<div class="warn">For S1's tail at f76988, the ray residual goes 8.29→0.69 mm while the supporting views drop 3→2.
+S2 increases 2→3, and the tail residual worsens 0.32→1.21 mm. Counting only the total number of observations misses this trade.</div>
+<p>A point reconstructed from 2 views tends to fit those 2 views. The check that predicts with the third view left out also becomes impossible to run for S1's tail in this candidate.
+This residual drop is therefore not counted as an improvement in 3-view consistency.</p>""")
     support_plot = root / "review/tail_support_76988.png"
     if not support_plot.exists():
         raise FileNotFoundError(support_plot)
     sources.extend([support_plot, support_plot.with_suffix(".json")])
     parts.append(
-        '<a href="review/tail_support_76988.png"><img loading="lazy" src="review/tail_support_76988.png" alt="尾の残差と支持視点数の推移"></a>'
+        '<a href="review/tail_support_76988.png"><img loading="lazy" src="review/tail_support_76988.png" alt="Tail residual and supporting-view count over time"></a>'
     )
 
     parts.append(
-        '<h2 id="images">全比較画像</h2><p>主区間の55候補区間から代表フレーム、逆方向で追加された14件、既知12例を収録しています。代表フレームは合成コストの改善量で選んだため、成功例の無作為標本ではありません。</p>'
-        '<label>表示 <select id="filter"><option value="all">すべて</option><option value="priority">条件通過・支持視点減少なし</option><option value="loss">支持視点が減る候補</option><option value="known">既知の場面</option></select></label>'
+        '<h2 id="images">All comparison images</h2><p>Includes representative frames from the 55 candidate intervals of the main interval, the 14 added by the backward direction, and the 12 known cases. Representative frames were chosen by the improvement in combined cost, so they are not a random sample of successes.</p>'
+        '<label>Show <select id="filter"><option value="all">All</option><option value="priority">Passed conditions, no loss of supporting views</option><option value="loss">Candidates that lose supporting views</option><option value="known">Known scenes</option></select></label>'
     )
     for e in [x for x in entries if x["kind"] == "image"]:
         name, frame = e["case"], e["center_frame"]
@@ -238,20 +255,20 @@ S2は2→3に増え、尾の残差は0.32→1.21 mmに悪化します。全体�
         if name.startswith("known_"):
             flags.append("known")
         parts.append(
-            f'<details class="sheet" data-types="{esc(" ".join(flags))}"><summary>{esc(name)} · f{frame} · {esc(status_at(name, frame))}</summary><p>{link(path, "元サイズの画像を開く")}</p><a href="{esc(path)}"><img loading="lazy" src="{esc(path)}" alt="{esc(name)} f{frame}の元対応と再評価候補"></a>{source_table(name, frame)}</details>'
+            f'<details class="sheet" data-types="{esc(" ".join(flags))}"><summary>{esc(name)} · f{frame} · {esc(status_at(name, frame))}</summary><p>{link(path, "Open full-size image")}</p><a href="{esc(path)}"><img loading="lazy" src="{esc(path)}" alt="Original correspondence and re-evaluated candidate for {esc(name)} f{frame}"></a>{source_table(name, frame)}</details>'
         )
 
     parts.append(
-        '<h2 id="graphs">各区間の全体グラフ</h2><p>破線が元の対応、実線が候補です。灰色帯が再評価したフレーム。体節長は各slot別、その他の誤差は表示slot内の最大値です。'
-        "体節長の薄い帯は候補外で得た参照中央値±スケールで、信頼区間ではありません。欠測は線で埋めていません。</p>"
+        '<h2 id="graphs">Whole-interval graphs</h2><p>Dashed lines are the original correspondence, solid lines the candidate. Grey bands are the re-evaluated frames. Segment length is per slot; other errors are the maximum over the displayed slots. '
+        "The faint band for segment length is the reference median ± scale obtained outside the candidates; it is not a confidence interval. Missing observations are not filled in with lines.</p>"
     )
     for e in [x for x in entries if x["kind"] == "plot" and x.get("scope") == "full_case"]:
         path = "review/" + e["path"]
         parts.append(
-            f'<details><summary>{esc(e["case"])} の推移</summary><a href="{esc(path)}"><img loading="lazy" src="{esc(path)}" alt="{esc(e["case"])}の全体診断グラフ"></a></details>'
+            f'<details><summary>{esc(e["case"])} over time</summary><a href="{esc(path)}"><img loading="lazy" src="{esc(path)}" alt="Whole-interval diagnostic graph for {esc(e["case"])}"></a></details>'
         )
     parts.append(
-        '<h2 id="numbers">全区間の集計</h2><p>件数はnativeフレーム数です。同じf76930付近が主区間と既知例に重なるため、合算を独立な観測数とは解釈しません。</p>'
+        '<h2 id="numbers">Totals for all intervals</h2><p>Counts are native frame counts. The same neighbourhood of f76930 overlaps the main interval and a known case, so the sum is not interpreted as a count of independent observations.</p>'
     )
     rows = []
     for c in report["cases"]:
@@ -269,19 +286,26 @@ S2は2→3に増え、尾の残差は0.32→1.21 mmに悪化します。全体�
         )
     parts.append(
         table(
-            ["区間・詳細JSON", "再評価", "異なる対応", "事前条件通過", "うち部位の支持減なし"], rows
+            [
+                "Interval / detail JSON",
+                "Re-evaluated",
+                "Different correspondence",
+                "Passed prespecified conditions",
+                "Of which no body-part support loss",
+            ],
+            rows,
         )
     )
-    parts.append("""<p>20秒全体の10 mm超の胸びれ移動は元も候補も3件です。局所の当てはまりを改善する候補はありますが、テレポートやIDスワップを解消した結果ではありません。</p>
-<h2>評価の範囲</h2><p>各視点で魚全体を割り当て直す216通りと未使用検出への置換を調べ、元対応と最良の全体対応から、1視点の口・胸びれ・尾・口＋胸びれを交換する候補を追加しました。
-これは限定した局所探索で、あらゆる同時交換を網羅したものではありません。体節長と利用可能な前後の動きも評価しましたが、生物学的IDの正解ラベルは候補選択に使っていません。</p>
-<p>残差は同じ検出から計算した整合性の指標です。視点を1つ除く検査もID正解を独立に保証しません。提案をそのまま連結するとフレームごとに対応が切り替わる場合があるため、継続時間・境界・IDの確認が必要です。</p>
-<p>画像の投影は保存C34と候補の再構成位置を比較しています。別途、両方を同じ方法で再三角測量した残差も確認しました。変更していない部位の再計算差は最大0.0000105 mmで、支持点数の変化はありません。</p>""")
+    parts.append("""<p>Over the whole 20 s, pectoral-fin moves over 10 mm number 3 for both the original and the candidate. Some candidates improve the local fit, but this is not a result that resolves teleports or ID swaps.</p>
+<h2>Scope of the evaluation</h2><p>The 216 combinations that reassign whole fish in each view, and substitutions with unused detections, were examined; starting from the original correspondence and the best whole-fish correspondence, candidates exchanging the mouth, pectoral fin, tail, or mouth + pectoral fin in one view were added.
+This is a limited local search and does not cover every simultaneous exchange. Segment length and the available motion before and after were also evaluated, but no biological-ID ground-truth labels were used in candidate selection.</p>
+<p>The residual is a consistency measure computed from the same detections. The leave-one-view-out check does not independently guarantee correct ID either. Chaining the proposals as they are can switch correspondence frame by frame, so duration, boundaries and IDs need to be checked.</p>
+<p>The image projections compare the saved C34 with the candidate's reconstructed positions. Separately, residuals from re-triangulating both the same way were also checked. For unchanged body parts the recomputation difference is at most 0.0000105 mm, with no change in the number of supporting points.</p>""")
     audit_paths = [root / "support_audit.json", root / "refit_audit.json"]
     note_paths = sorted((root / "review").glob("*visual*notes*.json"))
     sources.extend([p for p in audit_paths + note_paths if p.exists()])
     parts.append(
-        "<p>追加の確認記録："
+        "<p>Additional review records: "
         + " · ".join(
             link(p.relative_to(root).as_posix(), p.stem)
             for p in audit_paths + note_paths
@@ -290,14 +314,14 @@ S2は2→3に増え、尾の残差は0.32→1.21 mmに悪化します。全体�
         + "</p>"
     )
     parts.append(
-        "<p>再現用："
-        + link("analysis/protocol.json", "事前条件")
+        "<p>For reproduction: "
+        + link("analysis/protocol.json", "Prespecified conditions")
         + " · "
-        + link("analysis/summary.json", "全数値")
+        + link("analysis/summary.json", "All numbers")
         + " · "
-        + link("review/manifest.json", "画像・動画・グラフの記録")
+        + link("review/manifest.json", "Image, video and graph record")
         + " · "
-        + link("analysis/multiview_node_reassessment.provenance.json", "解析の入力・コード")
+        + link("analysis/multiview_node_reassessment.provenance.json", "Analysis inputs and code")
         + "</p>"
     )
     parts.append(

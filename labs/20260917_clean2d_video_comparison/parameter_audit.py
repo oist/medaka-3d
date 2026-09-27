@@ -1,6 +1,6 @@
 """Reproducible source/parameter audit of saved C27 versus frozen clean P/N/F."""
 
-# Report prose and original Unicode notes intentionally remain readable as complete strings.
+# Report prose stays readable as complete strings; typographic signs are intentional.
 # ruff: noqa: E501, RUF001
 
 from __future__ import annotations
@@ -578,59 +578,59 @@ def main():
             encoding="utf-8",
         )
         rows = [
-            "# C27 と clean P/N/F の設定・履歴監査",
+            "# Settings and history audit: C27 versus clean P/N/F",
             "",
-            "差は閾値だけではありません。C27 は長期IDを維持する順方向割当、P/N/F は曖昧な接続を切る隣接フレームの順逆合意です。今回の比較から『パラメータ調整の良し悪しだけが原因』とも『新法のID精度が高い』とも判断できません。",
+            "The difference is not only thresholds. C27 is forward assignment that keeps long-term IDs; P/N/F are forward/backward agreement between adjacent frames that cuts ambiguous links. From this comparison it cannot be concluded either that 'the quality of parameter tuning alone is the cause' or that 'the new method has higher ID accuracy'.",
             "",
-            "|項目|保存C27／現在の実装確認|clean P/N/F|",
+            "|Item|Saved C27 / current implementation check|clean P/N/F|",
             "|---|---|---|",
         ]
         rows += [f"|{a['axis']}|{a['c27']}|{a['clean']}|" for a in axes]
         rows += [
             "",
-            "## 再現に関する重要な事実",
+            "## Key facts about reproduction",
             "",
-            "- 保存C27は[0,348600)の全編serial、mouth/pectoral、OKS、履歴5観測、max_tracks=None。window=5は5 native frameでの失効ではありません。",
-            "- 現installed実装の合成例では、1000frame離れた10000px移動にもOKS=0で同じIDを付与しました。NaN/inf costもHungarian前に有限大値となり、割当後に拒否されません。",
-            "- min_match_points=0は過去候補の非NaN点数>0、min_new_track_points=0も>0の検出から開始する条件です。類似度閾値でも曖昧さ判定でもありません。",
-            "- 2既存trackに[新規,既存0,既存1]を入力すると返却順が[1,2,0]となることを合成再現しました。C24/C27 wrapperは返却順を元row順とみなすため、局所replayではlegacyとrow-faithfulの両方を保存します。これは旧保存C27の全行が誤りという断定ではありません。",
-            "- 現installedファイルはdistribution RECORDと一致しますが、保存C27の旧環境はpackage hashを残しておらずgit_dirty=trueです。全編の厳密な再現は未認証です。",
-            "- 9区間×3視点のcropped再実行では、legacyと元行へ戻したreadoutがcore内24行・7frame・6 case-viewで異なりました。全contextでは34行です。これは現再実行で実証した差で、旧保存全編の同数の誤りを意味しません。",
-            "- 保存fullとのcore全体ID分割の一致（単一ID名置換のみ許可）はlegacy 7/27、元行readout 10/27でした。隣接edge一致率が高くても、全編保存の厳密再現とは言えません。",
-            "- side1 f30823の235.15px、f31489の276.23px、top f105541±8の最大37.93pxは両readoutで同じ検出間リンクを再現しました。いずれも中心±12に返却行の並び替えはなく、現trackerのassociationで再現する飛びです。",
-            "- top f75315の91/93px、f333619/620の最大233.01pxは両cropped readoutで再現しませんでした。この付近にも並び替えはなく、旧full履歴と局所履歴、旧runtime差が未分離です。333619の旧保存ジャンプをserializationのせいと断定しません。",
-            "- mouth欠測のあるM/Pペアではcurrent側のbbox面積が0になり、有限移動に対するOKSが0へ潰れる場合があります。実測frameとcropped各候補の再計算scoreはJSONに保持しています。『全検出のmouthが欠測』ではありません。",
-            "- この欠測はscaleがNaNになる例ではありません。nanmin/nanmaxにより1可視点の面積が0となり、epsilonを足した正規化分母はsigma=.025で正の1.110223×10^-18です。currentの欠測点はKS=0、可視点の平均分母からも除外されます。",
-            "- 固定したcropped履歴だけでsigma=.0125/.025/.05/.1を比較しても、f30823・31489・333619のmouth欠測行は全候補score=0のままでした。333619のM/P有限row0ではsigma=.05/.1でごく小さい正値が戻りました。これはscoreの診断であり、追跡を再実行したID改善結果ではありません。",
+            "- Saved C27 is whole-recording serial over [0,348600), mouth/pectoral, OKS, 5-observation history, max_tracks=None. window=5 is not expiry after 5 native frames.",
+            "- In a synthetic example with the currently installed implementation, the same ID was assigned with OKS=0 even to a 10000px move 1000 frames apart. NaN/inf costs also become large finite values before the Hungarian step and are not refused after assignment.",
+            "- min_match_points=0 is the condition that a past candidate has >0 non-NaN points, and min_new_track_points=0 likewise starts from a detection with >0. It is neither a similarity threshold nor an ambiguity test.",
+            "- It was reproduced synthetically that feeding [new, existing0, existing1] to 2 existing tracks returns the order [1,2,0]. The C24/C27 wrapper treats the returned order as the original row order, so the local replay saves both legacy and row-faithful. This is not an assertion that every row of the old saved C27 is wrong.",
+            "- The currently installed files match the distribution RECORD, but the old environment of saved C27 left no package hashes and has git_dirty=true. Exact reproduction of the whole recording is not certified.",
+            "- In the cropped rerun of 9 intervals × 3 views, the legacy readout and the readout mapped back to original rows differed on 24 rows, 7 frames and 6 case-views within core. Over the full context it is 34 rows. This is a difference demonstrated in the current rerun and does not imply the same number of errors in the old saved whole recording.",
+            "- Agreement of the whole core ID partition with saved full (allowing only a single ID-name substitution) was legacy 7/27 and original-row readout 10/27. Even with a high adjacent-edge agreement rate, this cannot be called an exact reproduction of the saved whole recording.",
+            "- side1 f30823 235.15px, f31489 276.23px and top f105541±8 max 37.93px reproduced the same inter-detection links in both readouts. None has a reordering of returned rows within centre ±12; they are jumps reproduced by the current tracker's association.",
+            "- top f75315 91/93px and f333619/620 max 233.01px were not reproduced by either cropped readout. There is no reordering near these either; the old full history versus local history and old-runtime differences are not separated. The old saved jump at 333619 is not asserted to be caused by serialization.",
+            "- For M/P pairs with mouth missing, the current-side bbox area becomes 0, and OKS for a finite move can collapse to 0. The measured frames and the recomputed scores of each cropped candidate are kept in the JSON. This is not 'mouth missing in every detection'.",
+            "- This missingness is not a case where scale becomes NaN. Through nanmin/nanmax the area of 1 visible point becomes 0, and the normalization denominator with epsilon added is a positive 1.110223×10^-18 at sigma=.025. A missing current point has KS=0 and is also excluded from the visible-point mean denominator.",
+            "- Comparing sigma=.0125/.025/.05/.1 on the fixed cropped histories alone, the mouth-missing rows at f30823, 31489 and 333619 stayed at score=0 for every candidate. For the M/P-finite row0 at 333619, very small positive values returned at sigma=.05/.1. This is a score diagnostic, not an ID improvement from re-running tracking.",
             "",
-            "## 過去の『2Dは明瞭』という観察",
+            "## The past observation that '2D is clear'",
             "",
-            "注釈は2026-09-03の旧C27→C28→C33→C30映像です。S0/S1/S2はその映像のslot名で、生物学的IDや現在法の正解名ではありません。以下は原CSVのコメントを保持しています。",
+            "The annotations are on the old C27→C28→C33→C30 video of 2026-09-03. S0/S1/S2 are that video's slot names, not biological IDs or ground-truth names for the current method. The comments from the original CSV are kept below.",
             "",
-            "|元注釈の区間（両端含む）|今回比較core [start,stop)|明瞭とされた視点|原コメント|",
+            "|Original annotation interval (both ends inclusive)|Comparison core here [start,stop)|Views called clear|Original comment|",
             "|---|---|---|---|",
         ]
         rows += [
-            f"|{s['original_event_inclusive']}|{s['comparison_core_half_open']}|{', '.join(s['clear_views_in_human_note']) or '視点未指定'}|{s['original_note']}|"
+            f"|{s['original_event_inclusive']}|{s['comparison_core_half_open']}|{', '.join(s['clear_views_in_human_note']) or 'view not specified'}|{s['original_note']}|"
             for s in scenes
         ]
         rows += [
             "",
-            "31479については後日の分析に、side1でも276pxのtracklet jumpがあったとの反証が記録されています。見た目の検出が明瞭なことと、保存時間IDが連続して正しいことを分けて映像で確認します。",
+            "For 31479, a later analysis records counterevidence that there was a 276px tracklet jump in side1 as well. Whether the detection looks clear and whether the saved temporal ID is continuously correct are checked separately on video.",
             "",
-            "## 試験の切り分け",
+            "## Separating the tests",
             "",
         ] + ["- " + x for x in test_axes]
-        rows += ["", "## 根拠", ""]
+        rows += ["", "## Evidence", ""]
         rows += [
             f"- {key}: [{value['path']}:{value['line']}](../../{value['path']}:{value['line']})"
             for key, value in citations.items()
         ]
         rows += [
-            "- 原コメント: [swap_events.csv](../../work/generative_tracking_inputs/assets/groundtruth/swap_event_gt/20251225_K_1_2_FCMC/swap_events.csv)",
-            "- 後日解析: [doubt-channel](../../docs/decisions/2026-09-01-doubt-channel.md:342)",
+            "- Original comments: [swap_events.csv](../../work/generative_tracking_inputs/assets/groundtruth/swap_event_gt/20251225_K_1_2_FCMC/swap_events.csv)",
+            "- Later analysis: [doubt-channel](../../docs/decisions/2026-09-01-doubt-channel.md:342)",
             "",
-            "保存元データ・過去結果・凍結済みP/N/Fは変更していません。詳細と入力hashはparameter_audit.jsonとprovenanceに記録しています。",
+            "The saved source data, past results and frozen P/N/F were not modified. Details and input hashes are recorded in parameter_audit.json and the provenance.",
         ]
         markdown = OUT / "parameter_audit.md"
         markdown.write_text("\n".join(rows) + "\n", encoding="utf-8")

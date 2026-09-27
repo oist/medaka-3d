@@ -1,7 +1,5 @@
 """Source-backed, per-view 2D comparison report; never infer identity ground truth."""
 
-# ruff: noqa: RUF001 -- Japanese report punctuation is intentional.
-
 from __future__ import annotations
 
 import argparse
@@ -65,7 +63,7 @@ def source(label, files, definition, components):
 def normalize(summary, protocol):
     """Preserve exact core scopes, with input absence separated from association."""
     cases = [
-        dict(id=c["name"], label=("主20秒" if c["name"] == "cg20s" else c["name"]), **c)
+        dict(id=c["name"], label=("main 20 s" if c["name"] == "cg20s" else c["name"]), **c)
         for c in protocol.get("cases", [])
     ]
     metrics, observations, sensitivity, reasons = [], [], [], []
@@ -111,7 +109,7 @@ def normalize(summary, protocol):
                     for k, v in values.get("cut_reason_counts_nonexclusive", {}).items()
                 )
     parameters = [
-        dict(condition="P/N/F", parameter=k, value=v, basis="保存protocolの実行設定")
+        dict(condition="P/N/F", parameter=k, value=v, basis="run settings in the saved protocol")
         for k, v in protocol.get("tracking_config", {}).items()
     ]
     settings = [
@@ -177,10 +175,11 @@ def main():
         for e in annotation["events"]
     ]
     data_source = source(
-        "同じ検出点に対する2D追跡の保存指標",
+        "Saved 2D tracking metrics on the same detection points",
         [summary_path, protocol_path, *measured_paths],
-        "各case・view・conditionのnative範囲のみ。検出row、欠けたnode、負の追跡ID、"
-        "接続と断片を分離する。個体ID精度を測る正解列ではない。",
+        "Native range of each case, view and condition only. Separates detection rows, missing "
+        "nodes, negative tracking IDs, links and fragments. Not a ground-truth series for "
+        "measuring individual-ID accuracy.",
         [
             "summary",
             "metrics-table",
@@ -207,10 +206,10 @@ def main():
     queries["human_reviews"] = dict(
         rows=notes,
         source=source(
-            "過去の人手レビュー原文",
+            "Past human review, original text",
             [REVIEWS],
-            "以前の3D比較動画へのレビュー。3D slot名とSLEAPの視点内IDは異なり、"
-            "2D追跡のswap正解には読み替えない。",
+            "Review of an earlier 3D comparison video. 3D slot names differ from SLEAP's "
+            "within-view IDs and are not reinterpreted as swap ground truth for 2D tracking.",
             ["review-note", "review-history"],
         ),
     )
@@ -226,9 +225,9 @@ def main():
                         "center_frame": record["anchor"],
                         "condition": arm,
                         "scope": (
-                            "中心±8（17 frames）"
+                            "centre ±8 (17 frames)"
                             if record["window_kind"] == "anchor_17_native_frames"
-                            else "動画範囲（166 frames）"
+                            else "video range (166 frames)"
                         ),
                         "window_kind": record["window_kind"],
                         **values,
@@ -238,10 +237,11 @@ def main():
     queries["local_metrics"] = dict(
         rows=window_rows,
         source=source(
-            "中心17 framesと動画166 framesの再集計",
+            "Recount over the central 17 frames and the 166 video frames",
             [windows_path],
-            "各frame_start以上frame_stop未満。広い既知区間の切断を注釈中心の切断と混同しない。"
-            "同じ検出に対するSLEAP/P/N/F/F_all_looseの直接2D指標。",
+            "Each from frame_start inclusive to frame_stop exclusive. Breaks in the wide known "
+            "interval are not confused with breaks at the annotation centre. "
+            "Direct 2D metrics of SLEAP/P/N/F/F_all_loose on the same detections.",
             ["local-metrics"],
         ),
     )
@@ -250,10 +250,10 @@ def main():
     if parameter_audit:
         queries["parameters"]["rows"].extend(
             dict(
-                condition=f"保存C27 {view}",
+                condition=f"saved C27 {view}",
                 parameter=k,
                 value=str(v),
-                basis="保存済み effective_tracker_config",
+                basis="saved effective_tracker_config",
             )
             for view, config in parameter_audit["saved_c27_effective_config"].items()
             for k, v in config.items()
@@ -261,36 +261,40 @@ def main():
         requested = parameter_audit["saved_c27_requested_parameters"]
         queries["parameters"]["rows"].extend(
             dict(
-                condition="保存C27 全視点",
+                condition="saved C27 all views",
                 parameter=k,
                 value=json.dumps(requested[k], ensure_ascii=False),
-                basis="保存済み requested parameters",
+                basis="saved requested parameters",
             )
             for k in ("nodes", "scoring", "window_size", "min_match_points", "whole_recording")
         )
         queries["parameters"]["source"] = source(
-            "保存C27と固定P/N/Fの実行設定",
+            "Run settings of saved C27 and fixed P/N/F",
             [protocol_path, audit_path],
-            "C27は保存effective config、P/N/Fは実行protocol。現在のinstalled実装の"
-            "合成監査と、当時の実行環境の完全再現は区別する。",
+            "C27 from the saved effective config, P/N/F from the run protocol. A synthetic audit "
+            "of the currently installed implementation is kept distinct from an exact "
+            "reproduction of the original run environment.",
             ["parameters", "limitations"],
         )
     queries["parameter_mapping"] = dict(
         rows=parameter_audit.get("parameter_mapping", []),
         source=source(
-            "追跡方式とパラメータの対応監査",
+            "Audit of tracking method versus parameter correspondence",
             [audit_path],
-            "同じ名前の閾値でも候補集合・履歴・割当規則が違えば同じ実験にならない。",
+            "Thresholds with the same name do not make the same experiment if the candidate "
+            "set, history or assignment rule differs.",
             ["parameter-mapping", "replay-notes"],
         ),
     )
     queries["parameter_audit"] = dict(
         rows=[parameter_audit] if parameter_audit else [],
         source=source(
-            "現在の実装・保存パラメータ・実データ局所履歴の監査",
+            "Audit of the current implementation, saved parameters and local histories on real "
+            "data",
             [audit_path, base / "c27_replay/summary.json"],
-            "過去の全編実行の内部scoreを再現したものではない。"
-            "sigma比較は固定した局所履歴の再採点で、全追跡の感度試験ではない。",
+            "Does not reproduce the internal scores of the past whole-recording run. "
+            "The sigma comparison re-scores fixed local histories; it is not a sensitivity "
+            "test of full tracking.",
             ["scoring-notes", "software-notes"],
         ),
     )
@@ -315,20 +319,20 @@ def main():
     queries["c27_sensitivity"] = dict(
         rows=c27_rows,
         source=source(
-            "同一局所区間と環境でのSLEAP履歴長比較",
+            "SLEAP history-length comparison on the same local intervals and environment",
             [c27_path, base / "c27_sensitivity/protocol.json"],
-            "row-faithful出力でwindow=1/5/10のみを変更。全セッション保存C27とは履歴が異なり、"
-            "その完全再現として扱わない。",
+            "Row-faithful output with only window=1/5/10 changed. The history differs from the "
+            "saved full-session C27, so it is not treated as an exact reproduction of it.",
             ["c27-sensitivity"],
         ),
     )
     queries["media"] = dict(
         rows=[],
         source=source(
-            "各視点の直接比較動画",
+            "Direct comparison video per view",
             [],
-            "SLEAP/P/N/Fの4条件を同じraw frameと同じ検出点で比較する。NEW、UNASSIGNEDは"
-            "検出が消えたことを意味しない。",
+            "Compares the 4 conditions SLEAP/P/N/F on the same raw frames and the same "
+            "detection points. NEW and UNASSIGNED do not mean the detection disappeared.",
             ["comparison-video"],
         ),
     )
@@ -337,7 +341,7 @@ def main():
         raise ValueError("Cannot complete a report without measured data")
     snapshot = dict(
         surface="report",
-        title="同じ2D検出で、SLEAPと独自追跡を視点ごとに比較する",
+        title="SLEAP versus custom tracking, per view, on the same 2D detections",
         generatedAt=datetime.now(UTC).isoformat(),
         buildStatus="complete" if args.complete else "updating",
         status="reviewed" if args.complete else "partial",
@@ -345,39 +349,44 @@ def main():
         queries=queries,
         cases=normalized["cases"],
         report={"asOf": "2026-09-17"},
-        summaryMarkdown="## 2Dの直接比較を準備中\n\n各視点でSLEAPとP/N/Fを同じ検出に重ねます。"
-        "検出不足、ノード欠損、未割当、断片の切断を分けて確認します。",
-        interpretationMarkdown="このレポートは2Dの比較です。前回3Dで観測を採用しなかった"
-        "ことを、2Dの検出が消えたこととして数えません。",
+        summaryMarkdown="## Direct 2D comparison in preparation\n\nIn each view, SLEAP and P/N/F "
+        "are overlaid on the same detections. Missing detections, node dropouts, unassigned "
+        "rows and fragment breaks are checked separately.",
+        interpretationMarkdown="This report is a 2D comparison. An observation not adopted in "
+        "the previous 3D run is not counted as a 2D detection having disappeared.",
     )
     snapshot["protocol"] = protocol
     if parameter_audit:
         snapshot["parameterNotes"] = (
-            "保存C27はmouth/pectoral・OKS・Hungarian・履歴5観測・max_tracksなし。"
-            "window=5は5 native framesでの失効ではありません。P/N/Fは隣接frameの"
-            "双方向合意と明示的な拒否条件を使います。数値の厳しさだけでは比較できません。"
+            "Saved C27 uses mouth/pectoral, OKS, Hungarian, a 5-observation history and no "
+            "max_tracks. window=5 is not expiry after 5 native frames. P/N/F use bidirectional "
+            "agreement between adjacent frames and explicit refusal conditions. They cannot be "
+            "compared on numerical strictness alone."
         )
     if normalized["metrics"]:
         snapshot["summaryMarkdown"] = (
-            "## 検出は残り、時間方向の接続が切れています\n\n"
-            "主20秒の全29,386検出はSLEAP・P・N・Fの全条件に残っています。"
-            "連続した2D断片はSLEAP 224に対しF 1,324。Fは点を消さず、"
-            "不確かな接続を切って新しい断片番号を付けています。\n\n"
-            "mouthまたはpectoralが欠ける検出は743行あります。"
-            "FがSLEAPの接続を切断・変更した1,129件のうち、720件では"
-            "端点の主要ノード欠損が拒否理由に含まれます（他理由との重複あり）。"
-            "閾値をまとめて緩めてもFの断片は1,028。必要ノードの条件は固定した実験です。\n\n"
-            "断片が少ないこと、動きが滑らかなことだけでは、個体IDが正しいと判定できません。"
+            "## Detections remain; links across time are cut\n\n"
+            "All 29,386 detections in the main 20 s remain under every condition: SLEAP, P, N "
+            "and F. Contiguous 2D fragments: SLEAP 224 versus F 1,324. F does not delete points; "
+            "it cuts uncertain links and assigns new fragment numbers.\n\n"
+            "743 detection rows lack mouth or pectoral. "
+            "Of the 1,129 cases where F cut or changed a SLEAP link, in 720 the refusal reasons "
+            "include a missing primary node at an endpoint (overlapping with other reasons). "
+            "Even with all thresholds loosened together, F has 1,028 fragments. The required-node "
+            "condition was held fixed in this experiment.\n\n"
+            "Fewer fragments or smoother motion alone cannot establish that individual IDs are "
+            "correct."
         )
     snapshot["limitationsMarkdown"] = (
-        "## 比較条件と限界\n\nSLEAPは保存済みの全セッションC27追跡、P/N/Fは同じC01検出点から"
-        "前後332 native framesの文脈を使った処理です。Pはpectoral、Nはmouth＋pectoralで"
-        "候補を選びtailを整合性検査に使い、FはさらにLK flowを使います。"
-        "P/N/Fは隣接frameの双方向一致だけを接続し、2Dの空白期間は跨ぎません。"
-        "入力の検出点とノードの組み合わせは修正しません。\n\n"
-        "同じ3匹の既知区間を再評価しています。全個体の2D ID正解がないため、"
-        "swap精度や旧方式への優越は未確認です。過去のS0/S1/S2は3D側のslot名で、"
-        "視点ごとのSLEAP番号とは別です。"
+        "## Comparison conditions and limits\n\nSLEAP is the saved full-session C27 tracking; "
+        "P/N/F are processing on the same C01 detection points using 332 native frames of "
+        "context before and after. P selects candidates by pectoral and N by mouth + pectoral, "
+        "using tail for the consistency check; F additionally uses LK flow. "
+        "P/N/F link only on bidirectional agreement between adjacent frames and do not bridge "
+        "2D gaps. Input detection points and node groupings are not modified.\n\n"
+        "Known intervals of the same 3 fish are re-evaluated. With no 2D ID ground truth for "
+        "all individuals, swap accuracy and superiority over the old method are not confirmed. "
+        "The past S0/S1/S2 are 3D-side slot names, distinct from the per-view SLEAP numbers."
     )
     if "id" in existing:
         snapshot["id"] = existing["id"]
@@ -386,10 +395,10 @@ def main():
         snapshot["queries"]["case_findings"] = dict(
             rows=read(findings_path)["records"],
             source=source(
-                "既知8場面の再評価",
+                "Re-evaluation of 8 known scenes",
                 [findings_path, windows_path, base / "inspection/manifest.json", audit_path],
-                "数値は中心±8の17native frames、目視は中心±1の3frame。"
-                "アシスタントによる確認で、新しい人手ID正解ではない。",
+                "Numbers over the 17 native frames at centre ±8; visual check over the 3 frames "
+                "at centre ±1. Checked by the assistant; not new human ID ground truth.",
                 ["case-findings"],
             ),
         )
@@ -421,7 +430,7 @@ def main():
         snapshot["queries"]["narrative"] = dict(
             rows=[dict(key=k, text=v) for k, v in narrative.items() if isinstance(v, str)],
             source=source(
-                "実測・原画・設定監査を照合した解釈",
+                "Interpretation checked against measurements, raw frames and the settings audit",
                 [
                     narrative_path,
                     summary_path,
@@ -431,7 +440,8 @@ def main():
                     base / "audit.json",
                     ROOT / "work/clean_tracklets_v2/summary.json",
                 ],
-                "元の数値・定義・注釈と照合したレポート文面。ID正解の追加ではない。",
+                "Report text checked against the original numbers, definitions and annotations. "
+                "Not an addition of ID ground truth.",
                 [
                     "summary",
                     "result-notes",
@@ -491,10 +501,12 @@ def main():
         snapshot["queries"]["media"] = dict(
             rows=media_rows,
             source=source(
-                "各視点の直接比較動画",
+                "Direct comparison video per view",
                 [manifest_path],
-                "同じ検出を全て表示し、条件ごとの時間IDだけを比較。局所は166 native framesを"
-                "30fpsで再生し補間しない。原版とreport用がある場合は双方のSHAを記録。",
+                "Shows every one of the same detections and compares only the per-condition "
+                "temporal IDs. Local clips play 166 native frames at 30fps without "
+                "interpolation. Where both an original and a report version exist, both SHAs "
+                "are recorded.",
                 ["comparison-video"],
             ),
         )
@@ -518,10 +530,10 @@ def main():
     snapshot["queries"]["inspection"] = dict(
         rows=inspection_rows,
         source=source(
-            "native3frameの原画cropによる確認",
+            "Check using raw-frame crops over 3 native frames",
             [inspection_path, base / "c27_replay/summary.json"],
-            "同じcropを3つのnative frameに適用。表示は測定2D点と追跡番号で、"
-            "新しい人手ID正解は与えていない。",
+            "The same crop is applied to 3 native frames. The display shows measured 2D points "
+            "and tracking numbers; no new human ID ground truth is given.",
             ["inspection"],
         ),
     )

@@ -1,251 +1,299 @@
-# 再捕捉サイクルの結果
+# Results of the reacquisition cycle
 
-**再初期化なしの1分間は技術的に完走しましたが、3匹のIDを維持して使える軌跡を
-出す目標は未達です。観測率99.76%に対して、受理率は3.56%でした。**
-既知2区間、設定固定後の4検証区間も完走しました。
-固定4区間では位置の観測率99.80〜100%に対して、ID確認を保留しない受理出力は
-23.01〜67.83%にとどまり、事前の利用可能率基準を全区間で満たしませんでした。
-1分間も観測率99.76%に対して受理率3.56%でした。メスのraw端点は13区間を維持しましたが、
-受理後は13区間とも未評価であり、ID付き軌跡を継続して出せる品質には達していません。
+**The one minute without reinitialisation ran to completion technically, but the goal of
+producing usable trajectories that keep the IDs of the three fish is not met. Against an
+observation rate of 99.76%, the acceptance rate was 3.56%.**
+The 2 known intervals and the 4 validation intervals run after the settings were frozen also
+ran to completion.
+On the 4 fixed intervals, against a position observation rate of 99.80–100%, accepted output
+(output on which ID confirmation is not held) stayed at 23.01–67.83%, and the pre-set
+usable-rate criterion was not met on any interval.
+The one minute likewise had an acceptance rate of 3.56% against an observation rate of 99.76%.
+The female's raw endpoints kept 13 intervals, but after acceptance all 13 intervals are not
+evaluated, and the quality needed to output ID-labelled trajectories continuously has not
+been reached.
 
-事前登録は [REACQUISITION_PLAN.md](REACQUISITION_PLAN.md)、全開始frameと初期poseは
-[reacquisition_windows.json](reacquisition_windows.json)。原動画・既存結果は変更せず、
-各runの新規フォルダに入力hash、実行コードsnapshot、NPZ、共通評価、previewを保存しました。
-全て同じ1群のメダカです。初期frameは全録画の既存法から得た楽観的なseedですが、
-その後の既存法の予測やGTによる再初期化はありません。
+The pre-registration is [REACQUISITION_PLAN.md](REACQUISITION_PLAN.md); all start frames and
+initial poses are in [reacquisition_windows.json](reacquisition_windows.json). Source video and
+existing results were not changed; each run's new folder holds input hashes, a snapshot of the
+executed code, NPZ, the shared evaluation and previews.
+All of it is the same single group of medaka. The initial frame is an optimistic seed taken
+from the existing method over the full recording, but there is no subsequent reinitialisation
+from existing-method predictions or GT.
 
-## 既知区間での床面感度比較
+## Floor sensitivity comparison on the known intervals
 
-「観測率」は2視点以上の割当てで支持された胸ヒレの割合です。「受理率」はそこから
-review対象を除いた割合で、ID正解率ではありません。分母は各frame×3匹です。
+"Observation rate" is the fraction of pectoral fins supported by an assignment in 2 or more
+views. "Acceptance rate" is that fraction with review targets removed; it is not ID accuracy.
+The denominator is frames × 3 fish.
 
-| 区間 | 方法 | 胸ヒレ観測率 | 受理率 | S0 / S1 / S2 の受理frame数 | メスのraw / 受理後評価 | 推論時間 |
+| Interval | Method | Pectoral-fin observation rate | Acceptance rate | Accepted frames S0 / S1 / S2 | Female raw / post-acceptance evaluation | Inference time |
 |---|---|---:|---:|---|---|---:|
-| 76620:77286（666fr） | 旧v3 | 72.17% | 67.92% | 444 / 426 / 487 | 未評価1区間 / 未評価1区間 | 967.76秒 |
-| 同区間 | 再捕捉v1・名目床z≥0 | 78.83% | 69.12% | 450 / 444 / 487 | swap 1区間 / 未評価1区間 | 385.77秒 |
-| 同区間 | 再捕捉v1・床許容z≥−6 | 98.75% | 85.09% | 514 / 651 / 535 | 維持1区間 / 維持1区間 | 402.11秒 |
-| 333519:333719（200fr） | 旧v3 | 67.83% | 66.00% | 180 / 200 / 16 | メスmark 1点、区間なし | 304.57秒 |
-| 同区間 | 再捕捉v1・名目床z≥0 | 98.17% | 92.67% | 171 / 200 / 185 | メスmark 1点、区間なし | 120.19秒 |
-| 同区間 | 再捕捉v1・床許容z≥−6 | 98.17% | 92.67% | 171 / 200 / 185 | メスmark 1点、区間なし | 116.99秒 |
+| 76620:77286 (666fr) | old v3 | 72.17% | 67.92% | 444 / 426 / 487 | 1 interval not evaluated / 1 interval not evaluated | 967.76 s |
+| same interval | reacquisition v1, nominal floor z≥0 | 78.83% | 69.12% | 450 / 444 / 487 | 1 interval swap / 1 interval not evaluated | 385.77 s |
+| same interval | reacquisition v1, floor tolerance z≥−6 | 98.75% | 85.09% | 514 / 651 / 535 | 1 interval kept / 1 interval kept | 402.11 s |
+| 333519:333719 (200fr) | old v3 | 67.83% | 66.00% | 180 / 200 / 16 | 1 female mark, no interval | 304.57 s |
+| same interval | reacquisition v1, nominal floor z≥0 | 98.17% | 92.67% | 171 / 200 / 185 | 1 female mark, no interval | 120.19 s |
+| same interval | reacquisition v1, floor tolerance z≥−6 | 98.17% | 92.67% | 171 / 200 / 185 | 1 female mark, no interval | 116.99 s |
 
-新旧は同じframe、同じ初期poseです。新cycleには再捕捉に加え、CUDA背景処理、
-CPU視点並列化、光学フローの最大辺640→320、順序保持prefetchが含まれます。
-時間は動画I/O・画像処理・追跡を含みますが、runの一部は他区間と並列実行したため、
-各変更の単独速度効果を表す表ではありません。既存7armの計算時間は測定していません。
+Old and new use the same frames and the same initial pose. Besides reacquisition, the new cycle
+includes CUDA background processing, CPU parallelisation over views, optical-flow max side
+640→320, and order-preserving prefetch.
+Times include video I/O, image processing and tracking, but some runs executed in parallel with
+other intervals, so the table does not represent the standalone speed effect of each change.
+Compute time of the existing 7 arms was not measured.
 
-名目床では、メスの入口76698はS1、出口77285はS2となりました。出口はreviewで
-受理されず、受理後評価は「不明」です。床許容6mmでは両端ともS1となりました。
-これは1つのメス端点区間の結果で、途中の往復swapやオス同士のswapを排除しません。
+With the nominal floor, the female was S1 at entry 76698 and S2 at exit 77285. The exit was
+review and not accepted, so the post-acceptance evaluation is "unknown". With the 6mm floor
+tolerance, both ends were S1.
+This is the result of a single female endpoint interval and does not exclude round-trip swaps
+in between or swaps between males.
 
-同じ共有評価に通した既存7armでは、λ0/2/8はこのメス区間を維持し、
-λ0.1/0.25/0.5/0.767はswapでした。全armでメスmarkは2点とも利用可能です。
-新方式が全ての既存設定より優れることは示していません。
+Among the existing 7 arms passed through the same shared evaluation, λ0/2/8 kept this female
+interval and λ0.1/0.25/0.5/0.767 were swap. In every arm both female marks are usable.
+It is not shown that the new approach is better than every existing setting.
 
-## 回復した位置と、未解決のID
+## Recovered positions, unresolved IDs
 
-200fr区間では旧v3のS2胸ヒレ観測は17/200frでした。再捕捉v1では193/200frに増え、
-S2の受理出力は333535:333550の15fr欠測後に戻りました。選択された再捕捉は
-333537(S2)、333539(S0)、333540(S2)、333542(S0)、333543(S2)、333545(S0)、
-333547(S2)、333552(S0)、333580(S0)、333600(S0)です。これは位置支持の復帰記録です。
+In the 200fr interval, old v3 observed S2's pectoral fin in 17/200fr. Reacquisition v1 raised
+this to 193/200fr, and S2's accepted output returned after a 15fr gap at 333535:333550. The
+selected reacquisitions were 333537(S2), 333539(S0), 333540(S2), 333542(S0), 333543(S2),
+333545(S0), 333547(S2), 333552(S0), 333580(S0), 333600(S0). This is a record of recovered
+position support.
 
-しかし333558・333638・333718の3視点previewでは、候補のS0/S2が既存法とは逆の
-魚位置に対応しています。3匹のraw胸ヒレが揃う190frで位置の近さだけを照合すると、
-最初の18frは既存slotとの対応(0,1,2)、333547以降の172frは(2,1,0)でした。
-333547でこの対応の3点RMS距離は0.319mmです。初期slotは一致しており、再捕捉時の
-オス交換が疑われます。独立したオスの正解注釈がないため、この不一致を確定したオスの誤ID数
-として数えてはいません。それでもidentity_review=0のまま受理率92.67%を
-成功と呼ぶことはできません。床許容の有無でsource/観測/reviewは一致しました。
+However, in the 3-view previews at 333558, 333638 and 333718, the candidate's S0/S2 correspond
+to the opposite fish positions from the existing method. Matching by positional proximity alone
+over the 190fr in which raw pectoral fins exist for all three fish, the correspondence with the
+existing slots was (0,1,2) for the first 18fr and (2,1,0) for the 172fr from 333547 on.
+At 333547 the 3-point RMS distance of this correspondence is 0.319mm. The initial slots agree,
+so a male exchange at reacquisition is suspected. Because there is no independent male ground
+truth annotation, this disagreement is not counted as a confirmed number of male wrong IDs.
+Even so, an acceptance rate of 92.67% with identity_review=0 cannot be called a success.
+source/observation/review were identical with and without the floor tolerance.
 
-このv1結果を保存したまま、v2では単独の欠測・再捕捉でもIDを未解決として保留し、
-位置再取得とID再接続を分離しました。前後の軌跡と初期の画像情報による6順列の接続は
-別の後処理として評価し、元の3D座標を再推定・補間しません。
+With this v1 result kept, v2 holds the ID as unresolved even after a single dropout and
+reacquisition, separating position reacquisition from ID reconnection. Linking by the
+6 permutations, using trajectories before and after and initial image information, is
+evaluated as a separate post-process and does not re-estimate or interpolate the original 3D
+coordinates.
 
-後処理設定固定後に追加した開発区間だけの原因診断として、同じv1 transientで
-`appearance_weight=0`とした比較も保存しました。最終対応はdefaultの[2,0,1]から
-[2,1,0]へ変わり、メスmarkに対応するraw評価IDはdefaultの2から初期の1に戻りました。
-ただし受理数は57から56で、メスmarkは両方ともreviewです。この局所例では外観項が
-不適切なメス再割当てに寄与したと考えられますが、ID精度改善の証明ではありません。
-正式な4検証区間・1分間のdefault設定は変更していません。
-記録: [appearance ablation](../../work/generative_tracking/appearance_ablation_v1_transient/README.md)。
+As a cause diagnosis on the development interval only, added after the post-process settings
+were frozen, a comparison with `appearance_weight=0` on the same v1 transient was also saved.
+The final correspondence changed from the default's [2,0,1] to [2,1,0], and the raw evaluation
+ID corresponding to the female mark returned from the default's 2 to the initial 1.
+However, the accepted count went from 57 to 56, and both female marks are review. In this local
+example the appearance term is thought to have contributed to an inappropriate reassignment of
+the female, but this is not proof of improved ID accuracy.
+The default settings for the formal 4 validation intervals and the one minute were not changed.
+Record: [appearance ablation](../../work/generative_tracking/appearance_ablation_v1_transient/README.md).
 
-## 床の許容値は校正精度の保証ではない
+## The floor tolerance is not a guarantee of calibration accuracy
 
-既知区間の診断では、ray residualが小さくても三角測量zが約−1.4〜−4.4mmとなる
-観測があり、名目z≥0の制約で候補が消失していました。校正の絶対床位置の保証が
-不足するため、事前に床だけ6mmを許容する感度比較を登録しました。
+Diagnosis on the known intervals found observations whose triangulated z was about −1.4 to
+−4.4mm even with a small ray residual, and candidates were being eliminated by the nominal z≥0
+constraint. Because the absolute floor position of the calibration is not sufficiently
+guaranteed, a sensitivity comparison that tolerates 6mm on the floor only was pre-registered.
 
-666frの床許容runでは、名目床下のobserved nodeが911点あり、魚別では
-351 / 336 / 224点です。reviewを除いたaccepted側では532点
-（104 / 336 / 92点）でした。最小zは約−5.99999mmで、新たな許容境界にも接しています。
-200fr区間では名目床外の観測は0点でした。光学calibrationを再推定した結果でも、
-座標を後から平行移動した結果でもありません。
+In the 666fr floor-tolerance run there were 911 observed nodes below the nominal floor,
+351 / 336 / 224 by fish. On the accepted side, excluding review, there were 532
+(104 / 336 / 92). The minimum z is about −5.99999mm, touching the new tolerance boundary as
+well. In the 200fr interval there were 0 observations outside the nominal floor.
+This is neither the result of re-estimating the optical calibration nor of translating
+coordinates after the fact.
 
-固定検証では床許容6mmを工程上の設定として採用しました。既知区間で観測の
-取り戻しが改善し、床から離れた区間の対応は同じだったことが理由です。
-床の位置が6mmずれていると実測したわけではなく、今後の区間を通すために
-さらに床の許容値を広げることは今回の検証には含めません。
+For the fixed validation, the 6mm floor tolerance was adopted as a process setting. The
+reasons are that recovery of observations improved on the known intervals and that the
+correspondence in the interval away from the floor was the same.
+It was not measured that the floor position is off by 6mm, and widening the floor tolerance
+further to get future intervals through is not part of this validation.
 
-## 保存先と監査
+## Storage and audit
 
-`work/generative_tracking/` 内の次の4フォルダを保持しています。
+The following 4 folders in `work/generative_tracking/` are retained.
 
 - `recovery_v1_nominal_dev_interval`
 - `recovery_v1_nominal_dev_transient`
 - `recovery_v1_floor6_dev_interval`
 - `recovery_v1_floor6_dev_transient`
 
-各 `comparison.json`、`candidate.npz`、`benchmark.provenance.json` が根拠です。
-独立監査の `<run名>_audit.json` では記録hashと階層保存したコードsnapshot、
-frame列、追加appearance/quality配列の形、reviewとaccepted座標、観測数を確認しました。
-全4runが初期化1回で完走し、fit failureとanatomy refusalは0でした。
-ソフトウェアが完走したことと、IDが正しかったことは別の判定です。
+Each `comparison.json`, `candidate.npz` and `benchmark.provenance.json` is the evidence.
+The independent audit, `<run name>_audit.json`, checked the recorded hashes and the
+hierarchically saved code snapshot, the frame sequence, the shapes of the added
+appearance/quality arrays, the review and accepted coordinates, and the observation counts.
+All 4 runs completed with a single initialisation, with 0 fit failures and 0 anatomy refusals.
+The software running to completion and the IDs being correct are separate judgements.
 
-標準postpassの最初の6run（開発4本とvalidation swap A/B）は、実行コードの主要部分を
-snapshotしていますが、`fast_fit.py`等の間接import先が一部含まれていません。
-これらの再現には同じrepo環境または対応する追加依存が必要であり、snapshot単体で
-完結するとは主張しません。全postpassが停止中にwrapperの保存対象だけを補正し、
-以後のrunで依存を追加しました。推論core・設定は変更せず、既存出力も変更していません。
-同じ停止中に、全経路が棄却された場合の`global_cost=inf`でJSON保存が失敗することを
-既存コードで再現し、wrapperの保存処理のみ補正しました。JSONでは非有限値をnullとし、
-対象のfieldを列挙します。feasibility=falseとreviewは維持し、NPZの数値も変更しません。
+The first 6 runs of the standard postpass (the 4 development runs and validation swap A/B)
+snapshot the main part of the executed code, but some indirect imports such as `fast_fit.py`
+are not included. Reproducing them requires the same repo environment or the corresponding
+additional dependencies; the snapshot is not claimed to be self-contained on its own.
+While all postpasses were stopped, only the wrapper's set of saved files was corrected, and
+later runs added the dependencies. The inference core and settings were not changed, nor were
+existing outputs.
+During the same stop, the JSON save failing on `global_cost=inf` when all paths are rejected
+was reproduced with the existing code, and only the wrapper's save step was corrected. In JSON,
+non-finite values become null and the affected fields are listed. feasibility=false and review
+are kept, and the NPZ values are not changed.
 
-## 設定固定後の4検証区間
+## The 4 validation intervals after the settings were frozen
 
-raw v2は全区間で床許容6mm、CUDA背景処理、flow最大辺320、同じ追跡設定を使い、
-開始時のseedだけで完走しました。区間とseedは新しい候補の結果を見る前に固定し、
-後処理の設定固定まではraw結果も開封しませんでした。swap A/Bとocclusionは以前の
-イベント注釈から選んだため、未知の失敗場面を無作為抽出した検証ではありません。
-controlは時間位置で選んだ同一録画内の区間です。設定決定と追記文書の保存時刻の区別は
-[REACQUISITION_V2_FREEZE.md](REACQUISITION_V2_FREEZE.md)に記録しました。
+raw v2 used the 6mm floor tolerance, CUDA background processing, flow max side 320 and the same
+tracking settings on every interval, and ran to completion with only the seed at the start.
+Intervals and seeds were fixed before seeing the new candidate's results, and the raw results
+were not opened until the post-process settings were frozen. swap A/B and occlusion were chosen
+from earlier event annotations, so this is not a validation on randomly sampled unknown failure
+scenes. control is an interval within the same recording chosen by temporal position.
+The distinction between when the settings were decided and when the appended document was saved
+is recorded in [REACQUISITION_V2_FREEZE.md](REACQUISITION_V2_FREEZE.md).
 
-メスの各欄は、既存の口の手動注釈2点を結ぶ**1端点区間**の評価です。
-rawはreviewの有無によらない割当て、受理後はreviewを除いた出力です。
-「維持」は両端が同じIDであった意味で、途中の往復swapやオス同士の交換は検査できません。
+Each female column evaluates **one endpoint interval** joining 2 existing manual mouth
+annotations. raw is the assignment regardless of review; post-acceptance is the output with
+review removed.
+"Kept" means both ends had the same ID; round-trip swaps in between and exchanges between males
+cannot be checked.
 
-| 固定区間 | frame範囲 | 胸ヒレ観測数 / 分母 | 受理数 / 分母（率） | S0 / S1 / S2 受理frame数 | メスraw / 受理後 | 推論時間 |
+| Fixed interval | Frame range | Pectoral-fin observations / denominator | Accepted / denominator (rate) | Accepted frames S0 / S1 / S2 | Female raw / post-acceptance | Inference time |
 |---|---|---:|---:|---|---|---:|
-| swap A | 99070:99900 | 2485 / 2490（99.80%） | 1017 / 2490（40.84%） | 830 / 138 / 49 | 維持 / 維持 | 348.06秒 |
-| swap B | 105085:106080 | 2983 / 2985（99.93%） | 1136 / 2985（38.06%） | 995 / 77 / 64 | 維持 / 維持 | 433.69秒 |
-| occlusion | 323660:324490 | 2486 / 2490（99.84%） | 573 / 2490（23.01%） | 39 / 492 / 42 | 維持 / 未評価 | 375.11秒 |
-| temporal control | 165950:166780 | 2490 / 2490（100%） | 1689 / 2490（67.83%） | 504 / 602 / 583 | 維持 / 維持 | 374.05秒 |
+| swap A | 99070:99900 | 2485 / 2490 (99.80%) | 1017 / 2490 (40.84%) | 830 / 138 / 49 | kept / kept | 348.06 s |
+| swap B | 105085:106080 | 2983 / 2985 (99.93%) | 1136 / 2985 (38.06%) | 995 / 77 / 64 | kept / kept | 433.69 s |
+| occlusion | 323660:324490 | 2486 / 2490 (99.84%) | 573 / 2490 (23.01%) | 39 / 492 / 42 | kept / not evaluated | 375.11 s |
+| temporal control | 165950:166780 | 2490 / 2490 (100%) | 1689 / 2490 (67.83%) | 504 / 602 / 583 | kept / kept | 374.05 s |
 
-事前の受理出力率基準は全体90%以上かつ各個体80%以上です。全4区間で未達でした。
-メスの受理後評価は3区間維持・1区間未評価であり、「4区間で誤りゼロ」ではありません。
-rawのID未解決animal-frame数は順に1471、1847、1913、797です。
-欠測後に観測が戻ってもID確認を保留するv2の方針は動作していますが、未解決のIDを
-十分に復帰できていません。確認を保留しなかった出力のID精度も、この少数GTだけでは
-推定できません。
-保留がその後ずっと続けば誤IDを含む出力を減らせますが、利用できる軌跡も失われます。
-この恒久的な保留の増加を「スワップゼロ達成」と評価しません。今回は人が途中でIDを
-修正する実験をしておらず、少数の人手修正で十分になるか、どの程度の時間が必要かも
-まだ実証していません。
+The pre-set accepted-output rate criterion is at least 90% overall and at least 80% for each
+individual. It was not met on any of the 4 intervals.
+The female's post-acceptance evaluation is kept on 3 intervals and not evaluated on 1; this is
+not "zero errors on 4 intervals".
+Raw unresolved-ID animal-frames are, in order, 1471, 1847, 1913 and 797.
+v2's policy of holding ID confirmation even when observation returns after a dropout is
+working, but it does not sufficiently recover the unresolved IDs. The ID accuracy of the output
+on which confirmation was not held also cannot be estimated from this small GT alone.
+If the hold continued indefinitely, output containing wrong IDs would be reduced, but usable
+trajectories would be lost too.
+This increase in permanent holds is not evaluated as "zero swaps achieved". No experiment was
+run in which a human corrects IDs midway, and it is not yet demonstrated whether a small number
+of human corrections would suffice or how much time that would require.
 
-同じframe・共有スコアに通した全7baseline armを省略せず示します。各セルは
-「胸ヒレ出力数 / 分母；メス端点評価」です。全armで各メスmarkは2点とも利用可能です。
-baselineの出力状態と候補のreview方針は異なるので、出力数の多さをID精度に読み替えません。
+All 7 baseline arms, passed through the same frames and shared score, are shown without
+omission. Each cell is "pectoral-fin outputs / denominator; female endpoint evaluation". In
+every arm both female marks are usable.
+The baseline output states and the candidate's review policy differ, so a larger output count
+is not read as ID accuracy.
 
 | C34 λ | swap A | swap B | occlusion | temporal control |
 |---:|---|---|---|---|
-| 0 | 2487/2490；維持 | 2985/2985；swap | 2490/2490；swap | 2490/2490；維持 |
-| 0.1 | 2487/2490；維持 | 2985/2985；維持 | 2490/2490；維持 | 2490/2490；維持 |
-| 0.25 | 2487/2490；維持 | 2985/2985；swap | 2490/2490；維持 | 2490/2490；維持 |
-| 0.5 | 2487/2490；維持 | 2985/2985；維持 | 2490/2490；維持 | 2490/2490；維持 |
-| 0.767 | 2481/2490；維持 | 2985/2985；維持 | 2490/2490；維持 | 2490/2490；維持 |
-| 2 | 2481/2490；維持 | 2985/2985；維持 | 2490/2490；維持 | 2490/2490；維持 |
-| 8 | 2481/2490；維持 | 2985/2985；swap | 2487/2490；維持 | 2490/2490；維持 |
+| 0 | 2487/2490; kept | 2985/2985; swap | 2490/2490; swap | 2490/2490; kept |
+| 0.1 | 2487/2490; kept | 2985/2985; kept | 2490/2490; kept | 2490/2490; kept |
+| 0.25 | 2487/2490; kept | 2985/2985; swap | 2490/2490; kept | 2490/2490; kept |
+| 0.5 | 2487/2490; kept | 2985/2985; kept | 2490/2490; kept | 2490/2490; kept |
+| 0.767 | 2481/2490; kept | 2985/2985; kept | 2490/2490; kept | 2490/2490; kept |
+| 2 | 2481/2490; kept | 2985/2985; kept | 2490/2490; kept | 2490/2490; kept |
+| 8 | 2481/2490; kept | 2985/2985; swap | 2487/2490; kept | 2490/2490; kept |
 
-候補はメスの端点では一部のbaseline armより良い結果ですが、λ0.1/0.5/0.767/2も
-全4区間を維持しており、全設定より優れることは示していません。いずれの方法にも
-オス個体ごとの独立GTはありません。
+At the female endpoints the candidate does better than some baseline arms, but
+λ0.1/0.5/0.767/2 also keep all 4 intervals, so it is not shown to be better than every setting.
+No method has independent GT for each male individual.
 
-### 固定した前後接続の後処理
+### The fixed post-process linking before and after
 
-6順列による後処理はrawとは別フォルダに保存し、3D座標・source・観測状態が元の
-配列の記録済み順列と完全一致することを検査しました。座標の再推定や補間はありません。
-設定・モデルは検証結果を見て変更せず、改善しなかった結果もそのまま示します。
+The 6-permutation post-process is saved in a folder separate from raw, and its 3D coordinates,
+source and observation state were checked to match a recorded permutation of the original
+arrays exactly. No coordinates are re-estimated or interpolated.
+Settings and model were not changed after seeing the validation results, and results that did
+not improve are shown as they are.
 
-| 固定区間 | 後処理受理数 / 分母（率） | S0 / S1 / S2 受理frame数 | メスraw / 受理後 | 幾何・gap制約の全体判定 |
+| Fixed interval | Post-process accepted / denominator (rate) | Accepted frames S0 / S1 / S2 | Female raw / post-acceptance | Overall geometry/gap constraint judgement |
 |---|---:|---|---|---|
-| swap A | 328 / 2490（13.17%） | 141 / 138 / 49 | 維持 / 未評価 | 不成立 |
-| swap B | 774 / 2985（25.93%） | 633 / 77 / 64 | swap / 未評価 | 成立 |
-| occlusion | 572 / 2490（22.97%） | 39 / 492 / 41 | 維持 / 未評価 | 不成立 |
-| temporal control | 1589 / 2490（63.82%） | 504 / 502 / 583 | 維持 / 未評価 | 成立 |
+| swap A | 328 / 2490 (13.17%) | 141 / 138 / 49 | kept / not evaluated | not satisfied |
+| swap B | 774 / 2985 (25.93%) | 633 / 77 / 64 | swap / not evaluated | satisfied |
+| occlusion | 572 / 2490 (22.97%) | 39 / 492 / 41 | kept / not evaluated | not satisfied |
+| temporal control | 1589 / 2490 (63.82%) | 504 / 502 / 583 | kept / not evaluated | satisfied |
 
-後処理は全区間で受理数を減らし、swap Bではメスのraw端点割当てを変えてしまいました。
-受理後のメス4区間は全て未評価です。したがって、この前後接続を改善として採用する
-根拠は得られませんでした。「制約成立」はこのモデル内での判定で、swap Bのように
-メスIDが正しいとは限りません。開発区間でも、名目床・床許容の666fr両runは受理892、
-200fr両runは受理57となり、ID再接続を十分に回復できませんでした。
+The post-process reduced the accepted count on every interval, and on swap B it changed the
+female's raw endpoint assignment. All 4 post-acceptance female intervals are not evaluated.
+Therefore no grounds were obtained for adopting this before-after linking as an improvement.
+"Constraint satisfied" is a judgement within this model; as swap B shows, it does not mean the
+female ID is correct. On the development intervals too, both 666fr runs (nominal floor and
+floor tolerance) gave 892 accepted and both 200fr runs gave 57 accepted; ID reconnection was not
+sufficiently recovered.
 
-### 画像・数値の監査
+### Image and numerical audit
 
-独立レビューでは4区間から固定した15枚の3視点previewを確認しました。
-occlusion終端324489ではraw S0/S2とC34 S2/S0が全3視点で逆に対応し、初期一致から
-終端不一致になっています。オス交換の疑いですが、オスの正解注釈がないためどちらの手法が
-正しいかは確定できません。メスS1は同じ端点魚に対応している一方、reviewで受理されません。
-temporal controlも終端166779では全IDがreviewであり、最後のメスmark166503までの
-端点維持を終端まで延長して解釈できません。
+The independent review examined 15 fixed 3-view previews from the 4 intervals.
+At the occlusion end frame 324489, raw S0/S2 and C34 S2/S0 correspond inversely in all 3 views:
+agreement at the start has become disagreement at the end. A male exchange is suspected, but
+with no male ground truth annotation it cannot be determined which method is correct.
+Female S1 corresponds to the same endpoint fish, but is review and not accepted.
+In temporal control as well, all IDs are review at the end frame 166779, so endpoint retention
+up to the last female mark 166503 cannot be interpreted as extending to the end.
 
-swap Aの99235、swap Bの105542では尾の予測が実魚から外れる画像がありました。
-その尾はobserved=falseとして保存されており、画像上の全骨格を測定値と解釈すべきでは
-ありません。監査の画像と根拠は
-[独立画像QA](../../work/generative_tracking/validation_visual_qa/visual_qa.md)に保存しました。
-これは新しいGTや全frameの目視検査ではありません。
+At 99235 in swap A and 105542 in swap B there were images in which the predicted tail is off the
+physical fish. Those tails are saved as observed=false, and the whole skeleton drawn on the
+image should not be interpreted as measurement. The audit images and evidence are saved in
+[independent image QA](../../work/generative_tracking/validation_visual_qa/visual_qa.md).
+This is not new GT or a visual inspection of every frame.
 
-全4raw runでframe列・初期化1回・入力hash・snapshot hash・accepted mask・集計一致を
-確認しました。記録されたrawコードhashは現行の凍結コードと全て一致しています。
-fit failureとanatomy refusalは各runで0、各骨格部位の初期長に対する最大比は
-全4区間で1.185以下でした。画像・flow合計costは各runで非ゼロですが、個別の画像証拠が
-IDを正しく支持した割合は測定していません。
+For all 4 raw runs, the frame sequence, the single initialisation, input hashes, snapshot
+hashes, the accepted mask and agreement of the summaries were confirmed. All recorded raw code
+hashes match the current frozen code.
+Fit failures and anatomy refusals were 0 in each run, and the maximum ratio to initial length
+for each skeleton segment was at most 1.185 across all 4 intervals. The total image/flow cost is
+nonzero in each run, but the fraction of cases in which individual image evidence correctly
+supported the ID was not measured.
 
-swap Bでは名目床より下のobserved nodeが247点（全てS1）あり、最小zは−5.99999mmと
-今回の許容境界に接しました。他の3区間では名目領域外のobserved nodeは0です。
-この結果を見た床制約の追加緩和はしていません。処理速度は各2.21〜2.38fpsでしたが、
-他区間・1分runとCPU/GPUを共有した実測です。baselineの速度比較は行っていません。
+In swap B there were 247 observed nodes below the nominal floor (all S1), and the minimum z of
+−5.99999mm touched this tolerance boundary. In the other 3 intervals there are 0 observed nodes
+outside the nominal region. The floor constraint was not relaxed further after seeing this
+result. Throughput was 2.21–2.38fps per run, but measured while sharing CPU/GPU with the other
+intervals and the one-minute run. No speed comparison with the baseline was made.
 
-保存先は `work/generative_tracking/recovery_v2_validation_{swap_a,swap_b,occlusion,temporal_control}`
-と対応する `reconnect_fixed_validation_*` です。各comparison/provenance/NPZに加え、
-集約した [fixed_validation_summary.json](../../work/generative_tracking/fixed_validation_summary.json)
-とraw各runの監査JSONに数値とhashを保存しました。
+Storage is `work/generative_tracking/recovery_v2_validation_{swap_a,swap_b,occlusion,temporal_control}`
+and the corresponding `reconnect_fixed_validation_*`. Besides each comparison/provenance/NPZ,
+numbers and hashes are saved in the aggregated
+[fixed_validation_summary.json](../../work/generative_tracking/fixed_validation_summary.json)
+and in each raw run's audit JSON.
 
-## 再初期化なしの1分間
+## One minute without reinitialisation
 
-**76620:86580の9960fr（166fps、60秒）を、初期化1回で完走しました。**
-途中の停止・再開や人によるID修正はしていません。初期frame76620のseed以後、
-baselineの予測・正解注釈による再初期化はありません。現在の観測に基づく再捕捉は
-追跡器の処理として続けました。設定は前記4検証区間と同じです。
-この1分は開発時に既知だった76930の失敗を含む、事前固定の連続診断区間です。
-未知区間だけでの汎化検証とは区別します。
+**76620:86580, 9960fr (166fps, 60 s), ran to completion with a single initialisation.**
+There was no stop/restart midway and no human ID correction. After the seed at initial frame
+76620, there is no reinitialisation from baseline predictions or ground truth annotations.
+Reacquisition based on current observations continued as part of the tracker's processing.
+Settings are the same as for the 4 validation intervals above.
+This minute is a continuous diagnostic interval fixed in advance, and it contains the failure at
+76930 that was known during development. It is distinguished from a generalisation test on
+unknown intervals alone.
 
-胸ヒレ観測は29807/29880 animal-frame（99.76%）でしたが、reviewを除いた受理出力は
-1064/29880（3.56%）でした。全3匹の胸ヒレ観測が揃うのは9887/9960fr、
-全3匹の受理出力が揃うのは冒頭267frだけです。
+Pectoral-fin observations were 29807/29880 animal-frames (99.76%), but accepted output
+excluding review was 1064/29880 (3.56%). Pectoral-fin observations for all 3 fish are present
+in 9887/9960fr; accepted output for all 3 fish is present only in the first 267fr.
 
-| 初期slot | 胸ヒレ観測frame数 / 9960 | 受理frame数 / 9960（率） | review frame数 | 最長の観測欠測 | 最後まで続く受理出力の欠測 |
+| Initial slot | Pectoral-fin observed frames / 9960 | Accepted frames / 9960 (rate) | Review frames | Longest observation gap | Accepted-output gap lasting to the end |
 |---|---:|---:|---:|---:|---|
-| S0 | 9932（99.72%） | 267（2.68%） | 9693 | 7fr | 76887:86580、9693fr |
-| S1 | 9952（99.92%） | 310（3.11%） | 9650 | 7fr | 76930:86580、9650fr |
-| S2 | 9923（99.63%） | 487（4.89%） | 9473 | 13fr | 77107:86580、9473fr |
+| S0 | 9932 (99.72%) | 267 (2.68%) | 9693 | 7fr | 76887:86580, 9693fr |
+| S1 | 9952 (99.92%) | 310 (3.11%) | 9650 | 7fr | 76930:86580, 9650fr |
+| S2 | 9923 (99.63%) | 487 (4.89%) | 9473 | 13fr | 77107:86580, 9473fr |
 
-S0/S1/S2の胸ヒレ観測が一時的に欠けて戻った区間は12/2/10本でした。
-終端では全9ノードが観測されていますが、全IDがreviewです。ID未解決は
-9692/9649/9472fr、合計28813 animal-frameとなりました。観測の再取得と、同じ個体だと
-確認して出力を再開することの間が未解決のままです。受理率の全体90%・各個体80%という
-事前基準は満たさず、恒久的な保留を増やしてスワップゼロを達成したとは扱いません。
+Intervals in which the S0/S1/S2 pectoral-fin observation was temporarily lost and then returned
+numbered 12/2/10. At the end all 9 nodes are observed, but every ID is review. Unresolved IDs
+came to 9692/9649/9472fr, 28813 animal-frames in total. The gap between reacquiring the
+observation and confirming that it is the same individual in order to resume output remains
+unresolved. The pre-set acceptance-rate criterion of 90% overall and 80% per individual is not
+met, and increasing permanent holds is not treated as having achieved zero swaps.
 
-メスの手動口markは76698、77285、78083、78799、79547、80215、80657、81410、
-82121、83265、83853、84700、85625、86350の14点です。rawでは全て同じS1に対応し、
-13端点区間が維持されました。一方、受理後に利用できたのは初回76698だけで、
-**受理後の13区間は全て未評価**です。raw端点の維持から、途中の往復swap、オス同士の
-交換、最後のmark86350から終端86579までのIDを保証することはできません。
+The female's manual mouth marks are the 14 points 76698, 77285, 78083, 78799, 79547, 80215,
+80657, 81410, 82121, 83265, 83853, 84700, 85625, 86350. In raw all correspond to the same S1,
+and 13 endpoint intervals were kept. On the other hand, only the first, 76698, was usable after
+acceptance, and **all 13 post-acceptance intervals are not evaluated**. Raw endpoint retention
+is not a guarantee of anything about round-trip swaps in between, exchanges between males, or
+the ID from the last mark 86350 to the end 86579.
 
-同じframeの全7baseline armも共有スコアで評価しました。
-全armでメス14markが利用可能で、端点区間の未評価は0です。
+All 7 baseline arms on the same frames were also evaluated with the shared score.
+In every arm all 14 female marks are usable, and 0 endpoint intervals are not evaluated.
 
-| 方法 | 胸ヒレ観測・出力数 / 29880 | 受理出力数 / 29880 | メスraw端点の維持 / swap / 未評価 | メス受理後の維持 / swap / 未評価 |
+| Method | Pectoral-fin observations/outputs / 29880 | Accepted outputs / 29880 | Female raw endpoints kept / swap / not evaluated | Female post-acceptance kept / swap / not evaluated |
 |---|---:|---:|---|---|
 | raw v2 | 29807 | 1064 | 13 / 0 / 0 | 0 / 0 / 13 |
-| 固定後処理 | 29807 | 901 | 13 / 0 / 0 | 0 / 0 / 13 |
+| fixed post-process | 29807 | 901 | 13 / 0 / 0 | 0 / 0 / 13 |
 | C34 λ0 | 29880 | — | 10 / 3 / 0 | — |
 | C34 λ0.1 | 29880 | — | 10 / 3 / 0 | — |
 | C34 λ0.25 | 29877 | — | 11 / 2 / 0 | — |
@@ -254,63 +302,76 @@ S0/S1/S2の胸ヒレ観測が一時的に欠けて戻った区間は12/2/10本�
 | C34 λ2 | 29850 | — | 13 / 0 / 0 | — |
 | C34 λ8 | 29823 | — | 13 / 0 / 0 | — |
 
-baseline欄の端点評価は各armが出力可能と宣言した状態に基づきます。候補と同じ
-reviewモデルは持たないため、候補の受理率と同じ意味の列を捏造せず「—」としました。
-raw候補のメス端点は一部armより改善していますが、λ2/8も13区間を維持しており、
-新方式が全armより優れるとは結論できません。端点swapの区間数を実際のswap発生回数に
-読み替えることもできません。
+The endpoint evaluation in the baseline rows is based on the states each arm declared as
+outputtable. The baselines do not have the same review model as the candidate, so rather than
+fabricate a column with the same meaning as the candidate's acceptance rate, "—" is shown.
+The raw candidate's female endpoints improve on some arms, but λ2/8 also keep 13 intervals, so
+it cannot be concluded that the new approach is better than every arm. The number of
+endpoint-swap intervals cannot be read as the actual number of swap occurrences either.
 
-固定後処理の受理数は901（3.02%）、ID別276/310/315frとなり、総受理数はrawより
-163減りました。元の3D座標・source・観測状態は記録した順列以外に変更していません。
-メスのraw端点維持は同じですが、受理後は13区間とも未評価のままです。
-後処理は個別IDの欠測間接続5箇所で工程上の移動上限を超えたため、全体の
-幾何・gap制約成立フラグはfalseでした。これは6順列による固定軌跡の接続で
-十分なID回復を得られなかった結果であり、後処理による改善とは評価しません。
+The fixed post-process accepted 901 (3.02%), 276/310/315fr by ID, 163 fewer in total than raw.
+The original 3D coordinates, source and observation states were not changed other than by the
+recorded permutation. Female raw endpoint retention is the same, but all 13 intervals remain
+not evaluated after acceptance.
+The post-process exceeded the process's movement cap at 5 per-ID links across gaps, so the
+overall geometry/gap-constraint-satisfied flag was false. This is the result of linking fixed
+trajectories by 6 permutations failing to achieve sufficient ID recovery, and is not evaluated
+as an improvement from the post-process.
 
-再捕捉候補の探索は821fr、候補のfitは5993回、選択された再捕捉は55 animal-frame
-でした。最初は76889(S0)、76937(S1)、77109(S2)で、全frame一覧はrawの
-`comparison.json`内`candidate.diagnostics.recovery_events`に保存しています。
-これらは観測から選ばれた再捕捉で、外部IDによる再初期化ではありません。
-確認待ちは433 animal-frame、fit failure・anatomy refusalは0でした。
-初期長に対する各部位の最大長比はS0が1.537/1.144、S1が1.214/1.276、
-S2が1.808/1.307（順に口–胸ヒレ／胸ヒレ–尾）です。最長1.808倍にはlatent予測も含み、
-骨格が常に正しかったという評価ではありません。
+Reacquisition candidate search ran on 821fr, candidate fits numbered 5993, and selected
+reacquisitions were 55 animal-frames. The first were 76889(S0), 76937(S1) and 77109(S2); the
+full frame list is saved in `candidate.diagnostics.recovery_events` inside the raw
+`comparison.json`.
+These are reacquisitions selected from observations, not reinitialisations from external IDs.
+Pending confirmation was 433 animal-frames; fit failures and anatomy refusals were 0.
+The maximum length ratio to initial length for each segment is S0 1.537/1.144, S1 1.214/1.276,
+S2 1.808/1.307 (mouth–pectoral fin / pectoral fin–tail, in that order). The longest, 1.808×,
+includes latent prediction; this is not an assessment that the skeleton was always correct.
 
-名目床z<0のobserved nodeは9707点（S0/S1/S2で1648/4047/4012点）でした。
-最小zは−5.99999mmで許容境界に接しています。reviewを除いたobserved nodeには
-名目床下の点はありませんが、受理が冒頭に限られるため床モデルの正しさを示しません。
-画像・flow合計costは32183.13で非ゼロでしたが、画像証拠のIDへの有効性を直接測る
-正解注釈は不足しています。校正の再推定や床制約の追加緩和はしていません。
+Observed nodes below the nominal floor, z<0, numbered 9707 (1648/4047/4012 for S0/S1/S2).
+The minimum z is −5.99999mm, touching the tolerance boundary. Observed nodes excluding review
+include no points below the nominal floor, but since acceptance is confined to the beginning
+this does not show that the floor model is correct.
+The total image/flow cost was 32183.13, nonzero, but ground truth annotation to directly measure
+the usefulness of image evidence for ID is lacking. No calibration re-estimation or further
+relaxation of the floor constraint was done.
 
-rawの追跡時間は3582.26秒（59.70分）、処理速度2.780fpsでした。準備9.11秒は別で、
-追跡時間には動画I/O・画像処理・推論を含みます。最初の部分は4検証区間とCPU/GPUを
-共有したため、単独ハードウェア性能の測定ではありません。後処理はCPUで2.104秒
-（接続計算のみ）でした。baselineは保存済みの出力を評価したため計算時間を比較していません。
-使用したGPUはNVIDIA GeForce RTX 5070 Tiで、CUDA画像前処理の呼出しは9960回です。
-画像背景処理にはGPUを使い、視点別処理・flow・最適化にはCPU処理も含みます。
+Raw tracking time was 3582.26 s (59.70 min), a throughput of 2.780fps. Setup of 9.11 s is
+separate; tracking time includes video I/O, image processing and inference. The first part
+shared CPU/GPU with the 4 validation intervals, so this is not a measurement of standalone
+hardware performance. The post-process took 2.104 s on CPU (linking computation only).
+For the baseline, saved outputs were evaluated, so compute time was not compared.
+The GPU used was an NVIDIA GeForce RTX 5070 Ti, with 9960 CUDA image-preprocessing calls.
+The GPU was used for image background processing; per-view processing, flow and optimisation
+also include CPU processing.
 
-独立監査で、連続frame列9960点、初期化1回、事前seed一致、201点の単調な進捗ログ、
-18入力ファイルのhash、raw/postpassの入出力hash、実行snapshotと現行凍結コードのhash、
-reviewとaccepted mask、後処理の座標・sourceの順列一致を確認しました。
-検証コード・設定を変えた再実行はしていません。人による途中のID修正もしておらず、
-少数の修正で十分になるかは未検証です。
+The independent audit confirmed the contiguous frame sequence of 9960, the single
+initialisation, agreement with the pre-set seed, a monotonic progress log of 201 entries,
+hashes of the 18 input files, input/output hashes of raw/postpass, hashes of the run snapshot
+and of the current frozen code, the review and accepted masks, and permutation agreement of the
+post-process coordinates and source.
+No rerun with changed validation code or settings was done. No human ID correction midway was
+done either, and whether a small number of corrections would suffice is not verified.
 
-根拠は次の保存済み成果物です。
+The evidence is in the following saved artefacts.
 
-- [raw比較JSON](../../work/generative_tracking/recovery_v2_floor6_continuous_one_minute/comparison.json)
-- [固定後処理比較JSON](../../work/generative_tracking/reconnect_fixed_continuous_one_minute/comparison.json)
-- [raw数値監査](../../work/generative_tracking/recovery_v2_floor6_continuous_one_minute_audit.json)
-- [raw・後処理の独立監査](../../work/generative_tracking/continuous_minute_independent_audit.json)
-- [観測・受理・保留の時系列図](../../work/generative_tracking/timeline_continuous_one_minute_precise/review_timeline.png)
-- [1分間の3視点比較動画](../../work/generative_tracking/review_videos/recovery_v2_minute/index.html)
+- [raw comparison JSON](../../work/generative_tracking/recovery_v2_floor6_continuous_one_minute/comparison.json)
+- [fixed post-process comparison JSON](../../work/generative_tracking/reconnect_fixed_continuous_one_minute/comparison.json)
+- [raw numerical audit](../../work/generative_tracking/recovery_v2_floor6_continuous_one_minute_audit.json)
+- [independent audit of raw and post-process](../../work/generative_tracking/continuous_minute_independent_audit.json)
+- [timeline of observation, acceptance and hold](../../work/generative_tracking/timeline_continuous_one_minute_precise/review_timeline.png)
+- [one-minute 3-view comparison video](../../work/generative_tracking/review_videos/recovery_v2_minute/index.html)
 
-比較動画は原動画の4frごとを表示する2490画像、4倍スローの約4分です。全2490画像の
-decodeと入力hashを確認しましたが、全9960frを目視で注釈したものではありません。
-上段C34・下段raw v2の比較で、骨格の中抜きノードは未観測の予測です。
+The comparison video is 2490 images showing every 4th frame of the source video, about 4 minutes
+at 4× slow motion. Decoding of all 2490 images and the input hashes were checked, but this is
+not a visual annotation of all 9960fr.
+The top row is C34 and the bottom row raw v2; hollow skeleton nodes are unobserved predictions.
 
-全体テストは432 passed / 2 skipped、Ruffは正常でした（既存c30のAll-NaN警告2件）。
-これらは実装のチェックであり、生物学的なID正解を保証するテストではありません。
+The full test suite gave 432 passed / 2 skipped, and Ruff was clean (2 All-NaN warnings from the
+existing c30). These are checks of the implementation, not tests that guarantee biologically
+correct IDs.
 
-今回達成したのは、事前固定した1分間を再初期化なしで処理し、失敗を含めて評価する
-ことです。3個体のIDを連続して受理出力できる品質、全3個体のスワップゼロ、
-30分への適用可能性は確認できていません。
+What was achieved here is processing a minute fixed in advance without reinitialisation and
+evaluating it, failures included. Quality sufficient to output accepted IDs for the 3
+individuals continuously, zero swaps for all 3 individuals, and applicability to 30 minutes
+are not confirmed.

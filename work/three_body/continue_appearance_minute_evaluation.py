@@ -16,7 +16,7 @@ UPSTREAM = RUN / "experiment.provenance.json"
 OUTPUT = REPO / "work/three_body/appearance_continuous_one_minute_comparison_v1"
 LAB = REPO / "labs/20260909_three_body"
 EVALUATOR = LAB / "evaluate_appearance_minute.py"
-EXPECTED_EVALUATOR_SHA256 = "a3db47310125b8bc1ac19261cd70c40591f01d2bfff1447785c4d6c81a06b09c"
+EXPECTED_EVALUATOR_SHA256 = "45bfa43a3b43d83f8c4ec72840fc69cadb65ca7c934195d96f75fbf8760893ce"
 # Exactly the comparison main's source set, followed by this wrapper.
 CODE = [
     LAB / name

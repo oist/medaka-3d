@@ -1,5 +1,5 @@
 """Make a source-backed snapshot for the separate clean-fragment report app."""
-# Japanese report copy intentionally uses Japanese punctuation and kana.
+# Typographic multiplication signs and en dashes in report text are intentional.
 # ruff: noqa: RUF001
 
 from __future__ import annotations
@@ -24,10 +24,10 @@ NODE = Path(
 )
 REVIEWS = ROOT / "docs/reviews/2026-09-16_multiview_identity_review.json"
 CONDITIONS = {
-    "saved_C34": "保存C34",
-    "previous_custom_C_v3": "前回C v3",
-    "initial_clean_v1": "初期F→3D v1",
-    "new": "新F→3D v2",
+    "saved_C34": "saved C34",
+    "previous_custom_C_v3": "previous C v3",
+    "initial_clean_v1": "initial F→3D v1",
+    "new": "new F→3D v2",
 }
 CASES = ("cg20s", "known_30735", "known_31479", "known_323819", "control_50000", "holdout20s")
 
@@ -155,20 +155,26 @@ def main():
     methods = [
         dict(
             condition="P",
-            name="胸びれ点のみ",
-            description="視点ごとに胸びれの移動と前後の対応一致を使い、曖昧な箇所で短い断片に分ける。",
+            name="Pectoral-fin point only",
+            description=(
+                "Per view, uses pectoral-fin motion and forward/backward correspondence "
+                "agreement, splitting into short fragments where ambiguous."
+            ),
         ),
         dict(
             condition="N",
-            name="3ノードの動き",
-            description="口・胸びれ・尾の動きの整合性を加える。検出行内のノードを別の魚に再分配しない。",
+            name="3-node motion",
+            description=(
+                "Adds consistency of mouth, pectoral-fin and tail motion. Nodes within a "
+                "detection row are not redistributed to another fish."
+            ),
         ),
         dict(
             condition="F",
-            name="3ノード＋画像フロー",
+            name="3 nodes + image flow",
             description=(
-                "前後1 native frameの画像フローで各ノードの移動を検証する。"
-                "F断片から3Dを再構成する。"
+                "Verifies each node's motion with image flow over 1 native frame before and "
+                "after. 3D is reconstructed from the F fragments."
             ),
         ),
     ]
@@ -194,20 +200,22 @@ def main():
             elif row["condition_id"] != "new":
                 row["identity_review_fish_frames"] = None
             elif "initial_clean_v1" not in c["comparison"]:
-                row["condition"] = "初期F→3D v1"
+                row["condition"] = "initial F→3D v1"
         for destination, values in zip(
             (tracking, geometry, intervals, bridges, flows), rows, strict=True
         ):
             destination.extend(values)
     data_source = source(
-        "凍結した実験の保存指標",
+        "Saved metrics of the frozen experiment",
         evidence_paths,
         (
-            "評価範囲内のみ。2D incoming edgeは終点が範囲内で前方文脈からの入口を含む。"
-            "3D stepは両端が範囲内の隣接native frameのみ。魚×frame、観測step、検出rowを"
-            "別の分母として保持する。観測ありID保留はfinite(xyz)かつidentity_reviewの数。"
-            "identity_review全体は欠測も含む。過去方式には同じ保留ラベルがなくnull。"
-            "小さい移動や保留はID正解の証明ではない。"
+            "Evaluation range only. 2D incoming edges have their endpoint inside the range and "
+            "include entries from the preceding context. 3D steps are only between adjacent "
+            "native frames with both ends inside the range. Fish × frame, observed steps and "
+            "detection rows are kept as separate denominators. Observed ID hold is the count of "
+            "finite(xyz) and identity_review. identity_review as a whole also includes missing "
+            "observations. Past methods have no equivalent hold label, so null. "
+            "Small moves or holds are not proof of correct ID."
         ),
         [
             "report-summary",
@@ -231,18 +239,22 @@ def main():
         "human_reviews": query(
             review_rows,
             source(
-                "過去動画の人手レビュー原文8件",
+                "8 human reviews of past videos, original text",
                 [REVIEWS],
-                "原文を保存。frameは目印、左右パネルと正確な境界は未指定。新方式の正解判定へ転用しない。",
+                "Original text preserved. The frame is a marker; left/right panel and exact "
+                "boundaries are unspecified. Not reused for ground-truth judgement of the new "
+                "method.",
                 ["review-cases", "review-notes"],
             ),
         ),
         "methods": query(
             methods,
             source(
-                "実験仕様と凍結設定",
+                "Experiment specification and frozen settings",
                 [Path(__file__).with_name("README.md"), protocol_path],
-                "P/N/Fは2Dの診断比較。新3Dの入力はFのみ。過去の時間ID・3D軌跡・人手注釈を推定に使わず、比較にのみ使う。",
+                "P/N/F are a 2D diagnostic comparison. The new 3D takes only F as input. Past "
+                "temporal IDs, 3D trajectories and human annotations are not used for "
+                "estimation, only for comparison.",
                 ["methods", "limitations"],
             ),
         ),
@@ -252,11 +264,13 @@ def main():
         "bridges": query(
             bridges,
             source(
-                "2D断片の別層の接続提案",
+                "Separate-layer link proposals for 2D fragments",
                 paths,
                 (
-                    "前後332framesの文脈を含む候補ログ。acceptedは別層の2D補完で、"
-                    "初期clean edgeと3D観測は変更しない。重複場面を独立事象として合計しない。"
+                    "Candidate log including 332 frames of context before and after. accepted "
+                    "is a separate-layer 2D completion; the initial clean edges and 3D "
+                    "observations are not changed. Overlapping scenes are not summed as "
+                    "independent events."
                 ),
                 ["join-table", "join-summary"],
             ),
@@ -265,13 +279,13 @@ def main():
             **query(
                 flows,
                 source(
-                    "画像フローの入力署名・妥当性診断",
+                    "Image-flow input signature and validity diagnostics",
                     paths,
                     (
-                        "半解像度Gaussian pyrDownのLK。"
-                        "前後roundtripとpatch error等を固定条件で検証。"
-                        "IDを使わず native ±1frameを処理。動画全体SHAではなく"
-                        "size/mtime/先頭末尾サンプルSHA。"
+                        "LK on half-resolution Gaussian pyrDown. "
+                        "Forward/backward roundtrip, patch error etc. verified under fixed "
+                        "conditions. Processes native ±1frame without using IDs. Not a "
+                        "whole-video SHA but size/mtime/SHA of head and tail samples."
                     ),
                     ["flow-provenance"],
                 ),
@@ -325,21 +339,25 @@ def main():
                 queries["review_windows"] = query(
                     manifest.get("window_metrics", []),
                     source(
-                        "8場面・166 native frame内の診断",
+                        "Diagnostics in 8 scenes, within 166 native frames",
                         [manifest_path],
-                        "clip範囲はcenter−83:center+83。移動は範囲内両端有限の隣接胸びれ3D。保留と欠測を別々に数える。旧出力に新方式の保留ラベルはない。",
+                        "Clip range is center-83:center+83. Moves are adjacent pectoral-fin 3D "
+                        "steps with both ends finite inside the range. Holds and missing "
+                        "observations are counted separately. Old outputs have no hold label "
+                        "of the new method.",
                         ["window-table"],
                     ),
                 )
         queries[query_id] = query(
             rows,
             source(
-                "原画像・保存座標から作成した可視化",
+                "Visualisations made from raw images and saved coordinates",
                 [manifest_path],
                 (
-                    "動画の全3視点・全3匹を表示。局所は166 native framesを30fpsで再生、"
-                    "主20秒overviewは元時刻に従う間引き。補間なし。"
-                    "図中Xは3Dの投影予測、観測点と区別。"
+                    "Videos show all 3 views and all 3 fish. Local clips play 166 native frames "
+                    "at 30fps; the main 20 s overview is decimated following source time. No "
+                    "interpolation. X in figures is the 3D projected prediction, distinct from "
+                    "observed points."
                 ),
                 ["review-media", "overview-video", "event-plot"],
             ),
@@ -350,7 +368,7 @@ def main():
         raise ValueError("Cannot complete a report with missing experiment cases")
     snapshot = dict(
         surface="report",
-        title="短い2D断片から3Dをつなぐ：観測と保留を分けて比較",
+        title="Joining 3D from short 2D fragments: observations and holds compared separately",
         generatedAt=datetime.now(UTC).isoformat(),
         status="reviewed" if complete else "partial",
         buildStatus="complete" if complete else "updating",
@@ -378,23 +396,29 @@ def main():
         ],
         queries=queries,
         summaryMarkdown=(
-            "## 比較実験を実行中\n\n保存済みの結果から順次更新します。未測定を0として扱いません。"
+            "## Comparison experiment running\n\nUpdated progressively from saved results. "
+            "Unmeasured values are not treated as 0."
         ),
         methodNotes=(
-            "P/N/Fは2Dの比較です。3DにはF断片のみを入力し、屈折カメラ幾何・3D移動・"
-            "独立視点のclean断片一致から観測を選びます。別層の補完Jは初期断片Fを"
-            "保持したまま記録し、欠測画素の観測化や3D座標の修正には使いません。"
+            "P/N/F are a 2D comparison. Only F fragments are input to 3D, and observations are "
+            "selected from refractive camera geometry, 3D motion and agreement of clean "
+            "fragments across independent views. The separate-layer completion J is recorded "
+            "with the initial fragments F kept, and is not used to turn missing pixels into "
+            "observations or to modify 3D coordinates."
         ),
         limitationsMarkdown=(
-            "## 結果の読み方\n\n"
-            "- 3Dのジャンプ減少と同時に、欠測・保留・観測stepの分母を確認します。"
-            "保留の増加による滑らかさをID精度の改善とは呼びません。\n"
-            "- 人手レビュー8件は過去の動画に対する原文です。新方式のID修正は未検証で、"
-            "オス同士を含む全3匹の正解列はありません。\n"
-            "- 同じ3匹の1群です。別20秒も前回調べた区間で、独立した新しいholdoutではありません。"
-            "female端点注釈の分母は区間ごとに保持します。\n"
-            "- 検出行は全て2Dに残します。検出内のノード混在は再訓練・再分配せず、"
-            "矛盾する束を棄却する設計です。"
+            "## How to read the results\n\n"
+            "- Alongside any reduction in 3D jumps, check the denominators of missing "
+            "observations, holds and observed steps. Smoothness from more holds is not called "
+            "an improvement in ID accuracy.\n"
+            "- The 8 human reviews are original text on past videos. ID corrections by the new "
+            "method are not verified, and there is no ground-truth series for all 3 fish, "
+            "including male versus male.\n"
+            "- This is one group of the same 3 fish. The other 20 s is also an interval examined "
+            "previously, not an independent new holdout. Denominators of the female endpoint "
+            "annotation are kept per interval.\n"
+            "- All detection rows are kept in 2D. Mixed nodes within a detection are not "
+            "retrained or redistributed; the design rejects inconsistent bundles."
         ),
     )
     if stable_id:
@@ -410,16 +434,17 @@ def main():
         )
         female = comparisons["new"]["female"].get("interval_counts", {})
         snapshot["summaryMarkdown"] = (
-            "## 主20秒の結果\n\n"
-            "保存C34 → 新F→3Dで、10 mm超の移動は "
-            f"**{old['steps_over_10mm']} → {new['steps_over_10mm']}**、欠測は "
+            "## Main 20 s result\n\n"
+            "From saved C34 → new F→3D, moves over 10 mm went "
+            f"**{old['steps_over_10mm']} → {new['steps_over_10mm']}**, and missing went "
             f"**{old['missing_fish_frames']} → {new['missing_fish_frames']} / "
-            f"{new['possible_fish_frames']} fish-frames**。新方式の観測ありID保留は "
-            f"**{observed_held} fish-frames** です（欠測と分けて表示）。\n\n"
-            f"新方式のfemale端点は、維持 **{female.get('preserved', '未測定')}**・"
-            f"変化 **{female.get('swap', '未測定')}**・"
-            f"判定不能 **{female.get('unscored', '未測定')}**。"
-            "少ない移動だけでは、IDスワップ減少を確認できません。"
+            f"{new['possible_fish_frames']} fish-frames**. Observed ID holds under the new "
+            f"method are **{observed_held} fish-frames** (shown separately from missing).\n\n"
+            "Female endpoints under the new method: kept "
+            f"**{female.get('preserved', 'not measured')}**, "
+            f"changed **{female.get('swap', 'not measured')}**, "
+            f"undeterminable **{female.get('unscored', 'not measured')}**. "
+            "Fewer moves alone cannot confirm fewer ID swaps."
         )
     narrative_path = base / "report_inputs/final_narrative.json"
     if narrative_path.exists():
@@ -436,9 +461,9 @@ def main():
         snapshot["queries"]["narrative"] = query(
             [narrative],
             source(
-                "定量監査後の解釈",
+                "Interpretation after the quantitative audit",
                 [narrative_path],
-                "別途保存した最終解釈。数値は結果queriesを参照する。",
+                "Final interpretation saved separately. Numbers refer to the result queries.",
                 ["report-summary"],
             ),
         )

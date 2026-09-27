@@ -721,9 +721,11 @@ def main(argv=None):
         text += (
             f"\ncurrent_appearance: `{summary['algorithm_arm']}`\n\nRun: `{args.run.resolve()}`\n\n"
             f"Candidate SHA256: `{report['current_candidate_sha256']}`\n"
-            "\n最初166時点の保存済みonline状態と登録特徴の集計を検査しました。"
-            "最終backtraceの過去姿勢とは同一を要求していません。"
-            "原画像からの特徴再計算と暫定slotのIDの正しさは、この評価器では検証していません。\n"
+            "\nThe saved online states and the enrolled-feature tallies for the first 166 time "
+            "points were checked. They are not required to be identical to the past poses of "
+            "the final backtrace. Recomputation of the features from the raw images and the "
+            "correctness of the provisional slot identities are not verified by this "
+            "evaluator.\n"
         )
         path.write_text(text, encoding="utf-8")
         record.output("result", path, sha256=base.sha256(path))

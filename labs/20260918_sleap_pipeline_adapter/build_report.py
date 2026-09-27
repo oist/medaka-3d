@@ -212,9 +212,10 @@ def main():
             "parameters": parameters,
             "records": metrics["records"],
             "verdict": (
-                "全設定を固定して比較しました。暫定履歴と確定断片の分離・入力保持・復帰性を検証し、"
-                "採用判断に必要な個体対応の正解は別途残しています。"
-                "詳細は実行結果と検証記録を参照してください。"
+                "All settings were fixed and compared. The separation of provisional histories "
+                "from committed fragments, input retention and recoverability were verified; the "
+                "individual-correspondence ground truth needed for an adoption decision remains "
+                "outstanding. See the results and verification records for details."
             ),
         }
         write_json(OUT / "report_data.json", summary)

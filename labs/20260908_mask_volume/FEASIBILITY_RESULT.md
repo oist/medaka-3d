@@ -1,106 +1,127 @@
-# 独立マスクを屈折投影で統合する最初の結果
+# First result of fusing independent masks through refractive projection
 
-2026-09-08。**マスクから3D支持領域を計算する実装と実画像試験は完了。
-3匹の分離・ID保持が改善したという判定には、まだ進んでいません。**
-次は、この支持情報をSLEAPと併用して、3匹の体形と時間方向の対応を評価する。
+2026-09-08. **The implementation that computes a 3D support volume from masks, and its
+real-image test, are complete. It has not yet been judged whether separation of the three
+fish or ID retention improved.**
+Next, this support information is used together with SLEAP to evaluate the body shape of the
+three fish and their correspondence over time.
 
-[結果画像一覧](../../work/mask_volume/feasibility_v2/index.html) /
-[実行記録](../../work/mask_volume/feasibility_v2/summary.json) /
-[独立監査](../../work/mask_volume/feasibility_v2/independent_audit.json) /
-[研究計画](../../docs/MASK_VOLUME_RESEARCH_PLAN.md)
+[Result image index](../../work/mask_volume/feasibility_v2/index.html) /
+[Run record](../../work/mask_volume/feasibility_v2/summary.json) /
+[Independent audit](../../work/mask_volume/feasibility_v2/independent_audit.json) /
+[Research plan](../../docs/MASK_VOLUME_RESEARCH_PLAN.md)
 
-## 実行したこと
+## What was run
 
-- 旧リポジトリに残っていたDetectron2専用環境を再利用。
-  RTX 5070 Ti上の実推論に成功。環境の再インストール・再訓練はしていない。
-- 旧pilot cacheの共通保存frameから、時刻だけで10点を選択。
-  132000, 132555, 133110, 133665, 134220, 134774, 135329, 135884, 136439, 136994。
-  連続区間ではなく、132000:137000内の静止frameの開発診断である。
-- 各時点の原画像3枚に保存済みtop/sideモデルを新たに適用。
-  score閾値0.5、入力は元の全画面。モデル標準の内部resizeは設定どおり。
-  モデル・設定の完全SHA256を資産台帳と照合し、実際の設定を保存した。
-- 3視点ともDetectron2の場合と、topだけ固定背景差分へ置換した場合の計20caseを比較。
-  SLEAP、既存3D軌跡、個体ID、正解注釈を3D支持領域の生成に使用していない。
-- 2mm間隔、96×96×96＝884,736セルの中心を、既存の屈折モデルで投影。
-  x/yは0〜192mm、zは−6〜186mm。床の6mm許容は以前の工学的設定であり、実測補正ではない。
-  マスク内の支持が3視点揃う場合と、2視点以上で揃う場合を別に保存した。
+- Reused the Detectron2-specific environment left in the old repository.
+  Real inference on the RTX 5070 Ti succeeded. The environment was not reinstalled and
+  nothing was retrained.
+- Selected 10 points, by time alone, from the commonly stored frames of the old pilot cache:
+  132000, 132555, 133110, 133665, 134220, 134774, 135329, 135884, 136439, 136994.
+  This is not a contiguous interval; it is a development diagnostic on still frames within
+  132000:137000.
+- Newly applied the stored top/side models to the 3 raw images at each time point.
+  Score threshold 0.5, input the original full frame. The model's standard internal resize
+  is as configured. The full SHA256 of the models and configs was checked against the asset
+  ledger, and the configs actually used were saved.
+- Compared 20 cases in total: Detectron2 for all 3 views, and top alone replaced with fixed
+  background subtraction. SLEAP, existing 3D trajectories, individual IDs and ground truth
+  annotations were not used to generate the 3D support volume.
+- Projected the centres of 2 mm-spaced cells, 96×96×96 = 884,736, through the existing
+  refraction model. x/y are 0–192 mm, z is −6–186 mm. The 6 mm floor tolerance is an earlier
+  engineering setting, not a measured correction.
+  Cases where support inside the masks agrees in all 3 views and cases where it agrees in
+  2 or more views were saved separately.
 
-30画像から68マスクを取得した。各frameの検出数はtop 1〜2、side1 1〜3、side2 1〜4。
-選定されたframeのマスク・bbox・scoreは旧cacheと一致した。
-これは短い標本での再現確認であって、検出数を魚数とみなす根拠やIDの検証ではない。
-元cacheに保存groupがあるframeを選んだため、検出失敗を除く選択バイアスがあり、
-この試験から検出recallを推定しない。モデルの学習frameとの独立性も保証しない。
+68 masks were obtained from 30 images. Detections per frame: top 1–2, side1 1–3, side2 1–4.
+Masks, bboxes and scores for the selected frames matched the old cache.
+This is a reproduction check on a short sample, not grounds for treating detection counts as
+fish counts, and not a verification of ID.
+Because frames were chosen where the original cache had a stored group, there is a selection
+bias that excludes detection failures, and detection recall is not estimated from this test.
+Independence from the models' training frames is not guaranteed either.
 
-## 観測できたこと
+## What was observed
 
-以下の「成分」は、隣り合う支持セルが連なった領域であり、1成分＝1匹ではない。
-面で隣接する6近傍を用い、成分の大きさや個数による削除はしていない。
+A "component" below is a region of connected adjacent support cells; one component is not one
+fish. Face-adjacent 6-connectivity was used, and no component was removed by size or count.
 
-| 入力 | 3視点支持セル数／frame | 3視点支持の成分数 | 2視点以上支持の成分数 |
+| Input | 3-view support cells / frame | 3-view support components | ≥2-view support components |
 |---|---:|---:|---:|
-| Detectron2 3視点 | 109〜164 | 1〜5 | 1〜4 |
-| top背景差分＋side Detectron2 | 120〜191 | 1〜5 | 3〜26 |
+| Detectron2, 3 views | 109–164 | 1–5 | 1–4 |
+| top background subtraction + side Detectron2 | 120–191 | 1–5 | 3–26 |
 
-原画像への再投影では、魚らしい像や重なり付近に支持領域が残った。
-topを背景差分へ置換すると、全10frameで3視点支持セルが増えたが、
-小さな散在領域も増えた。例えば134220では3視点支持が128→191セルとなる一方、
-2視点以上の成分は1→21となった。これを「魚を回復した」とは数えない。
-136994の底隅でも支持が集まるが、3匹が別々に復元されたと静止画から確認できない。
+In the reprojection onto the raw images, support regions remained on fish-like shapes and near
+overlaps. Replacing top with background subtraction increased the 3-view support cells in all
+10 frames, but small scattered regions also increased. For example, at 134220 3-view support
+went from 128→191 cells, while ≥2-view components went from 1→21. This is not counted as
+"recovering fish". Support also gathers in the bottom corner at 136994, but it cannot be
+confirmed from a still image that the three fish were reconstructed separately.
 
-人工的な3匹の完全なマスクからでも、余分な4番目の交差領域が生じる例をテストした。
-反射、同一viewでの重なり、欠けたマスク、格子の粗さによって、実画像ではさらに
-成分が結合・分断し得る。したがって**大きい成分を3個選ぶ方式は採用しない**。
-単一frameのunion maskはIDを置換しても変わらないので、これだけではオス2匹の
-時間方向の同一性を判定できない。
+A test covers a case in which even perfect masks of three synthetic fish produce an extra,
+fourth intersection region. In real images, reflection, overlap within the same view,
+incomplete masks and grid coarseness can merge or split components further. Therefore
+**the approach of picking the three largest components is not adopted**.
+A single-frame union mask is unchanged when IDs are permuted, so on its own it cannot
+determine the temporal identity of the two males.
 
-## 数値精度を診断し、修正した
+## Numerical precision was diagnosed and fixed
 
-最初のfloat32版では20case中3caseでCPUとGPUの支持数が1セルずつ異なった。
-その出力とコードsnapshotを`feasibility_v1`に保存した。
-入力・閾値・格子を維持したままサンプリングをfloat64に変更し、
-`feasibility_v2`で全20caseを再実行した。
+In the first float32 version, CPU and GPU support counts differed by one cell in 3 of 20
+cases. That output and its code snapshot were saved in `feasibility_v1`.
+With inputs, thresholds and grid unchanged, sampling was changed to float64 and all 20 cases
+were rerun in `feasibility_v2`.
 
-最終版ではCPU/GPUの観測可否・支持数の不一致は全caseで0。
-支持値の最大絶対差は1.72×10⁻¹³だった。これはこの標本での数値一致であり、
-ID正解率ではない。旧float32モードは再現用に残している。
+In the final version, CPU/GPU disagreements in observability and support count are 0 in every
+case. The maximum absolute difference in support value was 1.72×10⁻¹³. This is numerical
+agreement on this sample, not ID accuracy. The old float32 mode is kept for reproduction.
 
-## GPUと速度
+## GPU and speed
 
-Detectron2は既存専用環境のPython 3.11.15 / torch 2.10.0+cu130 / Detectron2 0.6、
-支持領域の計算は本repoのtorch 2.13.0+cu130。両方でRTX 5070 Tiを使用した。
-異なる環境間は、hash付きのNPZと原画像を介して接続する。
+Detectron2 ran in the existing dedicated environment, Python 3.11.15 / torch 2.10.0+cu130 /
+Detectron2 0.6; the support-volume computation ran on this repo's torch 2.13.0+cu130. Both
+used the RTX 5070 Ti. The two environments are connected through hashed NPZ files and the raw
+images.
 
-- Detectron2 30画像：初期化・NPZ保存込み4.93秒。PNGの事前読込とモデルchecksumは除く。
-- 最終float64支持評価：GPU利用時の中央値0.314秒、CPU版1.091秒／case。
-  同じ精度の評価部分で約3.5倍の速度差だった。屈折投影の事前計算、画像読込は除く。
-  連結成分の集計等は両版ともCPUである。
-- 最終20caseのrunner：CPU照合・画像出力込み39.43秒。
-  これは3匹の連続トラッカーの処理速度や30分動画全体の速度ではない。
+- Detectron2 on 30 images: 4.93 s including initialisation and NPZ saving. Excludes PNG
+  pre-loading and model checksums.
+- Final float64 support evaluation: median 0.314 s with GPU, 1.091 s for the CPU version, per
+  case. A speed difference of about 3.5× on the evaluation part at the same precision.
+  Excludes refractive-projection precomputation and image loading.
+  Connected-component tallying and similar steps run on CPU in both versions.
+- Final 20-case runner: 39.43 s including the CPU cross-check and image output.
+  This is not the throughput of a continuous three-fish tracker, nor of a whole 30-minute
+  video.
 
-## 検証と次の判断
+## Verification and next decision
 
-関連56テストが通過、CUDAテストのskipなし、追加コードのRuffも正常。
-球の屈折rayとシルエットを用いた幾何、余分な交差領域、欠測view、未知画素、
-独立CPU/CUDAサンプリング、1200px画像の閾値境界、I/Oを確認した。
-入力PNG・マスク・モデル設定・コードsnapshotのhashも照合した。
+The 56 related tests pass, with no CUDA tests skipped, and Ruff is clean on the added code.
+They check geometry using refracted rays and silhouettes of a sphere, extra intersection
+regions, missing views, unknown pixels, independent CPU/CUDA sampling, threshold boundaries on
+a 1200 px image, and I/O. Hashes of the input PNGs, masks, model configs and code snapshots
+were also verified.
 
-**次の候補は「独立マスク＋SLEAP＋3匹の身体モデル」である。**
-支持領域だけを完成した魚検出器やIDトラッカーとして昇格しない。
-次の短区間試験では、3匹が画像中の前景を共同で説明すること、同じ像を複数個体が
-重複して説明しないこと、遮蔽前後の移動・形状の一貫性を評価する。
-少数のGaussianは身体表現の候補に含めるが、画像一致だけでID改善と判断しない。
+**The next candidate is "independent masks + SLEAP + a body model of the three fish".**
+The support volume alone is not promoted as a finished fish detector or ID tracker.
+The next short-interval test evaluates whether the three fish jointly explain the foreground
+in the images, whether multiple individuals avoid explaining the same image region twice, and
+the consistency of motion and shape before and after occlusion.
+A small number of Gaussians is included among the candidate body representations, but image
+agreement alone is not taken as an ID improvement.
 
-方法の採否には、独立に確認した3匹の対応に対する受理誤ID、受理率、
-確認場面数・所要時間を併記する。前回開封した1分間は回帰試験とし、
-新規の未使用区間を設定固定後の評価に確保する。人手修正を加えた結果は自動結果と分ける。
+The decision to adopt or reject a method reports, side by side, accepted wrong IDs against
+independently confirmed correspondences for the three fish, the acceptance rate, and the
+number of scenes reviewed and the time required. The one minute opened last time becomes a
+regression test, and new unused intervals are reserved for evaluation after the settings are
+frozen. Results with human corrections are kept separate from automatic results.
 
-## 再実行
+## Rerun
 
-fresh mask/raw入力が存在する状態で、新しい出力名を指定する。
+With the fresh mask/raw inputs present, specify a new output name.
 
 ```powershell
 .venv/Scripts/python.exe -B labs/20260908_mask_volume/run_feasibility.py --masks work/mask_volume/fresh_masks --raw work/mask_volume/inputs/raw_v1 --calibration work/generative_tracking_inputs/calibration/fixed_refractive_192x192x186/phase1-calibration-preserve-20260802T180200JST-60e13a7746d1/calibration --out work/mask_volume/feasibility_reproduction --device cuda
 ```
 
-実行済みフォルダは上書きしない。推論・staging・画像抽出は同labの各CLIと
-対応するmanifest／provenanceを参照する。
+Completed run folders are not overwritten. For inference, staging and image extraction, see
+each CLI in the same lab and the corresponding manifest/provenance.

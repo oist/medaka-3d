@@ -1,84 +1,105 @@
-# 最初の観測から登録した画素色による3D候補の比較
+# Comparing 3D candidates by pixel colour enrolled from the first observations
 
-2026-09-09。固定12時点の診断で、D2の領域が複数の魚像をまとめていても、3D身体の
-可視寄与を使えば画素の色を比較できた。メスの確認済み端点でIDが変わった後にも、
-初期テンプレートとの色対応は手掛かりを残していた。ただし既存形状に条件付けた
-診断であり、見えない形状の僅かな寄与をID証拠にはできない。
+2026-09-09. In a diagnostic at 12 fixed time points, pixel colours could be compared using the
+visible contribution of the 3D bodies even when a D2 region merged several fish images. Even
+after the identity changed at a confirmed female endpoint, the colour correspondence with the
+initial template still left a cue. However, this was a diagnostic conditioned on existing shapes,
+and a slight contribution from an unseen shape cannot be used as identity evidence.
 
-本armは、その観測経路を追跡に組み込む別実験である。持続する口欠測に限定した
-候補生成、3カメラの屈折を含む輪郭・SLEAP・flow・14-step身体fitは変えない。
-fit後の候補に画素色の追加損失を与えてbeamを選ぶ。今回の色は連続的な姿勢最適化には
-入れず、候補の順位と次フレームの状態へ反映する。旧結果・既存の外見テンプレート・
-人のID注釈を推論へ読み込まない。
+This arm is a separate experiment that builds that observation path into tracking. Candidate
+generation restricted to a persistently missing mouth, and the contour, SLEAP, flow and 14-step
+body fit including 3-camera refraction, are unchanged. An additional pixel-colour loss is given
+to post-fit candidates to select the beam. The colour here is not put into the continuous pose
+optimization; it is reflected in the candidate ranking and the next frame's state. Old results,
+existing appearance templates and human identity annotations are not read into inference.
 
-## 初期登録
+## Initial enrollment
 
-最初の166 nativeフレームを各1回、当時のonline best stateから登録する。この間の
-色損失は0とする。review中のslotを除外し、口・胸ヒレの直接支持と各viewの対応、
-同じ独立D2領域内の口・胸ヒレ、他の潜在的な口・胸ヒレがその領域に入らない条件を
-満たすときに既定のcore6特徴を集める。最初166枚の後に中央値テンプレートを固定する。
-各viewで3slot全てが各5標本に達した場合だけそのviewを利用できる。
+Each of the first 166 native frames is enrolled once, from the online best state at that time.
+The colour loss during this period is 0. Slots under review are excluded, and the default core6
+features are collected when these conditions are met: direct support of mouth and pectoral fin
+with a correspondence in each view, mouth and pectoral fin within the same independent D2 region,
+and no other latent mouth or pectoral fin inside that region. After the first 166 frames the
+median template is fixed.
+A view can be used only when all 3 slots reach 5 samples each in that view.
 
-登録ラベルは最初の登録済み3D姿勢のslot順から、その時点までの追跡で引き継いだ
-暫定的なモデルIDである。性別やオス2匹の正解ラベルではなく、初期の対応誤りも含み得る。
-以後の画像でテンプレートを更新せず、後のbeam backtraceで過去の登録ラベルを
-書き換えない。最終軌跡が別の過去の枝を選んでも、テンプレートをその軌跡に合わせて
-自動的に再ラベルしない。登録に失敗したviewは無効のままとする。
-身体の再初期化・外部位置の注入は行わない。
+An enrollment label is a provisional model identity carried by tracking up to that time from the
+slot order of the first registered 3D pose. It is not a ground-truth label for sex or for the two
+males, and may include early correspondence errors. Templates are not updated from later images,
+and past enrollment labels are not rewritten by a later beam backtrace. Even if the final
+trajectory selects a different past branch, the template is not automatically relabelled to fit
+that trajectory. A view whose enrollment failed stays invalid.
+No body reinitialization or external position injection is done.
 
-全166時点について、登録処理へ実際に渡した当時のonline best pose、node source、
-直接観測支持observed、identity reviewを、native frame番号と共に保存する。
-これらは最終backtraceから切り出した姿勢や支持で代用しない。保存された入力状態と
-特徴・理由・D2領域番号を対応付け、review除外、口・胸ヒレの直接支持、同一viewの
-対応行、領域への包含と他魚の除外を監査できるようにする。登録しなかった時点も
-省略せず、最初の連続166フレームと各状態配列の長さ・順序を検査する。
+For all 166 time points, the then-current online best pose, node source, direct-observation
+support observed and identity review actually passed to enrollment are saved with the native
+frame number. These are not substituted with poses or support sliced from the final backtrace.
+Saved input states are linked to features, reasons and D2 region numbers, so that review
+exclusion, direct mouth/pectoral-fin support, corresponding rows in the same view, containment
+in the region and exclusion of other fish can be audited. Time points not enrolled are not
+omitted either, and the first 166 contiguous frames and the length and order of each state array
+are checked.
 
-## 固定する色損失
+## The colour loss, fixed
 
-今回の追加色はtop_camだけに限定する。独立診断で上面の色情報が側面より有望だった
-ためである。3カメラの輪郭・ノード・flowは維持する。
+The added colour here is restricted to top_cam only, because in the independent diagnostic
+top-view colour information was more promising than side-view. The 3-camera contours, nodes and
+flow are kept.
 
-全D2領域のunionを5×5楕円で1回収縮し、最大512画素をnative frame番号だけに基づく
-固定seedで選ぶ。検出を3件に切り捨てず、SLEAPの支持や候補poseで画素を選ばない。
-各画素の6特徴はr/gの色比、スケールしたS cos H・S sin H、S、V。登録の集約特徴とは
-演算が異なるため、これは固定した代理損失である。
+The union of all D2 regions is eroded once with a 5×5 ellipse, and at most 512 pixels are chosen
+with a fixed seed based only on the native frame number. Detections are not truncated to 3, and
+pixels are not chosen by SLEAP support or candidate pose. The 6 features of each pixel are the
+r/g colour ratios, scaled S cos H and S sin H, S, and V. Because the computation differs from the
+aggregated enrollment features, this is a fixed surrogate loss.
 
-各候補の既存屈折rendererのvisible_alphaを使う。q_fを色距離のGaussian核、q_0を
-未説明画素の一定値とし、見える3匹と未説明部分の混合へ固定のoutlier成分を加える。
-`PixelAppearanceConfig(sigma=0.1, background_cost=2.0, outlier_fraction=0.1)` を使い、
-全候補に共通の有効foreground画素数で平均した負の対数を、係数1.0で元の損失に加える。
-値は未校正の工学的な設定で、IDの確率ではない。無効rayは除外する。画素やテンプレートが
-使えないviewは中立0となり、魚体を隠すだけでは有効foregroundの損失は0にならない。
+The visible_alpha of each candidate's existing refractive renderer is used. With q_f a Gaussian
+kernel on colour distance and q_0 a constant for unexplained pixels, a fixed outlier component is
+added to the mixture of the 3 visible fish and the unexplained part.
+`PixelAppearanceConfig(sigma=0.1, background_cost=2.0, outlier_fraction=0.1)` is used, and the
+negative log averaged over the number of valid foreground pixels common to all candidates is
+added to the original loss with coefficient 1.0.
+The values are an uncalibrated engineering setting, not identity probabilities. Invalid rays are
+excluded. A view whose pixels or templates are unusable is a neutral 0, and merely hiding a fish
+body does not make the valid-foreground loss 0.
 
-同色の個体、観測されない身体、誤った3D形状、反射、登録中の暫定IDの誤りはなお限界である。
-色の最小損失でID reviewを解除せず、元の支持判定・保留・backtraceを保持する。
+Same-coloured individuals, unobserved bodies, wrong 3D shapes, reflections and errors in the
+provisional identities during enrollment remain limitations. Identity review is not cleared by
+minimum colour loss; the original support decisions, holds and backtrace are kept.
 
-## 実行と選別
+## Running and screening
 
-`run_appearance_tracking.py` は別runnerで、同じ登録済み200・666・9960の全区間だけを
-許す。全nativeフレーム、同じ初期姿勢1回、外部reset0。現行persistent 1分のGPU実行を
-優先し、それが終わるまでは本armの新しいGPU追跡を開始しない。
+`run_appearance_tracking.py` is a separate runner and allows only the same registered full 200,
+666 and 9960 intervals. All native frames, the same initial pose once, 0 external resets. The
+current persistent one-minute GPU run takes priority; no new GPU tracking for this arm starts
+until it finishes.
 
-まずCPUで、係数0の元persistent出力との一致、登録時の因果的な同値、登録固定、色順位、
-空view・無効ray・保留維持を確認する。その後、同じ200・666区間で比較する。
-事前の最低条件は200で直接586/600・受理417/600を下回らず、666で受理1948/1998と
-初期S1に一致する2つのメス注釈を維持すること。追加色が実際に使われたフレーム数も
-示す。使われない区間の同値を色の有効性とはしない。
+First, on CPU, the following are checked: agreement with the original persistent output at
+coefficient 0, causal equivalence during enrollment, fixed enrollment, colour ranking, and empty
+views, invalid rays and holds being kept. Then the same 200 and 666 intervals are compared.
+The pre-set minimum conditions are: on 200, direct not below 586/600 and accepted not below
+417/600; on 666, keep accepted 1948/1998 and the two female annotations matching the initial S1.
+The number of frames in which the added colour was actually used is also shown. Equivalence on
+intervals where it is not used is not taken as colour effectiveness.
 
-登録中の同値確認は、同一入力と初期姿勢で最初の166フレームだけを処理して終了する
-独立した検証で、原persistentと姿勢・支持・source・review等の元21配列を比較する。
-また、登録へ渡した当時のonline状態と、色の採点開始が167番目以降であることを監査する。
-この検証は本armの200・666・9960全区間CLIを短縮する実行optionではない。
+The equivalence check during enrollment is an independent verification that processes only the
+first 166 frames with the same input and initial pose and then stops, comparing the original 21
+arrays (pose, support, source, review etc.) with the original persistent. It also audits the
+then-current online state passed to enrollment, and that colour scoring starts at the 167th
+frame or later. This verification is not a run option that shortens this arm's full-interval
+200/666/9960 CLI.
 
-200フレーム以上の全区間では、後続の色の損失によって最終backtraceが異なる過去の枝を
-選ぶことがある。そのため、全区間runが返す最初166フレームの配列と原persistentの
-最終軌跡との一致を合格条件にはしない。この違いだけでは、登録に未来の情報を使った
-ことを意味しない。因果性の監査対象は、保存した登録時のonline状態と更新順序である。
-両短区間を通過してから1分を比較する。開封済み開発区間での選別であり、基準達成や
-小さい画像損失で全3個体のIDが正しいとは扱わない。
+On full intervals of 200 frames or more, later colour losses may make the final backtrace select
+a different past branch. Therefore agreement between the first 166 frames of the arrays returned
+by a full-interval run and the final trajectory of the original persistent is not a pass
+condition. This difference alone does not mean that future information was used in enrollment.
+The subject of the causality audit is the saved online state at enrollment and the update order.
+The one minute is compared only after both short intervals pass. This is screening on opened
+development intervals; meeting the criteria or a small image loss is not treated as all 3
+individuals' identities being correct.
 
-元21配列に加え、geometric_cost・appearance_cost・appearance_enabled・appearance_pixelsを
-各フレーム保存する。costsは加算後、loss_partsは元の幾何5成分である。登録した全166時点の
-特徴・理由・領域番号・件数・テンプレートに加え、当時のonline pose・source・observed・
-reviewを別NPZとJSONに保存し、入力・source・出力をSHAで束縛する。
-自動結果・人の確認・将来の修正は別に残す。
+In addition to the original 21 arrays, geometric_cost, appearance_cost, appearance_enabled and
+appearance_pixels are saved per frame. costs is after the addition; loss_parts is the original 5
+geometric components. The features, reasons, region numbers, counts and templates for all 166
+enrolled time points, plus the then-current online pose, source, observed and review, are saved
+to a separate NPZ and JSON, and inputs, sources and outputs are bound by SHA.
+Automatic results, human checks and future corrections are kept separately.

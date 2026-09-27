@@ -1,41 +1,55 @@
-# 持続する口欠測に限定した観測復帰候補
+# Observation-recovery candidates restricted to a persistently missing mouth
 
-2026-09-09。即時追加版は連続200フレームで胸ヒレ支持を586から565/600へ減らし、
-受理は417/600のままだった。最初の口候補の直前は口が支持されていたため、今回の別armは
-一時的な予測外れへの追加を止める。即時版・元v1・既存の結果とsourceを変更しない。
+2026-09-09. The immediate-addition version reduced pectoral-fin support from 586 to 565/600 over
+200 contiguous frames, with acceptance unchanged at 417/600. Because the mouth was supported
+just before the first mouth candidate, this separate arm stops adding candidates for transient
+prediction misses. The immediate version, the original v1, and the existing results and sources
+are not changed.
 
 PersistentNodeConfig(enabled=True, minimum_missing_frames=4,
-minimum_pectoral_frames=4)を固定する。各beam親がそれまでに完了したnativeフレームで、
-口の直接不支持が4連続以上、胸ヒレの直接支持が4連続以上の両条件を満たす魚だけに、
-現在の口候補を許す。現在も口が直接不支持・胸ヒレが直接支持であることは既存helperで
-検査する。初期ageは0で、最速でも5番目の入力フレームから追加が可能になる。
+minimum_pectoral_frames=4) is fixed. A current mouth candidate is allowed only for a fish that,
+over the native frames each beam parent has completed so far, meets both conditions: the mouth
+directly unsupported for 4 or more consecutive frames, and the pectoral fin directly supported
+for 4 or more consecutive frames. That the mouth is currently still directly unsupported and the
+pectoral fin directly supported is checked with the existing helper. The initial age is 0, so
+addition becomes possible at the 5th input frame at the earliest.
 
-node_missingとdirect_pectoral_ageは各beam親から明示的に伝播する。未選択の候補が口を
-支持しても選択枝のageを解除しない。maskによるbody支持は直接胸ヒレageに数えない。
-身体欠測のage、速度、ID reviewは元の処理順を保ち、口の復帰でreviewを解除しない。
-trackループは元の凍結実装を明示的に継承元として記録したコピーであり、ageの初期化・
-更新・追加条件・保存を加える。pose内容やメモリアドレスで親を推測しない。
+node_missing and direct_pectoral_age are propagated explicitly from each beam parent. A mouth
+supported by an unselected candidate does not clear the age of the selected branch. Mask-based
+body support is not counted toward the direct pectoral-fin age. Body-missing age, velocity and
+identity review keep the original processing order, and mouth recovery does not clear review.
+The track loop is a copy that explicitly records the original frozen implementation as the base
+it derives from, adding age initialization, update, addition conditions and saving. Parents are
+not inferred from pose contents or memory addresses.
 
-元の18候補を保持し、最大6個の口候補を追加する。beam6、14-step fit、flow、D2、
-屈折校正、画像とノードの目的関数、NodeRecoveryConfigの体長とray・box条件を固定する。
-既検証のCUDA Graph fitterを使用する。今回の4フレームは工学的な開発条件であり、
-166 fpsでは約24 msに相当する。生物学的に検証した閾値やIDの確信度ではない。
+The original 18 candidates are retained and at most 6 mouth candidates are added. beam 6, the
+14-step fit, flow, D2, refractive calibration, the image and node objectives, and the body-length
+and ray/box conditions of NodeRecoveryConfig are fixed. The already-verified CUDA Graph fitter is
+used. The 4 frames here are an engineering development setting, equivalent to about 24 ms at
+166 fps. They are not a biologically validated threshold or an identity confidence.
 
-CLI `run_persistent_node_recovery.py` は即時版runnerを基にした別ファイルである。
---sequence / --input-root / --outputのみを受け付け、同じ登録済み200・666・9960の
-全nativeフレーム、同じ初期姿勢1回、外部reset0を使う。元19配列と2種類のage配列を
-保存し、ageが最終backtraceの厳密な観測支持から再計算した値に一致することを検査する。
-元v1・全7 C34・メス注釈は追跡完了後に開き、全推論入力SHA・元設定・seedを照合する。
-新しいsourceと本protocolをsnapshotし、入力・コードの前後SHAを検証する。
+The CLI `run_persistent_node_recovery.py` is a separate file based on the immediate-version
+runner. It accepts only --sequence / --input-root / --output, and uses all native frames of the
+same registered 200, 666 and 9960 intervals, the same initial pose once, and 0 external resets.
+The 19 original arrays and 2 kinds of age array are saved, and the ages are checked to match
+values recomputed from the exact observation support of the final backtrace. The original v1,
+all 7 C34 and the female annotations are opened after tracking completes, and all
+inference-input SHAs, the original configuration and the seed are verified. The new source and
+this protocol are snapshotted, and the before/after SHAs of inputs and code are verified.
 
-次の選別条件を実行前に固定する。
+The following screening conditions are fixed before running.
 
-1. 333519:333719の全200フレームで直接胸ヒレ支持586/600、受理417/600を下回らない。
-2. 通過後、76620:77286の全666フレームで受理1942/1998を下回らず、2つのメス注釈が
-   初期S1に一致すること。未採点を維持と数えない。
-3. 両方を通過した場合だけ、76620:86580の連続1分を途中の再初期化なしで比較する。
+1. Over all 200 frames of 333519:333719, direct pectoral-fin support does not fall below 586/600
+   and acceptance does not fall below 417/600.
+2. After passing, over all 666 frames of 76620:77286, acceptance does not fall below 1942/1998,
+   and the two female annotations match the initial S1. Unscored is not counted as kept.
+3. Only if both pass, the contiguous minute 76620:86580 is compared without mid-run
+   reinitialization.
 
-いずれも既に開封済みの開発区間である。基準を満たしてもIDの正解や30分の達成ではなく、
-次の計算を行う条件にすぎない。1分の受理基準90%全体・80%各魚と独立したID評価の
-条件は変更しない。失敗した場合は結果を残して原因を調べ、閾値を結果に合わせて変更した
-場合にはさらに別の開発版として記録する。3匹の独立した対応なしにswapゼロを主張しない。
+All of these are already-opened development intervals. Meeting the criteria does not mean
+correct identities or achievement of the 30 minutes; it is only the condition for running the
+next computation. The one-minute acceptance criteria of 90% overall and 80% per fish, and the
+conditions for independent identity evaluation, are not changed. On failure, the results are
+kept and the cause is investigated; if thresholds are changed to fit the results, that is
+recorded as yet another development version. Zero swaps are not claimed without independent
+correspondences for all 3 fish.

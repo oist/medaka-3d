@@ -1,71 +1,91 @@
-# 欠測前の直接観測を保持するID対応の全時間最適化
+# Whole-time identity-assignment optimization that retains the direct observation before a gap
 
-2026-09-09。実データの本方式を実行する前に条件を記録する。
+2026-09-09. Conditions recorded before running this method on real data.
 
-## 直前の方式で確認した問題
+## Problem found in the previous method
 
-固定幾何に対する隣接6状態DPは、200フレームを完走し原画像CPU再計算も一致したが、
-S2の胸ヒレが欠測する初期区間で、S0/S2対応の1フレームの交換・復帰を6回選んだ。
-移動を評価するIDが2匹から1匹へ減り、直接観測されたS0の移動コストを避けられた。
-全て色の登録期間でunaryは0。これは隣接する両端だけで移動を評価した目的関数の欠点で、
-色やGPUの計算誤差ではない。この版を666フレーム・1分へ拡張せず、元結果を保存する。
+The adjacent 6-state DP over fixed geometry completed 200 frames and its CPU recomputation from
+raw images agreed, but in an early interval where S2's pectoral fin is missing it chose a
+1-frame exchange-and-return of the S0/S2 assignment 6 times. The number of identities whose
+movement is evaluated dropped from 2 fish to 1, avoiding the movement cost of the directly
+observed S0. All of this was in the colour enrollment period, with unary 0. This is a flaw of an
+objective that evaluates movement only at the two adjacent ends, not a colour or GPU numerical
+error. This version is not extended to 666 frames or the one minute, and the original results are
+kept.
 
-## 維持する入力と検証条件
+## Inputs and verification conditions kept
 
-元の持続口欠測版の3D幾何、直接胸ヒレの観測、独立D2、屈折校正、原画像、登録済み
-166フレームの因果的外見templateを使う。200・666・9960の完全native区間、166 fps。
-元geometryの初期化は1回・外部reset0。IDの初回順列は[0,1,2]のみ。
-初回に胸ヒレ3匹全てが直接観測されることを要求し、初回欠測を潜在値で補わない。
+The 3D geometry of the original persistent-mouth-missing version, direct pectoral-fin
+observations, independent D2, refractive calibration, raw images and the causal appearance
+template enrolled from 166 frames are used. Full native intervals of 200, 666 and 9960, 166 fps.
+The original geometry had 1 initialization and 0 external resets. The first identity permutation
+is [0,1,2] only. The pectoral fins of all 3 fish are required to be directly observed at the first
+frame; a missing observation at the first frame is not filled with a latent value.
 
-上面最大512画素、8 Gaussian、width_ratio=.06、色sigma=.1、background_cost=2、
-outlier_fraction=.1、色係数1。登録の166フレームの色unaryは全て0。初回以降のID固定や
-手動seedは加えない。原画像採点は既存の検証済みpure helperを使い、幾何を再fitしない。
-GT・完成した基準法のID列は目的関数へ入力しない。
+Top view, at most 512 pixels, 8 Gaussians, width_ratio=.06, colour sigma=.1, background_cost=2,
+outlier_fraction=.1, colour coefficient 1. The colour unaries of the 166 enrollment frames are
+all 0. No identity fixing or manual seed is added after the first frame. Raw-image scoring uses
+the existing verified pure helper, and the geometry is not refit.
+GT and the identity sequences of completed reference methods are not input to the objective.
 
-## 状態と欠測をまたぐ移動
+## State, and movement across a gap
 
-各候補の状態は現在の順列Pと、各IDが最後に直接観測されたeventの順序付き3組。
-P[id]=raw geometry slot。eventはnative frame offsetとraw slotで特定する。
-現在そのIDに割り当てるraw胸ヒレが直接支持されるときだけ、最後のeventから現在へ
-移動コストを加えてeventを更新する。欠測中は過去のeventを保持し、観測値は作らない。
+Each candidate's state is the current permutation P and the ordered triple of the events at which
+each identity was last directly observed. P[id]=raw geometry slot. An event is identified by
+native frame offset and raw slot. Only when the raw pectoral fin currently assigned to that
+identity is directly supported is the movement cost from the last event to now added and the
+event updated. While missing, the past event is kept and no observed value is created.
 
-最後の直接観測からのフレーム数をd、3D変位をdxとして、IDごとのコストは
-`0.2 / 3 * (sum(dx**2) / (0.8**2 * d) + 3 * log(d))`。
-3D等方Brownian遷移の負の対数密度の2倍から共通定数を除いた形である。初回3観測と
-以後の観測総数が全経路で共通なので、観測eventごとの共通項は比較に影響しない。
-d=1では直前方式の直接隣接移動コストと一致する。
+With d the number of frames since the last direct observation and dx the 3D displacement, the
+per-identity cost is
+`0.2 / 3 * (sum(dx**2) / (0.8**2 * d) + 3 * log(d))`.
+This is twice the negative log density of a 3D isotropic Brownian transition, with the common
+constants removed. Because the 3 first-frame observations and the total number of later
+observations are common to all paths, the common term per observation event does not affect the
+comparison. At d=1 it equals the direct adjacent movement cost of the previous method.
 
-これは魚の運動として検証済みのモデルではない。一定速度や加速度の予測、支持の
-欠測過程・遮蔽の確率モデルは含まない。重みやスケールは今回の結果を見て変更しない。
-終端まで再観測されなかったIDの変位は未評価のまま残るため、最後のeventと欠測ageを
-明示し、そのIDが欠測期間に正しく維持されたと確定しない。
+This is not a model validated as fish motion. It includes no constant-velocity or acceleration
+prediction, and no probabilistic model of the support-dropout process or of occlusion. Weights
+and scale are not changed after seeing these results. The displacement of an identity not
+re-observed by the end remains not evaluated, so the last event and missing age are stated
+explicitly, and that identity is not confirmed as correctly kept through the missing period.
 
-## 厳密な経路比較と計算上限
+## Exact path comparison and computational limits
 
-同じPと同じ順序付きevent履歴に至る経路は、それ以後の計算が同じなので最小prefixへ
-統合できる。3匹が全て直接観測されると現在のeventが揃い、6状態に自然に合流する。
-累積コストと過去の経路は持ち越す。この合流は再初期化ではない。
+Paths that reach the same P and the same ordered event history have identical subsequent
+computation, so they can be merged into the minimum prefix. When all 3 fish are directly observed,
+the current events coincide and the states merge naturally into 6. Cumulative costs and past
+paths are carried over. This merging is not reinitialization.
 
-代替経路の比較のため、各層の全状態と遷移を保持してforward/backwardを計算する。
-同じPを持つ全event履歴の最小値を集め、T×6の最小周辺コストと各ID→slot別の差を
-求める。端で同じPに戻る往復経路も代替に含める。初期拘束、代替経路なし、数値上の
-同点を区別し、差をIDの正解確率とは表示しない。
+To compare alternative paths, all states and transitions of each layer are kept and
+forward/backward is computed. The minima over all event histories with the same P are collected
+to obtain the T×6 minimum marginal costs and the per identity→slot differences. Out-and-back
+paths that return to the same P at the ends are also included as alternatives. Initial
+constraints, no alternative path, and numerical ties are distinguished, and differences are not
+presented as probabilities of correct identity.
 
-上限は1層100000状態、全体1000000状態、6000000遷移。先に支持maskだけでreachable
-状態数を計測する。超過は厳密計算の未完了として停止し、黙ってbeam枝刈りや時間間引きを
-行わない。変更が必要なら理由と新条件を別に登録する。
+Limits: 100000 states per layer, 1000000 states in total, 6000000 transitions. The number of
+reachable states is first measured from the support mask alone. Exceeding a limit stops the run
+as an incomplete exact computation; no silent beam pruning or temporal decimation is done. If a
+change is needed, the reason and new conditions are registered separately.
 
-## 比較と次の段階
+## Comparison and next stages
 
-小さな系列で全6順列経路を列挙し、目的値・MAP・各時点P/ID条件の最小値を照合する。
-全フレーム3匹支持なら直前方式と一致すること、異なる欠測履歴を同じ現在Pだけで
-早期統合しないこと、全3匹支持への合流後も過去の別経路を評価できることを確認する。
+On small sequences, all 6-permutation paths are enumerated and the objective value, MAP and the
+minima conditioned on P/identity at each time point are checked against them. The checks confirm
+that the result equals the previous method when all 3 fish are supported in every frame, that
+different missing histories are not merged early on the same current P alone, and that past
+alternative paths can still be evaluated after merging on all 3 fish being supported.
 
-実200では、欠測を利用した先の6往復をどう扱うかと各IDの再観測接続を比較する。
-元の全幾何・source・支持・review・NaNを保ち、ID対応だけを別出力にする。
-動きだけ（色unary全0）の比較も同条件で求め、外見の寄与を分離する。
-200の実装・目的関数監査後に666、既知の支持されたメス端点の悪化がなければ1分を
-評価する。全3個体の独立正解は未受領であり、端点一致・支持数保存・往復が減ったこと
-だけでIDの正確さや最終目標の達成は主張しない。
+On the real 200, how the earlier 6 out-and-back exchanges that exploited missing observations are
+handled, and each identity's re-observation links, are compared. All original geometry, sources,
+support, review and NaN are kept, and only the identity assignment is a separate output. A
+motion-only comparison (all colour unaries 0) is also computed under the same conditions to
+isolate the appearance contribution. After the implementation and objective audit on 200, 666 is
+evaluated, and if the known supported female endpoints do not worsen, the one minute. Independent
+ground truth for all 3 individuals has not been received, and identity correctness or achievement
+of the final goal is not claimed on the basis of endpoint agreement, preserved support counts or
+fewer out-and-back exchanges alone.
 
-重複した身体、反射へのfit、魚そのものを表せない幾何はこのID段階では直せない。
+Duplicated bodies, fits to reflections and geometry that cannot represent the fish itself cannot
+be fixed at this identity stage.

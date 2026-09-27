@@ -218,13 +218,17 @@ def validate_sources(source, frames, nodes):
 
 def markdown_report(report):
     lines = [
-        "# 再初期化なし・連続1分の比較",
+        "# Continuous one-minute comparison without reinitialization",
         "",
-        "全9960フレームを比較した技術検証です。3匹のIDの正解は未確認です。",
-        "直接支持は胸ヒレの観測支持、受理は各手法が保留しなかった座標を表します。",
-        "C34の受理基準はslot_trackであり、新旧手法のreview基準と同一ではありません。",
+        "Technical check comparing all 9960 frames. "
+        "Identity ground truth for the three fish is not confirmed.",
+        "Direct support is observed pectoral-fin support; accepted is the coordinates "
+        "each method did not hold.",
+        "C34's acceptance criterion is slot_track, which is not the same as the review "
+        "criterion of the new and old methods.",
         "",
-        "| 手法 | 直接支持 | 受理 | 最大欠測 fr (受理) | メス区間 維持/変化/未採点 | 追跡秒 |",
+        "| Method | Direct support | Accepted | Max missing fr (accepted) | "
+        "Female intervals kept/changed/unscored | Tracking s |",
         "|---|---:|---:|---:|---:|---:|",
     ]
     for name, row in report["methods"].items():
@@ -233,7 +237,7 @@ def markdown_report(report):
         maximum = max(item["maximum_missing_frames"] for item in row["accepted_episodes"]["slots"])
         counts = row["female_accepted"]["interval_counts"]
         elapsed = row.get("tracking_seconds")
-        timing = "不明" if elapsed is None else f"{elapsed:.1f}"
+        timing = "unknown" if elapsed is None else f"{elapsed:.1f}"
         lines.append(
             f"| {name} | {direct:.2f}% | {accepted:.2f}% | {maximum} | "
             f"{counts['preserved']}/{counts['swap']}/{counts['unscored']} | {timing} |"
@@ -241,14 +245,21 @@ def markdown_report(report):
     lines.extend(
         [
             "",
-            "各メス注釈と全隣接区間の結果、個体別の欠測区間は comparison.json に保存しました。",
-            "端点の一致では区間内の往復スワップやオス2匹の対応は検証できません。",
-            "輪郭支持、滑らかさ、既存手法との一致もIDの正解として採点していません。",
-            "新方式の繰り返す欠測・競合候補は review_events.json、幾何・観測の診断は",
-            "diagnostics.json に保存しています。確認場面の数は人手で修正できる数ではありません。",
+            "Results for each female annotation and every adjacent interval, and the "
+            "per-individual missing intervals, were saved to comparison.json.",
+            "Endpoint agreement cannot verify out-and-back swaps within an interval or the "
+            "correspondence of the two males.",
+            "Contour support, smoothness and agreement with existing methods are also not "
+            "scored as identity ground truth.",
+            "The new method's repeated missing observations and competing candidates are saved "
+            "in review_events.json, and geometry/observation diagnostics in",
+            "diagnostics.json. The number of review scenes is not a count of errors a human "
+            "could correct.",
             "",
-            "計算時間は実行時に測定された追跡時間です。実装・画像処理・同時実行条件が異なり、",
-            "速度比の対照実験ではありません。新方式の独立Detectron2準備はこの追跡秒に含みません。",
+            "Compute time is the tracking time measured at run time. Implementation, image "
+            "processing and concurrent-execution conditions differ,",
+            "so this is not a controlled speed-ratio experiment. The new method's independent "
+            "Detectron2 preparation is not included in these tracking seconds.",
         ]
     )
     return "\n".join(lines) + "\n"

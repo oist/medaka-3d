@@ -5,248 +5,285 @@ expires: 2026-11-08
 blocker: Independent identity ground truth for all three fish through encounters is required before promotion can be assessed.
 ---
 
-# 3D仮説から画像を予測する追跡法：実装と比較
+# Tracking by predicting images from 3D hypotheses: implementation and comparison
 
-**実装して実動画で比較しましたが、現行法を置き換える段階には達していません。**
-画像証拠で口・尾の観測を維持できた場面はありました。しかし短い区間で1匹の見失いが
-解消せず、別の区間の終点では3匹とも胸ヒレが欠測になりました。
-メスのIDを評価できる区間でも終点を見失い、30分・3匹のスワップなし追跡は未達です。
-今回の比較範囲は、既知の難所2区間、合計866フレーム（約5.22秒）です。
+**Implemented and compared on real video, but not at the stage of replacing the current
+method.** There were scenes where image evidence kept the mouth and tail observed. However, in
+a short interval the loss of one fish was never resolved, and at the end of another interval
+the pectoral fin was missing for all three fish. Even in the interval where the female's ID
+can be evaluated, the end point was lost, and swap-free tracking of 3 fish over 30 minutes is
+not achieved. The scope of this comparison is 2 known difficult intervals, 866 frames in total
+(about 5.22 s).
 
-判定は `parked`、本番採用はしません。独立した3個体のID正解データが不足しており、
-全個体の交換を検証するにはその整備が必要です。それとは別に、本実装の再捕捉能力に
-明確な不足があります。正解データが増えるだけで今回の失敗が直るわけではありません。
-実装と失敗例を次の判断材料として保存し、期限を2026-11-08に更新します。
+Verdict `parked`; not adopted for production. Independent ID ground truth for the three
+individuals is lacking, and building it is required to verify exchanges among all
+individuals. Separately, this implementation's reacquisition capability is clearly
+insufficient. More ground truth alone would not fix the failures seen here. The implementation
+and the failure cases are kept as input for the next decision, and the expiry is updated to
+2026-11-08.
 
-## 実装したもの
+## What was implemented
 
-3匹それぞれの口・胸ヒレ・尾の3D位置を内部状態として持ち、屈折を含めて3台の
-カメラへ投影し、実際のSLEAP点と画像に合う位置・姿勢・対応候補を更新する
-`GenerativeTracker` を新しく実装しました。既存チェーンのパラメータ調整ではありません。
-キャリブレーション、既存SLEAP出力、入出力の来歴管理、評価用アノテーションは再利用しています。
+A new `GenerativeTracker` was implemented. It holds the 3D positions of the mouth, pectoral fin
+and tail of each of the three fish as internal state, projects them into the 3 cameras
+including refraction, and updates position, pose and correspondence candidates to fit the
+actual SLEAP points and images. This is not parameter tuning of the existing chain.
+Calibration, existing SLEAP output, input/output provenance management and evaluation
+annotations are reused.
 
-各フレームで、3D運動予測、各カメラへの投影、検出点との対応候補生成、3D姿勢の
-局所最適化、候補の比較を行います。観測が足りない場合は欠測を選べます。
-SLEAPのインスタンス単位のまとまりを固定せず、ノードごとの対応を再検討します。
-画像からは前景との一致、魚体付近の色分布、オプティカルフローを使います。
-重なりがある視点では、色・フローの信頼度を下げます。
+Each frame performs 3D motion prediction, projection into each camera, generation of
+correspondence candidates with detected points, local optimisation of the 3D pose, and
+comparison of the candidates. When observations are insufficient, missing can be chosen.
+SLEAP's per-instance grouping is not held fixed; correspondence is reconsidered per node.
+From the images, agreement with the foreground, the colour distribution near the fish body and
+optical flow are used. In views with overlap, the confidence of colour and flow is lowered.
 
-最大4本の履歴候補を保持し、区間末尾から最良の履歴を戻って選びます。
-これは枝刈りを伴う近似探索です。過去に捨てた候補の復活や、全時刻の3D姿勢の
-同時再最適化は行いません。画像への投影も、骨格上の前景支持と色・動きの比較であり、
-魚体表面や遮蔽を描画する完全な画像生成器ではありません。
+Up to 4 history candidates are retained, and the best history is selected by tracing back from
+the end of the interval. This is an approximate search with pruning. Candidates discarded
+earlier are not revived, and 3D poses at all times are not jointly re-optimised. The projection
+onto images is likewise a comparison of foreground support, colour and motion along the
+skeleton, not a full image generator that renders the fish surface or occlusion.
 
-内部の予測姿勢 `pose_xyz`、2視点以上で支持された胸ヒレの観測候補 `xyz`、
-ノードごとの観測状態 `observed`、要確認フラグ `review` を分けて保存します。
-`accepted_xyz` は、さらに要確認を除いた胸ヒレ座標です。既存Linkerへのアダプターも
-こちらを返します。「採用」はこの実装の判定であり、正しさを人が保証した意味ではありません。
-性別名は推定せず、IDは初期状態から継続する匿名の0/1/2です。
+The internal predicted pose `pose_xyz`, the pectoral-fin observation candidate supported by
+2 or more views `xyz`, the per-node observation state `observed` and the needs-review flag
+`review` are saved separately. `accepted_xyz` is the pectoral-fin coordinate with needs-review
+entries further removed. The adapter to the existing Linker also returns this. "Accepted" is
+this implementation's judgement and does not mean a human has vouched for its correctness.
+Sex is not inferred; IDs are anonymous 0/1/2 carried forward from the initial state.
 
-## 比較条件
+## Comparison conditions
 
-対象は `20251225_K_1_2_FCMC` の既知の難しい2区間です。166 fpsの全フレームを使い、
-時間方向に間引いていません。
+The targets are 2 known difficult intervals of `20251225_K_1_2_FCMC`. All frames at 166 fps are
+used, without temporal subsampling.
 
-| 区間 | フレーム（終端を含まない） | 長さ | 評価に使えるメスの注釈 |
+| Interval | Frames (end exclusive) | Length | Female annotations usable for evaluation |
 |---|---|---:|---|
-| 接近・ID変更を含む区間 | 76620:77286 | 666フレーム、約4.01秒 | 76698、77285の2点＝1区間 |
-| 一時的な検出崩れの区間 | 333519:333719 | 200フレーム、約1.20秒 | 333597の1点、区間比較なし |
+| Interval with approach and ID change | 76620:77286 | 666 frames, about 4.01 s | 76698, 77285: 2 points = 1 interval |
+| Interval with transient detection breakdown | 333519:333719 | 200 frames, about 1.20 s | 1 point at 333597, no interval comparison |
 
-現行法は `c27 → c28 → c33 → c30v4 → c34` の保存済み結果です。
-λ = 0, 0.1, 0.25, 0.5, 0.767, 2, 8 の全7条件を比較対象にしました。
-比較のために現行法や生動画は変更していません。
+The current method is the saved results of `c27 → c28 → c33 → c30v4 → c34`.
+All 7 conditions λ = 0, 0.1, 0.25, 0.5, 0.767, 2, 8 were compared.
+Neither the current method nor the raw video was changed for the comparison.
 
-新手法は各区間の最初の1フレームだけ、λ=0.767の対応から再構築した3匹の骨格で
-初期化します。それ以降の現行法の座標・ID・人の注釈は推論に渡しません。
-ただし、その初期対応自体は全編を使った現行法の出力です。
-従って、この比較は有利な初期条件を与えた短区間の復帰実験です。
-未見データでの性能や、30分を初期化し直さず追う能力を示すものではありません。
+The new method is initialised, on the first frame of each interval only, with the three fish's
+skeletons reconstructed from the λ=0.767 correspondence. After that, no coordinates or IDs from
+the current method, and no human annotations, are passed to inference. The initial
+correspondence itself, however, is output of the current method run over the whole recording.
+This comparison is therefore a short-interval recovery experiment given favourable initial
+conditions. It does not show performance on unseen data, or the ability to follow 30 minutes
+without reinitialisation.
 
-メスのIDは、人の口位置と対応する検出点の所属IDを、両手法で共通の評価器を使って
-採点します。両端が同じIDなら維持、違えば変更、片端でも得られなければ評価不能です。
-評価不能は維持成功に含めません。途中で入れ替わって戻る現象や、オス同士の交換は
-この注釈では数えられません。現行法の胸ヒレと新手法の口を直接比較することも避けています。
+The female's ID is scored as the ID to which the detected point corresponding to the human
+mouth position belongs, using an evaluator shared by both methods. If both ends have the same
+ID the interval is kept; if they differ, changed; if even one end is unavailable, not
+evaluable. Not evaluable is not counted as successful retention. Swaps that happen and revert
+in between, and exchanges between males, cannot be counted with these annotations. A direct
+comparison of the current method's pectoral fin with the new method's mouth is also avoided.
 
-観測率・採用率・要確認率の分母は「フレーム数×3匹」です。
-現行法の出力率は座標の利用可能性であり、正確さそのものではありません。
-現行法に新手法と同じ要確認判定はないため、要確認率の直接比較はできません。
+The denominator of the observation rate, acceptance rate and needs-review rate is
+"frames × 3 fish". The current method's output rate is coordinate availability, not accuracy
+itself. The current method has no needs-review judgement equivalent to the new method's, so
+needs-review rates cannot be compared directly.
 
-## 初期版で見つかった失敗と修正
+## Failures found in the initial version, and fixes
 
-最初の62フレームの試運転では、尾の欠測候補による小さなコスト差をIDの曖昧さと
-誤解釈し、全データを要確認にしました。v2では、IDの入れ替えに相当する履歴差と
-口・胸ヒレの欠測などを使うよう修正しました。レビュー判定だけの変更です。
+In the first 62-frame trial run, small cost differences caused by tail-missing candidates were
+misinterpreted as ID ambiguity, and all data were marked needs-review. v2 was fixed to use
+history differences corresponding to an ID swap, missing mouth and pectoral fin, and similar
+signals. Only the review judgement changed.
 
-続くv2の2区間実行で、より重大な問題が分かりました。検出が崩れると、一部の
-ノードが魚体から離れ続け、200フレーム区間では胸ヒレ―尾が17.49 mmから
-174.29 mmまで伸びました。口や尾を見失っても、胸ヒレだけ滑らかに動くため、
-大きな座標ジャンプ数だけでは異常を検出できませんでした。
+The subsequent v2 run on the 2 intervals revealed a more serious problem. When detection broke
+down, some nodes kept drifting away from the fish body; in the 200-frame interval, pectoral
+fin–tail stretched from 17.49 mm to 174.29 mm. Even when the mouth or tail was lost, the
+pectoral fin alone moved smoothly, so the anomaly could not be detected from the count of large
+coordinate jumps alone.
 
-誤検出点を少しずつ動かす独立の人工テストでも、初期長の約5〜10倍に伸びる現象を
-再現しました。原因は、観測の外れ値に備えた頑健な損失が体形制約にも適用されていた
-ことと、見えないノードの速度を独立に外挿し続けていたことでした。
+An independent synthetic test that moves a false detection little by little also reproduced
+stretching to about 5–10× the initial length. The causes were that the robust loss meant for
+observation outliers was also applied to the body-shape constraints, and that the velocity of
+unseen nodes kept being extrapolated independently.
 
-v3では、画像・検出点だけに頑健な損失を使い、体形・運動の制約は二乗損失にしました。
-予測は魚体全体の共通並進とし、部位間距離が初期値の2倍を超える候補はその魚の
-観測として採用しません。この2倍という上限は異常を止める工学上のガードであり、
-メダカの解剖学的許容範囲として検証した値ではありません。
+v3 uses the robust loss only for images and detected points, and squared loss for the
+body-shape and motion constraints. Prediction is a common translation of the whole fish body,
+and a candidate whose inter-part distance exceeds 2× its initial value is not accepted as an
+observation of that fish. This 2× cap is an engineering guard against the anomaly, not a value
+validated as the anatomical tolerance of medaka.
 
-| v2の実測 | 666フレーム区間 | 200フレーム区間 |
+| v2 measurement | 666-frame interval | 200-frame interval |
 |---|---:|---:|
-| 胸ヒレの観測候補 | 1486/1998（74.37%） | 417/600（69.50%） |
-| 要確認 | 642/1998（32.13%） | 366/600（61.00%） |
-| 要確認を除いた採用 | 1356/1998（67.87%） | 234/600（39.00%） |
-| メスの注釈区間 | 終点の口が見つからず、1区間が評価不能 | 注釈1点のため、区間比較なし |
-| 処理時間（読込・画像処理・推論） | 949.10秒 | 326.20秒 |
+| Pectoral-fin observation candidates | 1486/1998 (74.37%) | 417/600 (69.50%) |
+| Needs review | 642/1998 (32.13%) | 366/600 (61.00%) |
+| Accepted, excluding needs-review | 1356/1998 (67.87%) | 234/600 (39.00%) |
+| Female annotation interval | Mouth not found at the end point; 1 interval not evaluable | 1 annotation point, no interval comparison |
+| Processing time (loading, image processing, inference) | 949.10 s | 326.20 s |
 
-v2の結果はスワップ防止の成功ではありません。
+The v2 result is not a success in swap prevention.
 
-## v3および画像なし対照
+## v3 and the no-image control
 
-画像なし対照は同じ初期状態・設定・2区間で、画像証拠だけを無効にしました。
-前景・色・フローをまとめて除く比較であり、それぞれの寄与を個別に測るものではありません。
-この追加比較はv3の結果を見る前にREADMEへ記載しました。条件ごとの再調整は行いません。
+The no-image control uses the same initial state, settings and 2 intervals, with only the image
+evidence disabled. It removes foreground, colour and flow together and does not measure each
+contribution individually. This additional comparison was written into the README before the v3
+results were seen. No per-condition retuning is done.
 
-| 区間・方法 | 胸ヒレの観測候補 | 要確認を除いた採用 | 要確認率 | メスの注釈区間 |
+| Interval, method | Pectoral-fin observation candidates | Accepted, excluding needs-review | Needs-review rate | Female annotation interval |
 |---|---:|---:|---:|---|
-| 666フレーム・v3画像あり | 1442/1998（72.17%） | 1357/1998（67.92%） | 32.08% | 1区間が評価不能 |
-| 666フレーム・v3画像なし | 1490/1998（74.57%） | 1342/1998（67.17%） | 32.83% | 1区間が評価不能 |
-| 200フレーム・v3画像あり | 407/600（67.83%） | 396/600（66.00%） | 34.00% | 注釈1点、区間比較なし |
-| 200フレーム・v3画像なし | 405/600（67.50%） | 236/600（39.33%） | 60.67% | 注釈1点、区間比較なし |
+| 666 frames, v3 with images | 1442/1998 (72.17%) | 1357/1998 (67.92%) | 32.08% | 1 interval not evaluable |
+| 666 frames, v3 without images | 1490/1998 (74.57%) | 1342/1998 (67.17%) | 32.83% | 1 interval not evaluable |
+| 200 frames, v3 with images | 407/600 (67.83%) | 396/600 (66.00%) | 34.00% | 1 annotation point, no interval comparison |
+| 200 frames, v3 without images | 405/600 (67.50%) | 236/600 (39.33%) | 60.67% | 1 annotation point, no interval comparison |
 
-666フレーム区間では、画像を加えても採用率の差は0.75ポイントで、胸ヒレの観測候補数は
-画像なしの方が多くなりました。口・尾の支持は改善していますが、メスは両条件とも
-入口76698でS1に対応し、出口77285では口の対応がありません。
-生の候補と要確認を除いた結果の両方で、維持0・変更0・評価不能1です。
-終盤77107〜77285の179フレームは、3匹すべてが要確認です。
-最終77285では3匹とも胸ヒレが欠測で、予測骨格が実魚から離れていることを比較画像でも
-確認しました。部分的な尾の支持を、追跡が復帰した結果とは解釈していません。
+In the 666-frame interval, adding images changed the acceptance rate by 0.75 points, and the
+number of pectoral-fin observation candidates was higher without images. Mouth and tail support
+improved, but in both conditions the female corresponds to S1 at entry 76698 and has no mouth
+correspondence at exit 77285. For both the raw candidates and the results excluding
+needs-review: kept 0, changed 0, not evaluable 1. In the final 179 frames, 77107–77285, all
+three fish are needs-review. At the final frame 77285 the pectoral fin is missing for all three
+fish, and the comparison images also confirm that the predicted skeletons have moved away from
+the physical fish. Partial tail support is not interpreted as tracking having recovered.
 
-200フレーム区間では、S0の口の観測数が画像なしの20から画像ありの180へ、
-尾が32から162へ増えました。採用率も26.67ポイント高くなりました。
-一方、S2の胸ヒレは両条件とも17/200フレームしか得られず、復帰していません。
-これは画像証拠がノード支持と本実装の採用判定に影響した証拠です。
-正しいIDの割合が26.67ポイント改善した、という意味ではありません。
+In the 200-frame interval, S0's mouth observations rose from 20 without images to 180 with
+images, and its tail observations from 32 to 162. The acceptance rate was also 26.67 points
+higher. On the other hand, S2's pectoral fin was obtained in only 17/200 frames in both
+conditions and did not recover. This is evidence that image evidence affected node support and
+this implementation's acceptance judgement. It does not mean that the proportion of correct IDs
+improved by 26.67 points.
 
-v3画像ありの部位間距離の最大値は、666フレーム区間で初期長の1.295倍、
-200フレーム区間で1.235倍以内でした。200フレーム区間のv2の約9.978倍という伸長は
-解消しました。ただし、見失ったS2の内部予測もこの範囲に収まります。
-体形がもっともらしいことだけでは、魚を追えている証拠になりません。
-v2→v3では損失・速度予測・上限を同時に変えているため、改善を上限だけの効果とは
-解釈できません。実動画v3では上限による候補拒否は0回でした。
+The maximum inter-part distance for v3 with images was within 1.295× the initial length in the
+666-frame interval and 1.235× in the 200-frame interval. The stretching of about 9.978× in v2 on
+the 200-frame interval was resolved. However, the internal prediction of the lost S2 also falls
+within this range. A plausible body shape alone is not evidence that the fish is being tracked.
+v2→v3 changed the loss, the velocity prediction and the cap at the same time, so the
+improvement cannot be interpreted as the effect of the cap alone. On real video, v3's cap
+rejected candidates 0 times.
 
-### 現行法の7条件との比較
+### Comparison with the 7 conditions of the current method
 
-同じ666フレーム区間を同じメスの注釈で評価した結果です。
-「変更」は両端のIDが違うという区間判定で、交換イベントの個数ではありません。
+Results on the same 666-frame interval, evaluated with the same female annotations.
+"Changed" is an interval judgement that the IDs at the two ends differ, not a count of exchange
+events.
 
-| 現行法のλ | 胸ヒレ座標の出力率 | メスの注釈区間 | 10 mm超の隣接フレーム変位 |
+| Current method λ | Pectoral-fin coordinate output rate | Female annotation interval | Adjacent-frame displacements > 10 mm |
 |---:|---:|---|---:|
-| 0 | 1998/1998（100%） | 維持1 | 3 |
-| 0.1 | 1998/1998（100%） | 変更1 | 4 |
-| 0.25 | 1998/1998（100%） | 変更1 | 3 |
-| 0.5 | 1995/1998（99.85%） | 変更1 | 1 |
-| 0.767 | 1995/1998（99.85%） | 変更1 | 1 |
-| 2 | 1995/1998（99.85%） | 維持1 | 0 |
-| 8 | 1980/1998（99.10%） | 維持1 | 0 |
-| 新手法v3画像あり | 観測1442/1998（72.17%） | 評価不能1 | 0 |
+| 0 | 1998/1998 (100%) | kept 1 | 3 |
+| 0.1 | 1998/1998 (100%) | changed 1 | 4 |
+| 0.25 | 1998/1998 (100%) | changed 1 | 3 |
+| 0.5 | 1995/1998 (99.85%) | changed 1 | 1 |
+| 0.767 | 1995/1998 (99.85%) | changed 1 | 1 |
+| 2 | 1995/1998 (99.85%) | kept 1 | 0 |
+| 8 | 1980/1998 (99.10%) | kept 1 | 0 |
+| New method v3 with images | observed 1442/1998 (72.17%) | not evaluable 1 | 0 |
 
-新手法で大きな変位がなくても、終点を見失った結果を現行法より良いID維持とは数えません。
-現行法でもλ=0, 2, 8はこの1区間を維持しています。λ=0.767だけを比較対象にして
-新手法に有利な結論を出すことは避けました。この1区間から最適なλも選べません。
+Even though the new method has no large displacements, a result that lost the end point is not
+counted as better ID retention than the current method. In the current method too, λ=0, 2, 8
+keep this 1 interval. Drawing a conclusion favourable to the new method by comparing against
+λ=0.767 alone was avoided. The optimal λ cannot be chosen from this 1 interval either.
 
-200フレーム区間では、現行7条件はすべて胸ヒレ座標の出力率100%でした。
-メスの1注釈に対応するIDは得られていますが、区間数0なのでどの方法もID維持を
-採点できません。オス同士の正解ラベルも、この比較にはありません。
+In the 200-frame interval, all 7 current conditions had a pectoral-fin coordinate output rate of
+100%. An ID corresponding to the one female annotation is obtained, but with 0 intervals no
+method's ID retention can be scored. There are no male-vs-male ground truth labels in this
+comparison either.
 
-### 処理時間と全編への適用
+### Processing time and application to the full recording
 
-v3画像ありは、666フレームが967.76秒（0.688 fps）、200フレームが304.57秒
-（0.657 fps）でした。動画の読込・画像処理・追跡を含み、背景作成は別途約8秒です。
-画像なしはそれぞれ103.40秒、27.91秒でしたが、動画読込と画像処理を省いています。
-現行法は保存済み結果を読んだだけで、その計算時間を測っていません。
-一部の処理は並行実行したため、これらは厳密な速度ベンチマークでもありません。
+v3 with images took 967.76 s (0.688 fps) for 666 frames and 304.57 s (0.657 fps) for 200 frames.
+This includes video loading, image processing and tracking; background construction took about
+8 s separately. Without images the times were 103.40 s and 27.91 s respectively, but video
+loading and image processing are omitted. For the current method only the saved results were
+read; its compute time was not measured. Some processing ran in parallel, so these are not
+strict speed benchmarks either.
 
-まず短い難所での再捕捉に失敗したため、この版で30分全編を実行する段階には進めていません。
-候補探索の改善に加え、画像処理の速度と履歴保持のメモリ使用量も全編適用前の課題です。
-カメラのフレーム番号・動画メタデータは確認しましたが、サブフレームの同期精度や
-動く水面の影響を新たに検証したものではありません。
+Because reacquisition already failed on short difficult intervals, this version did not proceed
+to running the full 30 minutes. Besides improving the candidate search, image-processing speed
+and the memory used to retain histories are issues to address before applying it to the full
+recording. Camera frame numbers and video metadata were checked, but sub-frame synchronisation
+accuracy and the effect of the moving water surface were not newly verified.
 
-## 次の開発で解くべきこと
+## What the next development must solve
 
-観測から離れた魚を再捕捉できる候補生成が最優先です。現在は、通常のノード候補を
-予測画素から約15.5 px以内に制限する実効的な条件があり、見失った時間に応じて
-探索範囲や運動の不確かさを広げる処理がありません。画像の評価項を加えるだけでは、
-遠くの未使用検出点を新たな復帰候補として作れません。
-これはコードからの解釈であり、全失敗フレームの原因を切り分けた断定ではありません。
+Candidate generation that can reacquire a fish that has drifted away from its observations is
+the top priority. Currently an effective condition restricts ordinary node candidates to within
+about 15.5 px of the predicted pixel, and nothing widens the search range or the motion
+uncertainty according to how long the fish has been lost. Adding image terms alone cannot turn
+distant unused detections into new recovery candidates.
+This is an interpretation from the code, not a determination that isolates the cause of every
+failed frame.
 
-次の版では、欠測後の広域3D候補を3視点から再生成し、前後の確かな軌跡に接続する
-処理を先に検証します。その後、対応と3D姿勢を前後方向に再最適化する範囲を広げます。
-画素の重複使用や反射も説明する魚体・遮蔽モデルは、その結果と画像なし対照を見て
-追加を判断する課題です。今回の失敗だけで、この方向性自体が不可能とは結論しません。
+The next version first verifies regenerating wide-area 3D candidates from the 3 views after a
+dropout and connecting them to reliable trajectories before and after. After that, it widens
+the range over which correspondence and 3D pose are re-optimised forward and backward in time.
+A fish-body and occlusion model that also accounts for duplicate pixel use and reflection is to
+be decided on after seeing those results and the no-image control. These failures alone do not
+lead to the conclusion that the direction itself is impossible.
 
-本番採用の検証には、3匹それぞれの接近前後を独立に確認した正解IDと、
-既知区間とは別の評価区間が必要です。少数の人手確認を組み込む場合も、
-確認する区間数・長さと修正後の残存交換を測る必要があります。
-今回実装したのは要確認フラグと閲覧用成果物までで、人が直したIDを全編に伝播する
-修正UI・再最適化の運用はまだ実装していません。
+Validating production adoption requires ground truth IDs independently confirmed for each of
+the three fish before and after encounters, and evaluation intervals separate from the known
+intervals. If a small amount of human checking is built in, the number and length of the
+intervals checked and the exchanges remaining after correction must also be measured.
+What was implemented here stops at the needs-review flag and the viewing artefacts; a correction
+UI and re-optimisation workflow that propagate human-corrected IDs through the full recording
+are not yet implemented.
 
-## 再現と成果物
+## Reproduction and artefacts
 
-コマンド、設定、制約は [README.md](README.md) にあります。
-大きな入力と実験出力はGit管理外の `work/` にあります。
-小さな入力18ファイルは元ファイルと照合したSHA-256つきでローカルに複製し、
-生動画は元の共有領域から読み取っています。各実行はコードの完全なスナップショット、
-チェックサム、設定、開始・終了時刻を保存し、既存の出力先への上書きを拒否します。
+Commands, settings and constraints are in [README.md](README.md).
+Large inputs and experiment outputs are in `work/`, outside Git.
+The 18 small input files are copied locally with SHA-256 checked against the originals; raw
+video is read from the original shared storage. Each run saves a complete code snapshot,
+checksums, settings and start/end times, and refuses to overwrite an existing output location.
 
-| ファイル | 用途 |
+| File | Purpose |
 |---|---|
-| [tracker.py](tracker.py) | 3D仮説の予測・画像への投影・対応と姿勢の更新 |
-| [observations.py](observations.py) | 前景・色・フローの画像証拠 |
-| [benchmark.py](benchmark.py) | 生動画と現行7条件を使う比較実行 |
-| [run_without_images.py](run_without_images.py) | 画像証拠を外した対照実験 |
-| [stage_inputs.py](stage_inputs.py) | 必要な入力だけの複製・整合性確認 |
-| [calib.py](../../src/medaka3d/calib.py) | 屈折とレンズ歪みを考慮する3D→画素の投影 |
-| [eval/generative.py](../../src/medaka3d/eval/generative.py) | 共通のID評価、欠測・運動・骨格診断 |
+| [tracker.py](tracker.py) | Prediction from 3D hypotheses, projection into images, update of correspondence and pose |
+| [observations.py](observations.py) | Foreground, colour and flow image evidence |
+| [benchmark.py](benchmark.py) | Comparison run using raw video and the 7 current conditions |
+| [run_without_images.py](run_without_images.py) | Control experiment with image evidence removed |
+| [stage_inputs.py](stage_inputs.py) | Copying only the required inputs and checking their integrity |
+| [calib.py](../../src/medaka3d/calib.py) | 3D→pixel projection accounting for refraction and lens distortion |
+| [eval/generative.py](../../src/medaka3d/eval/generative.py) | Shared ID evaluation; missing-observation, motion and skeleton diagnostics |
 
-ソフトウェアの検証と追跡の正しさは分けます。テストでは屈折投影の物理式との一致、
-検出の欠測・混在、画像が3D推定に影響すること、将来の観測による履歴選択、
-異常な魚体伸長の拒否、要確認データの通常出力への漏れ防止などを確認しています。
-これらの成功は、実際の3匹のIDが全編で正しいことを保証しません。
+Software verification is kept separate from tracking correctness. The tests check agreement of
+refractive projection with the physical formula, missing and mixed detections, that images
+influence the 3D estimate, history selection from future observations, rejection of abnormal
+body stretching, prevention of needs-review data leaking into normal output, and so on.
+Their passing is not a guarantee that the actual IDs of the three fish are correct over the full
+recording.
 
-最終状態でリポジトリ全体のpytestは **385 passed, 2 skipped** でした。
-既存の `c30_slot_stitch.py` のAll-NaN警告が2件あり、テスト失敗はありません。
-追加・変更したPythonファイルのRuff検査と `git diff --check` も通過しました。
-両v3実行についてコード5ファイルの保存版・記録ハッシュ・現行版の一致を確認し、
-採用座標、観測数、骨格の最大長を保存NPZから再計算してJSONと照合しました。
-画像なし対照との初期対応・初期3D姿勢・設定・コードの一致も確認済みです。
+In the final state, repository-wide pytest gave **385 passed, 2 skipped**.
+There were 2 All-NaN warnings from the existing `c30_slot_stitch.py` and no test failures.
+The Ruff check on the added and changed Python files and `git diff --check` also passed.
+For both v3 runs, the saved copies, recorded hashes and current versions of the 5 code files were
+confirmed to match, and accepted coordinates, observation counts and maximum skeleton lengths were
+recomputed from the saved NPZ and checked against the JSON.
+Agreement of the initial correspondence, initial 3D pose, settings and code with the no-image
+control was also confirmed.
 
 ```powershell
 .venv/Scripts/python.exe -m pytest -o addopts='' -q --basetemp work/pytest_generative_final -p no:cacheprovider
 ```
 
-主要な実行結果は次のとおりです。リンクはこのレポートからリポジトリ内の
-`work/generative_tracking/` を参照します。
+The main run results are below. Links go from this report to
+`work/generative_tracking/` in the repository.
 
-| 結果 | 数値 | 画像 |
+| Result | Numbers | Images |
 |---|---|---|
-| v3画像あり・666フレーム | [comparison.json](../../work/generative_tracking/anatomy_v3_interval_76620-77286/comparison.json) | [3カメラ比較](../../work/generative_tracking/anatomy_v3_interval_76620-77286/preview.html) |
-| v3画像あり・200フレーム | [comparison.json](../../work/generative_tracking/anatomy_v3_transient_333519-333719/comparison.json) | [3カメラ比較](../../work/generative_tracking/anatomy_v3_transient_333519-333719/preview.html) |
-| v3画像なし・666フレーム | [comparison.json](../../work/generative_tracking/ablation_no_images_interval_76620-77286/comparison.json) | — |
-| v3画像なし・200フレーム | [comparison.json](../../work/generative_tracking/ablation_no_images_transient_333519-333719/comparison.json) | — |
-| 失敗したv2・666フレーム | [comparison.json](../../work/generative_tracking/interval_76620-77286/comparison.json) | [3カメラ比較](../../work/generative_tracking/interval_76620-77286/preview.html) |
-| 失敗したv2・200フレーム | [comparison.json](../../work/generative_tracking/transient_333519-333719/comparison.json) | [3カメラ比較](../../work/generative_tracking/transient_333519-333719/preview.html) |
+| v3 with images, 666 frames | [comparison.json](../../work/generative_tracking/anatomy_v3_interval_76620-77286/comparison.json) | [3-camera comparison](../../work/generative_tracking/anatomy_v3_interval_76620-77286/preview.html) |
+| v3 with images, 200 frames | [comparison.json](../../work/generative_tracking/anatomy_v3_transient_333519-333719/comparison.json) | [3-camera comparison](../../work/generative_tracking/anatomy_v3_transient_333519-333719/preview.html) |
+| v3 without images, 666 frames | [comparison.json](../../work/generative_tracking/ablation_no_images_interval_76620-77286/comparison.json) | — |
+| v3 without images, 200 frames | [comparison.json](../../work/generative_tracking/ablation_no_images_transient_333519-333719/comparison.json) | — |
+| Failed v2, 666 frames | [comparison.json](../../work/generative_tracking/interval_76620-77286/comparison.json) | [3-camera comparison](../../work/generative_tracking/interval_76620-77286/preview.html) |
+| Failed v2, 200 frames | [comparison.json](../../work/generative_tracking/transient_333519-333719/comparison.json) | [3-camera comparison](../../work/generative_tracking/transient_333519-333719/preview.html) |
 
-[魚体・観測・要確認のv2/v3比較図（200フレーム）](../../work/generative_tracking/transient_v2_v3_diagnostic.png)
-では、破線の内部予測と実線の観測支持を分けて表示しています。
+The [v2/v3 comparison figure of fish body, observation and needs-review (200 frames)](../../work/generative_tracking/transient_v2_v3_diagnostic.png)
+shows internal prediction as dashed lines and observation support as solid lines, separately.
 
-同じ仕様の [666フレーム比較図](../../work/generative_tracking/interval_v2_v3_diagnostic.png)
-にも、終盤の3匹全ての要確認期間を示しています。各図にはSVG、CSV、JSONと
-作図スクリプトの記録を添えています。
+The [666-frame comparison figure](../../work/generative_tracking/interval_v2_v3_diagnostic.png),
+to the same specification, also shows the final period in which all three fish are
+needs-review. Each figure comes with SVG, CSV and JSON files and a record of the plotting script.
 
-実際の動きは、[666フレームの比較動画](../../work/generative_tracking/comparison_videos/interval_76620-77286/index.html)
-と [200フレームの比較動画](../../work/generative_tracking/comparison_videos/transient_333519-333719/index.html)
-で確認できます。上段が現行λ=0.767、下段がv3です。4フレームごとに描画した4倍スローで、
-元のフレーム番号を表示し、同じ視点の上下で全区間固定の切り出し範囲を共有しています。
-推論は全フレームで行い、間引きは表示だけです。
-出力MP4は1440×960、10.375 fpsで、167枚／50枚の全画像を再デコードして確認しました。
+The actual motion can be checked in the [666-frame comparison video](../../work/generative_tracking/comparison_videos/interval_76620-77286/index.html)
+and the [200-frame comparison video](../../work/generative_tracking/comparison_videos/transient_333519-333719/index.html).
+The top row is the current λ=0.767, the bottom row v3. They are 4× slow motion drawn every
+4 frames, show the original frame numbers, and the top and bottom panels of the same view share
+a crop fixed over the whole interval. Inference ran on every frame; subsampling is for display
+only. The output MP4 is 1440×960 at 10.375 fps; all 167 / 50 images were re-decoded and checked.

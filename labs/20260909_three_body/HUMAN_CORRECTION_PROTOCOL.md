@@ -1,167 +1,220 @@
-# 少数場面の人手確認をID修正に使う範囲
+# Scope for using human checks of a few scenes to correct identities
 
-2026-09-09、段階実装中。端点の対応制約を作る純CPU helperを実装した。
-密な軌跡の修正コード・修正出力・人手の正解ラベルはまだない。
-本書は完了後の別出力に適用する設計であり、実行中の追跡、固定した自動評価、元の
-candidate、raw画像、レビューJSONを変更しない。
+2026-09-09, implementation in stages. A pure-CPU helper that builds endpoint correspondence
+constraints has been implemented.
+There is not yet any correction code for dense trajectories, corrected output or human
+ground-truth labels.
+This document is a design applied to a separate output after completion, and does not change
+the running tracking, the fixed automatic evaluation, the original candidate, raw images or the
+review JSON.
 
-ユーザーは少数場面の確認・修正を承諾済みである。追加の承認や別担当者による裁定を
-必須にしない。短い位置欠測の許容は未回答なので、暫定的にIDを優先し、裏付けのない
-位置とID対応をNaNのまま残す。数学的なID無誤り、全30分の維持、少数修正での達成は
-まだ保証できない。
+The user has agreed to checking and correcting a few scenes. Additional approval or
+adjudication by another person is not required. Whether short positional gaps are acceptable
+has not been answered, so identity is provisionally prioritized, and positions and identity
+correspondences without backing are left as NaN. Mathematically error-free identity,
+maintenance over the full 30 minutes, and achieving this with a few corrections cannot yet be
+guaranteed.
 
-## 1. 人のJSONが示すもの
+## 1. What the human JSON shows
 
-入力は [review_truth.py](review_truth.py) が作る `raw_encounter_review_v1`。
-A/B/Cはこのクリップの入口で人が付けた匿名名であり、別クリップのA/B/C、全動画の
-固定ID、メス・白いオス・赤いオスと自動的には対応しない。生物学的な名前は別の
-`biological_naming` の証拠に依存する。求愛役割や既存slotから名前を推定しない。
+The input is `raw_encounter_review_v1`, produced by [review_truth.py](review_truth.py).
+A/B/C are anonymous names a human assigned at the entry of this clip, and do not automatically
+correspond to A/B/C of another clip, fixed IDs for the whole video, or the female, the white
+male and the red male. Biological names depend on separate `biological_naming` evidence. Names
+are not inferred from courtship roles or existing slots.
 
-各個体の `entry_to_after` と `after_to_exit` の `confirmed` は、直接の目視連続性等を
-根拠に「両チェックポイントの魚が同じ」と人が述べた対応として利用する。
-3時点の口クリックは区間内の各フレームの候補IDや、切替時刻を注釈したものではない。
-同じ入口・出口IDでも、途中で入れ替わり再び戻る可能性は残る。
+`confirmed` on each individual's `entry_to_after` and `after_to_exit` is used as a
+correspondence in which a human stated, on grounds such as direct visual continuity, that "the
+fish at both checkpoints is the same".
+The mouth clicks at 3 time points do not annotate the candidate ID in each frame of the interval
+or the time of a switch.
+Even with the same entry and exit ID, the possibility remains that the fish swap partway and
+swap back.
 
-現時点の保存テンプレートは `unreviewed_template_not_ground_truth` であり、正解には
-使えない。提案時点は333519、333621、333718で、人が選択・確認するまでは確定しない。
-実際に保存された人のJSONが必要であり、アシスタントが空欄を埋めない。
-人が保存した `draft` 等のstatusは来歴としてそのまま保持し、対応ごとのconfirmedを
-使う。`review_truth.py` 冒頭の古い追加裁定を示唆する文章を、新しい承認要件として
-適用しない。この扱いは [evaluate_review.py](evaluate_review.py) の実装と一致する。
+The template saved at present is `unreviewed_template_not_ground_truth` and cannot be used as
+ground truth. The proposed time points are 333519, 333621 and 333718, and are not committed
+until a human selects and confirms them.
+An actually saved human JSON is required; the assistant does not fill in blanks.
+A status such as `draft` saved by the human is kept as is, as provenance, and the
+per-correspondence confirmed is used. The old text at the top of `review_truth.py` that suggests
+additional adjudication is not applied as a new approval requirement. This handling matches the
+implementation of [evaluate_review.py](evaluate_review.py).
 
-## 2. チェックポイントでの対応を確定する条件
+## 2. Conditions for committing a correspondence at a checkpoint
 
-既存の [共有評価](../../src/medaka3d/eval/encounter_review.py) と同じ規則を使い、
-人の確認から離れた任意の最近傍へ強制的に対応させない。
+The same rules as the existing [shared evaluation](../../src/medaka3d/eval/encounter_review.py)
+are used, and nothing is forced onto an arbitrary nearest neighbour far from the human check.
 
-1. レビューのmanifest SHA、実験、166 fpsのnative frame番号、1200×1200の口座標を
-   元画像と照合する。candidateは完了済みで、校正・入力・出力SHAを対応づける。
-2. 各probeで全3slotの潜在的な口を屈折投影する。未観測・review中の競合slotも残し、
-   人がクリックした全viewで5 px以内となる一対一対応を調べる。最大数を対応させる
-   全割当で一致する個体だけを一意とする。競合slotを先に消して一意性を作らない。
-3. その対応先の口が、元の少なくとも2カメラの検出rayで直接支持されることを要求する。
-   マスクの支持、有限の予測座標、3匹という前提だけでは代替しない。口の確認が成功
-   しても、胸ヒレ・尾の位置支持を追加しない。
-4. 自動手法のreviewは対応計算の後に適用する。修正案の対応を調べるときはraw側の
-   一意対応を使えるが、元のaccepted側の評価・保留記録は変更しない。
+1. The review's manifest SHA, experiment, 166 fps native frame number and 1200×1200 mouth
+   coordinates are checked against the source images. The candidate is complete, and the
+   calibration, input and output SHAs are linked to it.
+2. At each probe, the latent mouths of all 3 slots are projected with refraction. Competing slots
+   that are unobserved or under review are also kept, and one-to-one correspondences within
+   5 px in every view the human clicked are examined. Only an individual that is the same in
+   every assignment matching the maximum number is unique. Uniqueness is not manufactured by
+   removing competing slots first.
+3. The matched mouth is required to be directly supported by detection rays from at least 2 of
+   the original cameras. Mask support, finite predicted coordinates or the assumption of 3 fish
+   alone do not substitute for this. Even if the mouth check succeeds, no position support is
+   added for the pectoral fin or tail.
+4. The automatic method's review is applied after the correspondence computation. When the
+   correspondence for a correction proposal is examined, the raw-side unique correspondence may
+   be used, but the original accepted-side evaluation and hold records are not changed.
 
-一意でない、遠い、投影できない、口が観測されていないprobeは未対応のまま残す。
-人が実魚を確認できても、その魚を表す候補trackletが存在しない場合は、IDの付替え
-だけでは回復できない。別の支持された時点の確認または位置追跡の改善が必要になる。
+Probes that are non-unique, far, unprojectable, or whose mouth is not observed are left
+unmatched. Even if a human can confirm the physical fish, if no candidate tracklet represents
+that fish, relabelling identities alone cannot recover it. A check at another supported time
+point, or improved position tracking, is needed.
 
-## 3. 修正の単位と不確実な区間
+## 3. The unit of correction, and uncertain intervals
 
-修正は「確認した前側tracklet → 同じ魚と確認した後側tracklet」の接続として保存する。
-raw slotを動画の残り全体で一括交換しない。位置・検出source・観測フラグを保持した
-tracklet参照と、その時間範囲に対するID対応を別に持つ。
+A correction is saved as a link "confirmed earlier tracklet → later tracklet confirmed as the
+same fish".
+Raw slots are not swapped wholesale for the rest of the video. Tracklet references that retain
+position, detection source and observation flags are held separately from the identity
+correspondence over their time range.
 
-前側probeをp、後側probeをqとする。confirmedな対応と両probeの一意な口対応があれば、
-pとqでの同一魚の対応を制約として保存できる。入口IDがそれ以前の確認済み接続に
-つながる場合だけ、全動画側の同じ匿名IDへ結びつける。入口自体が未解決なら、まず
-クリップ内のA/B/C対応が得られるだけで、全動画のID復帰とは扱わない。
+Let p be the earlier probe and q the later probe. Given a confirmed correspondence and unique
+mouth correspondences at both probes, the correspondence of the same fish at p and q can be
+saved as a constraint. Only when the entry ID connects to an earlier confirmed link is it bound
+to the same anonymous ID on the whole-video side. If the entry itself is unresolved, only an
+A/B/C correspondence within the clip is obtained at first, and it is not treated as identity
+recovery for the whole video.
 
-切替時刻が不明なら、p<frame<qの当該魚について修正後のID付き位置をNaNとする。
-補間、速度最小化、最も近い時点、低いモデルlossから切替時刻を決めて自動受理しない。
-より狭い欠測にできるのは、その前後を限定する追加の人の時点確認等がある場合だけ。
-「入口と出口は同じslot」の場合にも、この原則を変えない。3probeは最大2本の接続を
-与えるが、6個体区間全体の密なID注釈にはならない。
+If the switch time is unknown, the corrected identity-labelled positions of that fish for
+p<frame<q are NaN.
+A switch time is not decided from interpolation, velocity minimization, the nearest time point
+or a low model loss and then automatically accepted.
+The gap can be narrowed only when there are additional human time-point checks or the like that
+bound it before and after.
+This principle does not change even in the case "entry and exit are the same slot". 3 probes give
+at most 2 links, but they are not dense identity annotation over all 6 individual-intervals.
 
-q以降へのID伝播は、人が確認したqの対応を起点にした**条件付きの機械伝播**として
-別記する。これは各フレームを人が確認したという意味ではない。次の節のriskで
-区切った後側trackletの範囲に限り、既存の観測座標へ対応を付ける。位置が直接支持
-されないノードはNaNを維持する。元の潜在poseは診断用に別保存する。
+Identity propagation beyond q is recorded separately as **conditional machine propagation**
+starting from the human-confirmed correspondence at q. This does not mean a human checked each
+frame. Correspondences are attached to existing observed coordinates only within the range of
+the later tracklet delimited by the risks of the next section. Nodes whose position is not
+directly supported stay NaN. The original latent pose is saved separately for diagnostics.
 
-## 4. sticky reviewの限定解除
+## 4. Limited clearing of sticky review
 
-一度trueになったreviewを単純にfalseへ書き換えない。人が解決した古いriskと、
-未解決または後続のriskを区別する台帳を別に作る。出力には少なくとも
-`raw_review`、解決根拠のreview SHAとprobe、適用開始・終了、未解決risk ID、
-`identity_origin`（自動／人のprobe対応／その後の機械伝播／未解決）を持たせる。
+A review that has once become true is not simply rewritten to false. A separate ledger is
+created that distinguishes old risks resolved by a human from unresolved or subsequent risks.
+The output carries at least
+`raw_review`, the review SHA and probe that ground the resolution, the start and end of
+application, unresolved risk IDs, and
+`identity_origin` (automatic / human probe correspondence / subsequent machine propagation /
+unresolved).
 
-最初の実装では [review_events.py](review_events.py) の固定規則を使う。
-4フレーム以上のbody unsupported episodeは4フレーム目だけでなく欠測開始からriskと
-し、既にsticky review中の繰返し欠測も毎回数える。有限の `score_margin <= 1` episode
-は別riskである。scalar marginでは対象のペアが不明なので、推測で一組に限定せず
-全3IDを保守的な対象とする。marginの+infは「比較した別候補なし」であり安全証明ではない。
-native frameの途切れも接続の境界とする。
+The first implementation uses the fixed rules of [review_events.py](review_events.py).
+A body-unsupported episode of 4 or more frames is a risk from the start of the dropout, not only
+from the 4th frame, and repeated dropouts already under sticky review are counted every time.
+A finite `score_margin <= 1` episode is a separate risk. A scalar margin does not identify the
+pair concerned, so rather than restricting it to one pair by guesswork, all 3 IDs are
+conservatively treated as affected. A margin of +inf means "no other candidate compared" and is
+not proof of safety.
+A break in native frames is also a link boundary.
 
-qで解除できるのは、qより前に終了し、今回のconfirmedな対応でカバーできたriskの
-該当IDだけ。qがriskの途中、qの口が未観測、入口へつながる未解決riskが残る、または
-mappingが一対一でない場合には解除しない。連続した機械伝播は次の対象riskの開始直前
-で止め、その開始から再び保留する。幾何学上の不受理や直接観測の欠測も解除しない。
+What can be cleared at q is only the affected IDs of risks that ended before q and are covered by
+the present confirmed correspondence. Nothing is cleared if q lies inside a risk, q's mouth is
+unobserved, an unresolved risk connecting to the entry remains, or the mapping is not
+one-to-one. Continuous machine propagation stops just before the start of the next applicable
+risk and holds again from that start. Geometric non-acceptance and missing direct observations
+are not cleared either.
 
-マスクだけでbody supportedとなった復帰は人の口対応の代わりにならない。
-4フレーム未満の位置欠測は既存risk設定ではID切断の十分条件ではないが、その座標は
-NaNとし、その前後をつなぐIDは人が密に保証したと表示しない。
+A recovery that became body-supported through the mask alone is no substitute for a human mouth
+correspondence.
+Under the existing risk settings, a position gap of fewer than 4 frames is not a sufficient
+condition for an identity break, but its coordinates are NaN, and the identity bridging it is
+not presented as densely guaranteed by a human.
 
-このrisk検出自体は全スワップを検出できない。検出行の排他性、滑らかな軌跡、
-マスクとの一致が成立していても入替はあり得る。したがって解除後の区間は
-「未検出riskがないと仮定した伝播」であり、独立した別場面・チェックポイントで
-検証する。既存のsticky flagとscalar marginだけでは過去の競合相手や理由を完全には
-復元できず、対象不明を無条件に安全側へ縮めない。
+This risk detection itself cannot detect every swap. A swap can occur even when detection-row
+exclusivity, a smooth trajectory and agreement with the mask all hold. The interval after
+clearing is therefore "propagation assuming there is no undetected risk", and is verified at
+independent separate scenes and checkpoints. The existing sticky flag and scalar margin alone
+cannot fully reconstruct past competitors or reasons, and an unknown target is not
+unconditionally narrowed toward the safe side.
 
-## 5. 部分確認・重なり・矛盾
+## 5. Partial confirmation, overlap and contradiction
 
-| 状況 | 適用する範囲 |
+| Situation | Scope of application |
 |---|---|
-| Aだけconfirmed、B/Cはambiguous | Aの一意な接続だけ保持する。B/Cを残りのslotから決めない。Aが未解決な競合slotと排他的に対応できない場合も解除しない。 |
-| entry→afterはambiguous、after→exitだけconfirmed | 後半のローカルtracklet接続は記録できる。入口や全動画のIDへは戻さない。既存評価では入口への連続性不足として未採点を維持する。 |
-| 前のriskが継続中に新しいriskが始まる | 対象IDと時間区間の和集合を未解決として保持。新しいprobeが両方の後ろにあり、必要な対応全てを解決するまで解除しない。 |
-| 別レビューが同じtrackletを別の魚へ割当 | 後に読んだJSONで上書きしない。衝突する接続成分とその依存先を保留し、矛盾を記録する。自動的に新しい裁定・承認を要求せず、既存情報で解決できない部分は未解決として残す。 |
-| ある場面はA↔slot0、別場面もA↔slot0 | クリップごとのAは別名。重複時点の対応または既に確立したtracklet接続がない限り同じ魚としない。 |
-| 全魚が欠測、または復帰時の口対応が非一意 | 3匹という数や予測位置で復帰IDを決めない。人のconfirmed対応と支持された後側probeが揃うまで該当ID付き出力を欠測にする。 |
-| 確認区間の後に別のrisk | 前の確認は新riskを解決しない。独立した未解決として再保留する。 |
+| Only A confirmed, B/C ambiguous | Only A's unique link is retained. B/C are not decided from the remaining slots. Nothing is cleared either if A cannot be matched exclusively against unresolved competing slots. |
+| entry→after ambiguous, only after→exit confirmed | The local tracklet link for the second half can be recorded. It is not carried back to the entry or to whole-video IDs. The existing evaluation keeps it unscored for lack of continuity to the entry. |
+| A new risk starts while an earlier risk is ongoing | The union of affected IDs and time intervals is held as unresolved. Not cleared until a new probe lies after both and resolves every required correspondence. |
+| Another review assigns the same tracklet to a different fish | Not overwritten by the JSON read later. The conflicting connected component and its dependants are held, and the contradiction is recorded. No new adjudication or approval is requested automatically; parts that existing information cannot resolve are left unresolved. |
+| One scene has A↔slot0, another scene also A↔slot0 | A is a separate name in each clip. They are not the same fish unless there is a correspondence at an overlapping time point or an already established tracklet link. |
+| All fish missing, or the mouth correspondence at recovery is non-unique | Recovery IDs are not decided from the count of 3 fish or from predicted positions. The affected identity-labelled output is missing until a human confirmed correspondence and a supported later probe are both available. |
+| Another risk after a confirmed interval | The earlier check does not resolve the new risk. It is held again as an independent unresolved risk. |
 
-166フレーム以内をまとめるsceneと前後83フレームのcontextは、見る材料をまとめる
-表示単位であり、解決の単位ではない。同じscene内の全riskが一回の判断で解決したと
-数えない。IDを一つ確定しても他の二つのIDは排他的に自動命名しない。
+The scene that groups up to 166 frames and the context of 83 frames before and after are display
+units that group the material to look at, not units of resolution. All risks within the same
+scene are not counted as resolved by one decision. Committing one ID does not automatically name
+the other two IDs by exclusion.
 
-## 6. 必要なデータと現JSONの限界
+## 6. Required data and limits of the current JSON
 
-現JSONで得られるのは、最大9個の口の時点確認、各魚2本の対応、確認者・時間・根拠の
-来歴である。実際に保存された人のJSONはまだない。適用時には既存の元画像、校正、
-完了candidateに加え、次の派生情報が必要になる。
+What the current JSON provides is up to 9 mouth time-point checks, 2 correspondences per fish,
+and provenance of reviewer, time and grounds. There is not yet an actually saved human JSON.
+Applying it requires, in addition to the existing source images, calibration and completed
+candidate, the following derived information.
 
-- 全対象時間のrisk台帳と、時間で区切ったtracklet ID。繰返しrisk、対象不明、区間端で
-  打切られたriskを残す。JSONにはこの台帳や切替時刻は含まれていない。
-- 各probeのraw一対一対応表と観測支持、各接続の前後tracklet、匿名名のscope、根拠SHA。
-  後の機械伝播がどの人の対応に依存するかを追跡できるようにする。
-- 全動画のIDへ接続するなら入口trackletの既存のID根拠。なければ、対応する前側の
-  原画像での確認が必要となる。現クリップ内のA/B/Cだけでは代替できない。
+- A risk ledger over the whole target time, and time-delimited tracklet IDs. Repeated risks,
+  unknown targets and risks truncated at interval ends are kept. The JSON contains neither this
+  ledger nor switch times.
+- The raw one-to-one correspondence table and observation support for each probe, the earlier and
+  later tracklets of each link, the scope of anonymous names, and grounding SHAs.
+  This makes it possible to trace which human correspondence later machine propagation depends
+  on.
+- To connect to whole-video IDs, the existing identity grounds of the entry tracklet. Without
+  them, a check on the corresponding earlier raw images is needed. A/B/C within the current clip
+  alone cannot substitute for this.
 
-追加のクリックが必要になり得る最小例は、qの候補の口が未観測または非一意な場合の
-「復帰後で一意な口が見える1時点」、または欠測を狭めたい場合の「不確実区間の直前・
-直後の対応」である。確認できない場合はambiguousと欠測を残す。より多くの人手を
-暗黙に前提にして少数修正で成功したと報告しない。生物名を求めるなら、接続とは別に
-その魚の外見・性を確認できる証拠が必要である。
+The minimal cases that may need additional clicks are "one time point after recovery where a
+unique mouth is visible" when the candidate mouth at q is unobserved or non-unique, or
+"correspondences just before and just after the uncertain interval" when the gap is to be
+narrowed. If no check is possible, ambiguous and the gap are left. Success with a few corrections
+is not reported while implicitly assuming more human work. If biological names are wanted,
+evidence that confirms that fish's appearance and sex is needed, separately from the links.
 
-## 7. 評価と実装前の確認
+## 7. Evaluation, and checks before implementation
 
-全自動の元出力、人のprobeで確認した対応、修正後の機械伝播を別の評価armとして
-比較する。修正に使った同じprobeへの一致は適用整合性であり、独立した精度検証では
-ない。修正後の一般化は、修正に使わない後続probeや別場面で検証する。未採点の
-6個体区間を分母から除かず、位置の観測率、ID付き受理率、未解決risk、実際に要した
-人のscene数・対応判断数・クリック数・時間を併記する。確認時間が未入力なら不明とする。
+The fully automatic original output, correspondences confirmed by human probes, and corrected
+machine propagation are compared as separate evaluation arms. Agreement with the same probes
+used for correction is application consistency, not independent accuracy validation.
+Generalization after correction is verified on later probes not used for correction and on
+other scenes. Unscored intervals among the 6 individual-intervals are not removed from the
+denominator, and the position observation rate, identity-labelled acceptance rate, unresolved
+risks, and the number of human scenes, correspondence decisions and clicks and the time actually
+required are reported alongside. If the review time was not entered, it is unknown.
 
-実装時の小さな回帰テストは、途中だけ入替わる3probe、部分confirmed、入口未解決、
-重なるrisk、解除後の再欠測、対象不明のmargin、矛盾する2レビュー、全魚欠測、
-NaN競合・未観測競合を含める。IDを並べ替える場合はposeだけでなくsources、observed、
-reviewとtracklet参照の全てを同じ対応で扱い、元データ・未観測位置を捏造しない。
-凍結ソース・元出力・人のJSONは変更しない。
+The small regression tests at implementation include: 3 probes with a swap only partway, partial
+confirmed, unresolved entry, overlapping risks, re-dropout after clearing, a margin with unknown
+target, 2 contradictory reviews, all fish missing, and NaN competitors and unobserved competitors.
+When IDs are permuted, not only pose but sources, observed, review and tracklet references are
+all handled by the same correspondence, and no source data or unobserved positions are
+fabricated.
+Frozen sources, original outputs and human JSON are not changed.
 
-## 8. 実装済みの最初の範囲
+## 8. The first scope implemented
 
-[review_constraints.py](review_constraints.py) は、実際のレビューとmanifestのbytesを受け、
-共有の入力検証・rawの一意対応を再利用し、全9端点と6本の要求対応を保持する。
-confirmedで両口が一意に直接支持される場合だけ端点間の制約を作る。後半だけの確認は
-後半のローカルな制約として保持し、未確認の入口や全動画のIDへは結び付けない。
+[review_constraints.py](review_constraints.py) takes the bytes of the actual review and manifest,
+reuses the shared input validation and raw unique correspondence, and retains all 9 endpoints and
+6 requested correspondences.
+A constraint between endpoints is created only when confirmed and both mouths are uniquely and
+directly supported. A check on the second half only is retained as a local constraint on the
+second half, and is not tied to an unconfirmed entry or to whole-video IDs.
 
-別レビューのAという名前だけでは結合しない。同じ候補・校正・投影元の端点グラフを
-結合し、同時刻の複数slotが同一魚になる矛盾や端点内容の不一致は、接続成分とそれに
-依存するリンク全体を保留する。最後に読んだレビューで上書きせず、未確認の2匹を
-残りの割当から推定しない。21 CPUテストとRuffを通過した。
+Reviews are not joined merely by the name A in another review. Endpoint graphs with the same
+candidate, calibration and projection source are joined, and a contradiction in which several
+slots at the same time become the same fish, or a mismatch in endpoint content, holds the
+connected component and every link depending on it.
+The last review read does not overwrite, and the 2 unconfirmed fish are not inferred from the
+remaining assignment. 21 CPU tests and Ruff passed.
 
-このhelperはI/Oを行わず、レビューとmanifestの元bytesのSHAを自計算する。
-候補・校正ファイルや投影実装のSHA照合は、将来の呼出側で行う必要がある。宣言された
-SHAが渡されたことを、実ファイルが検証済みという意味にはしない。まだ実レビューJSONを
-適用しておらず、trackletのID伝播、密な軌跡の並べ替え、reviewの解除は実装していない。
+This helper performs no I/O and computes the SHAs of the original review and manifest bytes
+itself.
+Checking the SHAs of candidate and calibration files and of the projection implementation must
+be done by a future caller. That a declared SHA was passed in is not taken to mean that the
+actual file has been verified. No actual review JSON has been applied yet, and tracklet identity
+propagation, reordering of dense trajectories and clearing of review are not implemented.

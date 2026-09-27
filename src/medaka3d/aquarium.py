@@ -8,7 +8,7 @@ motion events are retained even when the movie samples at a lower frame rate.
 Run ``python -m medaka3d.aquarium --help`` for the explicit input paths.
 """
 
-# Japanese UI punctuation is intentional.
+# Typographic multiplication signs and en dashes in the player page are intentional.
 # ruff: noqa: RUF001
 
 from __future__ import annotations
@@ -183,15 +183,15 @@ def write_review(path: Path, metadata: dict) -> None:
     """A local, network-free player with event seeking and playback speed."""
     rows = []
     for event in metadata["events"]:
-        label = "急移動候補" if event["type"] == "jump" else "欠損後の再出現"
+        label = "sudden-move candidate" if event["type"] == "jump" else "reappearance after dropout"
         rows.append(
             f'<button class="event" data-time="{max(0, event["clip_seconds"] - 0.6):.4f}">'
-            f"<b>+{event['clip_seconds']:.3f} s</b>　ID {event['slot']}　{label}"
-            f"　{event['distance_mm']:.1f} mm　<small>f {event['frame']}</small></button>"
+            f"<b>+{event['clip_seconds']:.3f} s</b> · ID {event['slot']} · {label}"
+            f" · {event['distance_mm']:.1f} mm · <small>f {event['frame']}</small></button>"
         )
-    page = """<!doctype html><html lang="ja"><meta charset="utf-8">
+    page = """<!doctype html><html lang="en"><meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
-<title>メダカ追跡 / Aquarium CG</title>
+<title>Medaka tracking / Aquarium CG</title>
 <style>
 *{box-sizing:border-box}body{margin:0;background:#0c1422;color:#e9f1fa;
 font:15px system-ui,sans-serif}
@@ -206,28 +206,32 @@ border-radius:7px;padding:9px 14px;cursor:pointer}button:hover{background:#243e5
 .event{text-align:left;font-size:13px}.event b{color:#ffbd69}small{color:#9cafc2}
 summary{cursor:pointer;margin:22px 0 12px}a{color:#8ed5df}code{overflow-wrap:anywhere}
 </style><main><div class="eyebrow">TRACKED MOTION · DIAGNOSTIC REPLAY</div>
-<h1>メダカが泳ぐ水槽を、追跡データから再生</h1>
-<p>__RANGE__ ／ __EXPERIMENT__ ／ __TITLE__<br>
-色は追跡スロット ID 0・1・2。斜めからの3D・上面・側面を同時に表示します。</p>
+<h1>The medaka tank, replayed from tracking data</h1>
+<p>__RANGE__ / __EXPERIMENT__ / __TITLE__<br>
+Colours are tracking slot IDs 0, 1, 2. Oblique 3D, top and side views are shown together.</p>
 <video id="video" controls preload="metadata" poster="preview.png" src="aquarium.mp4"></video>
-<div class="controls"><button id="play">再生 / 一時停止</button>
-<button id="back">−1フレーム</button><button id="next">＋1フレーム</button>
-<label>再生速度 <select id="speed"><option value=".1">0.1×</option>
+<div class="controls"><button id="play">Play / pause</button>
+<button id="back">-1 frame</button><button id="next">+1 frame</button>
+<label>Playback speed <select id="speed"><option value=".1">0.1×</option>
 <option value=".25">0.25×</option>
 <option value=".5">0.5×</option><option value="1" selected>1×</option></select></label>
-<button id="loop">ループ OFF</button><span id="time"></span></div>
-<p>元の __SOURCE_FPS__ fps全フレームで、1フレーム __JUMP__ mm超の急移動と欠損後の再出現を検出。
-赤い点線は急移動の候補で、スワップ確定ではありません。表示は __FPS__ fps、座標の補間・平滑化なし。
-短い候補も __HOLD__ 秒間表示します。欠損は消失または部分的な骨格として表示します。
-魚体の厚み・ヒレは簡易CG形状です。口・胸・尾の向きは検出点から決まり、尾の追加アニメーションはありません。</p>
-<details open><summary>候補一覧：クリックすると直前から再生</summary>
+<button id="loop">Loop OFF</button><span id="time"></span></div>
+<p>Sudden moves of more than __JUMP__ mm in one frame, and reappearances after dropout, are
+detected over every frame at the original __SOURCE_FPS__ fps.
+Red dotted lines are sudden-move candidates, not confirmed swaps. Display is __FPS__ fps,
+with no coordinate interpolation or smoothing.
+Even brief candidates are shown for __HOLD__ s. Dropouts are shown as disappearance or as a
+partial skeleton.
+Body thickness and fins are simplified CG shapes. Mouth, chest and tail orientation comes from
+the detected points; there is no added tail animation.</p>
+<details open><summary>Candidate list: click to play from just before</summary>
 <div class="events">__EVENTS__</div></details>
-<details><summary>入力と再現性</summary><p><code>__SOURCE__</code><br>
-フレーム範囲 __FRAMES__（末尾を含まない）。水槽内寸 __TANK__ mm。
-色は生物学的な性別・個体名の保証ではありません。<br>
-<a href="metadata.json">区間・候補・設定</a> ·
-<a href="native_pose.npz">元フレームレートの3D姿勢</a> ·
-<a href="aquarium.provenance.json">入力・コードのハッシュ</a></p></details>
+<details><summary>Inputs and reproducibility</summary><p><code>__SOURCE__</code><br>
+Frame range __FRAMES__ (end exclusive). Tank interior __TANK__ mm.
+Colours are not a guarantee of biological sex or individual identity.<br>
+<a href="metadata.json">Interval, candidates, settings</a> ·
+<a href="native_pose.npz">3D pose at the source frame rate</a> ·
+<a href="aquarium.provenance.json">Input and code hashes</a></p></details>
 </main><script>
 const v=document.getElementById('video'), fps=__FPS__;
 document.getElementById('play').onclick=()=>v.paused?v.play():v.pause();
@@ -235,13 +239,13 @@ document.getElementById('back').onclick=()=>{v.pause();v.currentTime=Math.max(0,
 document.getElementById('next').onclick=()=>{v.pause();v.currentTime=Math.min(v.duration,v.currentTime+1/fps)};
 document.getElementById('speed').onchange=e=>v.playbackRate=Number(e.target.value);
 document.getElementById('loop').onclick=e=>{
-v.loop=!v.loop;e.target.textContent='ループ '+(v.loop?'ON':'OFF')};
+v.loop=!v.loop;e.target.textContent='Loop '+(v.loop?'ON':'OFF')};
 document.querySelectorAll('.event').forEach(b=>b.onclick=()=>{v.currentTime=Number(b.dataset.time);v.play()});
 v.ontimeupdate=()=>document.getElementById('time').textContent=
 v.currentTime.toFixed(2)+' / '+v.duration.toFixed(2)+' s';
 </script></html>"""
     replacements = {
-        "__RANGE__": f"{metadata['duration_seconds']:.0f}秒 / 元動画 "
+        "__RANGE__": f"{metadata['duration_seconds']:.0f} s / source video "
         f"{metadata['start_frame'] / metadata['source_fps']:.3f}"
         f"–{metadata['stop_frame_exclusive'] / metadata['source_fps']:.3f} s",
         "__EXPERIMENT__": html.escape(metadata["experiment"]),
@@ -253,7 +257,7 @@ v.currentTime.toFixed(2)+' / '+v.duration.toFixed(2)+' s';
         "__FPS__": str(metadata["output_fps"]),
         "__HOLD__": str(metadata["alert_hold_seconds"]),
         "__FRAMES__": f"{metadata['start_frame']}:{metadata['stop_frame_exclusive']}",
-        "__EVENTS__": "\n".join(rows) or "この区間に閾値を超える候補はありません。",
+        "__EVENTS__": "\n".join(rows) or "No candidates exceed the threshold in this interval.",
     }
     for key, value in replacements.items():
         page = page.replace(key, value)

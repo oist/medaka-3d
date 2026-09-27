@@ -292,16 +292,19 @@ def main(argv=None):
         json.dumps(output, indent=2, allow_nan=False), encoding="utf-8"
     )
     page = (
-        '<!doctype html><html lang="ja"><meta charset="utf-8">'
+        '<!doctype html><html lang="en"><meta charset="utf-8">'
         "<title>Mask volume feasibility</title><style>body{font:17px sans-serif;"
         "max-width:1000px;margin:40px auto;line-height:1.7}</style>"
-        "<h1>独立マスクの屈折付き3D支持領域</h1>"
-        "<p>10 frame・3視点の開発診断です。ID精度・検出recallの評価ではありません。</p>"
-        "<p>上段: 原画と入力mask(シアン)。中段: 3視点支持(緑)。"
-        "下段: 2視点以上の支持(橙)。全画面表示で、候補の数は魚の数を意味しません。</p>"
-        "<p>top_contrastはtopだけ背景差分へ置き換えた比較です。</p><ul>"
+        "<h1>Refraction-aware 3D support volume from independent masks</h1>"
+        "<p>Development diagnostic on 10 frames, 3 views. "
+        "Not an evaluation of ID accuracy or detection recall.</p>"
+        "<p>Top row: raw frame and input mask (cyan). Middle row: 3-view support (green). "
+        "Bottom row: support from 2 or more views (orange). Shown full-frame; "
+        "the number of candidates does not mean the number of fish.</p>"
+        "<p>top_contrast is the comparison in which only top was replaced with "
+        "background subtraction.</p><ul>"
         + "\n".join(links)
-        + '</ul><p><a href="summary.json">数値と実行記録</a></p></html>'
+        + '</ul><p><a href="summary.json">Numbers and run record</a></p></html>'
     )
     (args.out / "index.html").write_text(page, encoding="utf-8")
 

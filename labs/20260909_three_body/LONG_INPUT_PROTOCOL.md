@@ -1,30 +1,37 @@
-# 約30分に向けた独立画像入力の準備
+# Preparing independent image inputs for about 30 minutes
 
-2026-09-09、入力準備の条件を `long_input_protocol.json` に登録した。
-ここでは検出器の前処理だけを扱い、30分の追跡手法・ID判定はまだ選択しない。
+2026-09-09: the input-preparation conditions were registered in `long_input_protocol.json`.
+Only detector preprocessing is covered here; the 30-minute tracking method and identity
+decision are not yet selected.
 
-元動画の最後の30分、native frame 49800:348600（166 fps、298800フレーム）を対象とする。
-既知の短い失敗区間と実行中の1分を含むため、未使用のID評価データとは呼ばない。
-第一フレームだけの幾何監査では3匹9ノードに直接支持があったが、検出前処理はその
-姿勢、SLEAP、個体名、人の注釈を一切読まない。
+The target is the last 30 minutes of the source video, native frames 49800:348600 (166 fps,
+298800 frames). Because it contains known short failure intervals and the minute currently
+running, it is not called unused identity-evaluation data. A geometry audit of the first frame
+alone found direct support for 9 nodes of the 3 fish, but detector preprocessing reads none of
+that pose, SLEAP, individual names or human annotations.
 
-既存の固定9枚の背景規則は長窓に適用すると2枚しか残らない。そのため別の規則として、
-全対象区間より前の5000,10000,...,45000の9枚を固定する。同じ9枚の画素ごとの中央値を
-全chunk・全手法へ渡す。フレームの見た目による選択や不足時のfallbackは行わない。
-背景画像は検出器へ渡さず、後の背景差分等の入力として保存する。
+Applied to the long window, the existing fixed 9-frame background rule leaves only 2 frames.
+So, as a separate rule, the 9 frames 5000,10000,...,45000, all before the whole target interval,
+are fixed. The per-pixel median of the same 9 frames is passed to every chunk and every method.
+No selection by frame appearance and no fallback on shortage are used. The background image is
+not passed to the detector; it is saved as input for later background subtraction and the like.
 
-モデル・設定・原動画・元入力manifestのSHAを登録し、既存のbatch1、閾値0.5、
-FP32パラメータ、backend設定を維持する。各画像の全検出をそのまま残す。
-元MP4は読み取り用hardlinkを使い、動画を再エンコード・複製しない。
+The SHAs of the model, configuration, source video and original input manifest are registered,
+and the existing batch1, threshold 0.5, FP32 parameters and backend settings are kept. All
+detections of each image are kept as they are. The source MP4 is read through a read-only
+hardlink; the video is not re-encoded or copied.
 
-10秒（1660 native frames）単位で3viewを保存する。全3viewと各出力SHAの完了記録が
-揃ったchunkだけを再利用する。途中出力や異なるprotocol/code/model/inputのchunkは
-流用しない。未完了attemptは保持して新attemptを作り、古いファイルへ追記しない。
-これは画像ごとに独立した検出の再開であり、追跡の初期化処理は実行しない。
+The 3 views are saved in 10-second units (1660 native frames). Only chunks with a completion
+record for all 3 views and every output SHA are reused. Partial outputs and chunks with a
+different protocol/code/model/input are not reused. An incomplete attempt is kept and a new
+attempt is created; old files are not appended to. This is resumption of per-image independent
+detection; no tracking initialization is run.
 
-最終入力は全chunkの順序・連続native番号・全mask配列・全原画SHAが整合してから公開する。
-chunk内のゼロ検出も削除せず、マスクの並びや浮動小数の値を保持する。結合ではoffsetだけ
-を再計算し、同じ入力を通し保存した配列との完全一致を検査する。
+The final input is published only after the order of all chunks, contiguous native numbering,
+all mask arrays and all raw-frame SHAs are consistent. Zero detections within a chunk are not
+deleted either, and mask order and floating-point values are kept. Joining recomputes only the
+offsets, and exact equality with arrays saved in a single pass over the same input is checked.
 
-全30分のGPU実行前にCPUテストと小実窓での比較・中断後再利用を検証する。
-この文書とJSONの存在は、30分の入力完成・追跡完成・無スワップを意味しない。
+Before the full 30-minute GPU run, CPU tests, a comparison on a small real window, and reuse
+after interruption are verified. The existence of this document and the JSON does not mean that
+the 30-minute input is complete, that tracking is complete, or that there are no swaps.

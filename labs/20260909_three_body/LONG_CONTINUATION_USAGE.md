@@ -1,17 +1,20 @@
-# 長時間入力の継続実行
+# Continuation runs on long inputs
 
-`run_long_continuation.py` は、登録した49800の初期姿勢から、完成した入力チャンクの末尾まで
-同じ追跡状態で進む。対象全体は `[49800,348600)`、166 fps、298800フレームである。
-独立D2の保存単位は1660フレーム（10秒）。ファイル境界で姿勢を初期化しない。
+`run_long_continuation.py` advances from the registered initial pose at 49800 to the end of the
+completed input chunks with the same tracking state. The full target is `[49800,348600)`,
+166 fps, 298800 frames. The independent-D2 storage unit is 1660 frames (10 s). Poses are not
+initialized at file boundaries.
 
-初回の実データ試行は `[49800,51460)` の1660フレームに限定した。全30分の完走や、
-3匹の生物学的IDの正解確認を表す試行ではない。実行条件は
-[long_tracking_protocol.json](long_tracking_protocol.json) に追跡前に固定した。
+The first real-data trial was limited to the 1660 frames of `[49800,51460)`. It is not a trial
+representing completion of the full 30 minutes, or confirmation of ground truth for the
+biological identities of the 3 fish. The run conditions were fixed in
+[long_tracking_protocol.json](long_tracking_protocol.json) before tracking.
 
-## 実行済み初回試行のコマンド
+## Command for the completed first trial
 
-リポジトリ直下のPowerShellから、既存成果物を上書きしない新しい出力先を指定する。
-以下の出力先は初回実行の記録であり、同名で再実行しない。
+From PowerShell at the repository root, specify a new output location that does not overwrite
+existing outputs. The output location below is the record of the first run; do not re-run under
+the same name.
 
 ```powershell
 & .venv/Scripts/python.exe -B labs/20260909_three_body/run_long_continuation.py `
@@ -21,16 +24,18 @@
   --output work/three_body/long_continuation_first1660_v1
 ```
 
-前処理は専用のDetectron2環境、追跡は本リポジトリのCUDA対応環境を使う。
-新しいパッケージのインストールは必要ない。初期値登録・SL・屈折校正・元動画・D2モデル・
-背景規則・保存済みマスクと実装のSHAを検査するため、最初の進捗表示まで時間がかかる。
+Preprocessing uses the dedicated Detectron2 environment; tracking uses this repository's
+CUDA-enabled environment. No new package installation is needed. Because the SHAs of the
+initial-value registration, SL, refractive calibration, source video, D2 model, background rule,
+saved masks and implementation are checked, the first progress display takes a while.
 
-## 後続区間へ進む場合
+## Continuing to later intervals
 
-次の10秒分の独立マスクだけを準備するコマンドは次のとおり。既に検査に通るチャンクは
-再利用し、次の未完了チャンクを新しいattemptへ保存する。1回の制限で全180チャンクが
-そろわなければ、親処理は `PreparationPaused` / `incomplete` と終了コード1を返す。
-個々の成功チャンクのsealとは意味が異なる。
+The command that prepares only the next 10 seconds of independent masks is as follows. Chunks
+that already pass the checks are reused, and the next incomplete chunk is saved to a new
+attempt. If a single limited run does not complete all 180 chunks, the parent process returns
+`PreparationPaused` / `incomplete` and exit code 1. This means something different from the seal
+of an individual successful chunk.
 
 ```powershell
 & ../medaka-mating-pipeline/.venv-detectron2/Scripts/python.exe -B `
@@ -41,8 +46,9 @@
   --max-new-chunks 1
 ```
 
-初回の成功sealと次のチャンク `[51460,53120)` がそろった場合に、次を実行できる。
-同じ出力先が存在する場合は別名を使う。検証が通る前にこのコマンドを繰り返さない。
+Once the first run's success seal and the next chunk `[51460,53120)` are both present, the
+following can be run. If the same output location exists, use a different name. Do not repeat
+this command before verification passes.
 
 ```powershell
 & .venv/Scripts/python.exe -B labs/20260909_three_body/run_long_continuation.py `
@@ -53,24 +59,33 @@
   --output work/three_body/long_continuation_through53120_v1
 ```
 
-`--through-frame` は登録済みチャンクの終端だけを受理する。将来のチャンクが増えても
-固定入力bindingは同じである。親が消費したチャンクのseal・内容・順序が変わると拒否する。
-失敗した親や、保存された候補座標だけからの再開は受け付けない。
+`--through-frame` accepts only the end of a registered chunk. The fixed input binding stays the
+same as future chunks are added. If the seal, content or order of chunks the parent consumed
+changes, the run is refused. Resumption from a failed parent, or from saved candidate
+coordinates alone, is not accepted.
 
-## 出力の読み方
+## Reading the outputs
 
-- `continuation.provenance.json`: フェーズ全体の成功・失敗と入力、実装、出力のSHA。
-- `checkpoint/`: 全候補の親履歴・累積コスト・速度・欠測と保留の状態・直前画像を保存。
-- `candidate.npz`: 現在の終端で選んだ21配列。後続映像によって過去部分も変わり得る。
-- `consumed_chunks.json`: 今回までの入力証拠。復元時は以前のprefixとの完全一致が必要。
-- `summary.json`: 追跡時間、観測と受理の数、初期化・復元回数、暫定結果かどうか。
-- `progress.jsonl`: 処理済みのnativeフレームと経過時間。
+- `continuation.provenance.json`: success/failure of the whole phase, and the SHAs of inputs,
+  implementation and outputs.
+- `checkpoint/`: saves every candidate's parent history, cumulative cost, velocity, missing and
+  hold state, and previous image.
+- `candidate.npz`: the 21 arrays selected at the current end. Earlier parts may also change with
+  later video.
+- `consumed_chunks.json`: the input evidence up to this run. On restore, an exact match with the
+  earlier prefix is required.
+- `summary.json`: tracking time, observation and acceptance counts, initialization and restore
+  counts, and whether the result is provisional.
+- `progress.jsonl`: processed native frames and elapsed time.
 
-`full_sequence_complete` は348600まで完走した場合だけtrueとなる。
-`prefix_backtrace_provisional` がtrueの結果では、勝った経路だけを次の初期値に流用しない。
-復元は全候補を含むcheckpointから行う。履歴の保存・検証・復元費用は処理済み時間とともに増える。
+`full_sequence_complete` is true only when the run has completed through 348600.
+For a result with `prefix_backtrace_provisional` true, the winning path alone is not reused as
+the next initial value. Restore is done from the checkpoint containing all candidates. The cost
+of saving, verifying and restoring history grows with processed time.
 
-`accepted_pectoral_count` は条件付きの出力可能数であり、正しいIDの正解数ではない。
-IDが曖昧になった場面は、[原画確認の手順](../../work/three_body/minute_reviews/REVIEW_INSTRUCTIONS.md)
-で得る実際の人手記録と照合する。固定された背景9枚は旧1分実験の背景とは異なるため、
-この新しい長区間と旧1分の値だけからアルゴリズムの改善率を計算しない。
+`accepted_pectoral_count` is a conditional count of outputtable points, not a count of correct
+identities. Scenes where identity became ambiguous are checked against actual human records
+obtained with the [raw-frame review procedure](../../work/three_body/minute_reviews/REVIEW_INSTRUCTIONS.md).
+The fixed 9 background frames differ from the background of the old one-minute experiment, so
+an algorithm improvement rate is not computed from this new long interval and the old
+one-minute values alone.

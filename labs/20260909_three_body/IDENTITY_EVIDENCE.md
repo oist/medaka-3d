@@ -1,83 +1,109 @@
-# 3 個体の独立評価に使える証拠と、追加確認の最小単位
+# Evidence usable for independent evaluation of the 3 individuals, and the minimum unit of additional checking
 
-2026-09-09 に `assets/groundtruth` の全ファイル名、CSV/JSON/JSONL の列と内容、
-旧リポジトリの `annotations/`、`report/` と `runs/` の注釈関連ファイル名を調べた。
-調査範囲内では、**3 個体すべての確定した、手法に依存しない遭遇前後の対応セットは見つからなかった**。
-全アーカイブの全ファイルを精査したという意味ではない。
-ファイルの SHA256 と集計は
-[groundtruth_inventory.json](../../work/three_body/groundtruth_inventory.json) に保存した。
+On 2026-09-09, all file names in `assets/groundtruth`, the columns and contents of the
+CSV/JSON/JSONL files, the old repository's `annotations/`, and the annotation-related file names
+in `report/` and `runs/` were examined.
+Within the scope examined, **no confirmed, method-independent set of before/after-encounter correspondences for all 3 individuals was found**.
+This does not mean every file in the whole archive was scrutinized.
+File SHA256s and tallies were saved to
+[groundtruth_inventory.json](../../work/three_body/groundtruth_inventory.json).
 
-| 既存データ | 実際にある証拠 | 今回の評価での限界 |
+| Existing data | Evidence actually present | Limitation for this evaluation |
 |---|---|---|
-| `female_sex_gt.csv` | メスの選択 300 confirmed、1 ambiguous | 他の 2 匹の対応は決まらない。`click_x/y` は人手選択で、`mouth_x/y` と geometry ID は連結された推定値 |
-| `contact_episode_gt.csv` | 32 行、各入口・出口の `female` と `anchor_male` のクリック | 第三個体のクリックなし。全行 `contact_validity` と `tracker_assessment` は `uncertain`。`evidence_quality=usable` と矛盾せず、確定判定とは別。自動対応提案を人手判断に昇格しない |
-| `swap_events.csv/json` | ある C30 描画に対する人手の交換指摘。オス側の証拠も含む | その描画の slot 名に依存。オス同士の指摘は完全網羅ではない。別手法の slot へ直接転記できない |
-| BORIS 26 CSV | 行動時刻と subject。K_1_2 は 173 行、`m1tf`、`m2tf` 等あり | 原画像の座標や遭遇前後対応はない。求愛する側を使って個体を命名し、その行動を検証すると循環する |
-| SLEAP / Detectron2 / HITL の画像注釈 | 各画像のキーポイント・輪郭 | 姿勢正解の存在は、オス同士の時間的な同一性正解の存在を意味しない |
+| `female_sex_gt.csv` | Female selections: 300 confirmed, 1 ambiguous | The correspondence of the other 2 fish is not determined. `click_x/y` is a human selection; `mouth_x/y` and the geometry ID are linked estimates |
+| `contact_episode_gt.csv` | 32 rows; clicks on `female` and `anchor_male` at each entry and exit | No clicks for the third individual. `contact_validity` and `tracker_assessment` are `uncertain` in every row. This does not contradict `evidence_quality=usable`, and is separate from a confirmed judgement. Automatic correspondence proposals are not promoted to human judgements |
+| `swap_events.csv/json` | Human swap reports against one C30 render; includes male-side evidence | Depends on that render's slot names. Male-to-male reports are not exhaustive. Cannot be transcribed directly onto another method's slots |
+| BORIS 26 CSV | Behaviour times and subject. K_1_2 has 173 rows, including `m1tf`, `m2tf` etc. | No raw-image coordinates or before/after-encounter correspondences. Naming individuals by which one courts and then verifying that behaviour is circular |
+| SLEAP / Detectron2 / HITL image annotations | Keypoints and contours per image | The existence of pose ground truth does not imply the existence of temporal male-to-male identity ground truth |
 
-旧 contact の 32 行は無価値ではない。人手の元クリックを保持し、自動 mapping や
-SLEAP に吸着した座標とは分けて、必要なら独立再確認の対象にできる。
-ただし今回の `333519:333719` を含まず、入口・出口フレームは 13323–32635 にある。
-「人手のオス情報が一切ない」という従来の簡略説明は正確ではない。
+The 32 old contact rows are not worthless. They retain the original human clicks and, kept apart
+from the automatic mapping and SLEAP-snapped coordinates, can be the target of independent
+re-checking if needed.
+However, they do not include this `333519:333719`; their entry and exit frames lie in
+13323–32635.
+The earlier simplified statement that "there is no human male information at all" is not
+accurate.
 
-## 今回用意した原画像の確認画面
+## The raw-image review page prepared for this
 
-[確認画面](../../work/three_body/review_truth/transient_333519-333719/index.html) は
-新しい FFV1 原画像 staging だけを読む。モデルの ID、姿勢、マスク、自動対応を読み込まない。
-600 枚の元 BGR 画素 SHA256 を照合した。
-全 200 フレームの 3 視点動画を 20 fps で再生でき、各フレームの native-size JPEG で
-正確なフレーム送りと口のクリックができる。初期の 3 時点には lossless PNG もある。
-動画・JPEG は表示用の再圧縮であり、lossless 原画そのものではない。
+The [review page](../../work/three_body/review_truth/transient_333519-333719/index.html) reads
+only the new FFV1 raw-image staging. It does not load model identities, poses, masks or automatic
+correspondences.
+The source BGR pixel SHA256s of 600 images were verified.
+The 3-view video of all 200 frames can be played at 20 fps, and a native-size JPEG of each frame
+allows exact frame stepping and mouth clicks. The initial 3 time points also have lossless PNGs.
+The videos and JPEGs are recompressed for display, not the lossless raw frames themselves.
 
-最小の人手作業は次のとおり。
+The minimum human work is as follows.
 
-1. 入口で 3 匹を任意に A・B・C と呼び、各魚の口を見やすい視点で 1 点ずつ付ける。
-2. 報告された異常直後と出口でも同じ魚の口を付ける。合計は最少 9 点。
-3. 各魚について「入口→直後」「直後→出口」を同じ魚と確認できるか、曖昧か、見えないかを答える。合計 6 判断。
-4. 映像からメスを判別できれば追加で記録する。オスの白・赤という命名は要求しない。
+1. At the entry, call the 3 fish A, B and C arbitrarily, and mark one point on each fish's mouth in a view where it is easy to see.
+2. Also mark the same fish's mouths just after the reported anomaly and at the exit. The minimum total is 9 points.
+3. For each fish, answer whether "entry→after" and "after→exit" can be confirmed as the same fish, are ambiguous, or are not visible. 6 judgements in total.
+4. If the female can be identified from the video, record that additionally. Naming the males white and red is not required.
 
-初期時点は 333519、333621、333718。これは既知の追跡異常報告 333619–333620 を挟む
-確認候補であり、実魚が接触したことを仮定しない。人は原画像を見て時点を変更できる。
-この 200 フレームだけでは連続性が分からない場合は曖昧を残し、追加の前後映像を求める。
-アシスタントによる画像解釈は、人手正解として書き込まない。
+The initial time points are 333519, 333621 and 333718. These are review candidates bracketing
+the known tracking-anomaly report 333619–333620, and do not assume that the physical fish made
+contact. The human can change the time points after viewing the raw images.
+If continuity cannot be determined from these 200 frames alone, the item is left ambiguous and
+additional video before and after is requested.
+Image interpretation by the assistant is not written in as human ground truth.
 
-A・B・C はこのクリップ内の匿名対応であり、別クリップや別日の同じ文字とは接続しない。
-経路の連続性を前後再生で確認することは許容する。求愛傾向や優劣からの推測は許容しない。
-これは `DEVELOPMENT_STRATEGY.md` の「匿名オスの遭遇対応」と「生物学的な命名」を分離する扱い。
-後段にある「形態だけ」という文を、目視の時間的連続性まで禁止する意味には用いない。
+A, B and C are anonymous correspondences within this clip and are not linked to the same letters
+in another clip or on another day.
+Confirming path continuity by playing back and forth is allowed. Inference from courtship
+tendency or dominance is not allowed.
+This follows the separation in `DEVELOPMENT_STRATEGY.md` between "encounter correspondence of
+anonymous males" and "biological naming".
+The "morphology only" sentence further on is not used to mean that visual temporal continuity is
+also prohibited.
 
-JSON は最初すべて未確認で、保存後も `human_draft_requires_adjudication` とする。
-クリック不足の確認や構造検証は人手判断の真偽を保証しない。
-生の人手入力、判定者、所要時間、曖昧な項目を保持し、確定版は `/bucket` に保存する。
-人手で修正してから走らせた結果は、全自動の結果とは別条件として報告する。
+The JSON is initially entirely unconfirmed, and remains `human_draft_requires_adjudication` after
+saving.
+Checks for missing clicks and structural validation do not guarantee that the human judgements
+are true.
+The raw human input, the judge, the time taken and the ambiguous items are retained, and the
+final version is saved to `/bucket`.
+Results run after human correction are reported as a separate condition from fully automatic
+results.
 
-生成器と入力境界のテストは 4 件成功し、Ruff を通過した。全動画フレームの decode を確認した。
-Browser で `file://` を開く操作はセキュリティポリシーが拒否し、別経路による回避も禁止されたため、
-**実ブラウザ上のクリック・JSON 保存操作は未検証**。UI の実用確認を済ませたという主張はしない。
+The 4 generator and input-boundary tests passed, and Ruff passed. Decoding of all video frames
+was confirmed.
+Opening `file://` in the browser was refused by security policy, and working around it by another
+route was prohibited, so **clicking and JSON saving in a real browser are not verified**. No
+claim is made that the UI has been checked for practical use.
 
-## 次の未使用評価窓の選択ルール案 — まだ抽出・開封しない
+## Proposed selection rule for the next unused evaluation windows — not yet extracted or opened
 
-設定凍結の前に結果を見ない。旧 2 開発窓、旧 4 検証窓、76620:86580 の 1 分間、
-132000:137000 の mask-volume pilot はすでに開封済みであり、次回の未使用検証に再利用しない。
-この除外は個々の採用フレームだけでなく、閲覧した前後を含む連続区間で行う。
+Results are not viewed before the settings are frozen. The old 2 development windows, the old 4
+validation windows, the one minute 76620:86580 and the 132000:137000 mask-volume pilot are
+already opened and are not reused for the next unused validation.
+This exclusion is applied not only to the individual frames used but to the contiguous intervals
+including the viewed frames before and after.
 
-次の順序を固定してから、同一動画の 3 秒窓 4 本を選ぶことを提案する。
+It is proposed to fix the following order and then select four 3-second windows from the same
+video.
 
-1. 既使用区間一覧と、実際に使う SLEAP / Detectron2 の全訓練・検証画像の元フレーム一覧を保存する。
-   元画像への対応が不明な訓練データは「不明」とし、厳密な学習非重複を主張しない。
-2. 1 秒刻みの開始候補から 498 フレーム窓を作る。既使用区間と全訓練フレームの前後 332 フレームを除く。
-   背景サンプルとして既に読み込んだ画像も一覧に含め、背景画像を窓内に入れない。
-3. 残った候補を、固定文字列 `three-body-validation-20260909-v1` と実験名・開始フレームの
-   SHA256 の辞書順で並べる。順番に、相互に 1660 フレーム以上の間隔を置いて 4 本採用する。
-   検出数、追跡スコア、GT の有無、魚の分離状態は選択条件にしない。不足したら不足を報告する。
-4. 初期化・閾値・停止規則を凍結してから動画を開く。原画像の人手対応が曖昧な窓を
-   別の易しい窓へ差し替えない。未評価分を分母から黙って落とさない。
+1. Save the list of used intervals and the list of source frames of all training and validation images of the SLEAP / Detectron2 models actually used.
+   Training data whose mapping to source images is unknown is marked "unknown", and strict training non-overlap is not claimed.
+2. Build 498-frame windows from start candidates at 1-second steps. Exclude the used intervals and all training frames with 332 frames before and after.
+   Also include in the list the images already read as background samples, and keep background images out of the windows.
+3. Sort the remaining candidates in lexicographic order of the SHA256 of the fixed string `three-body-validation-20260909-v1` with the experiment name and start frame.
+   Take 4 in that order, at least 1660 frames apart from each other.
+   Detection count, tracking score, presence of GT and fish separation state are not selection criteria. If there are too few, report the shortfall.
+4. Open the video only after initialization, thresholds and stopping rules are frozen. Do not replace a window whose raw-image human correspondence is ambiguous with another, easier window.
+   Do not silently drop the not-evaluated portion from the denominator.
 
-これは「新しい追跡候補の結果を見ていない」と「検出器の訓練画像と重ならない」を別々に検証する規則である。
-K_1_2 内の窓を増やしても新しい独立個体群にはならない。汎化を主張する後段では、別の group が必要。
-部分注釈で確認できるのは指定した各時点間の対応であり、途中の一過性の交換が一度もないという保証ではない。
-3 匹の観測率、受理率、対応が確認できた割合、交換指摘、未評価割合を分けて報告する。
+This rule verifies "the results of the new tracking candidate have not been seen" and "does not
+overlap the detector's training images" separately.
+Adding windows within K_1_2 does not make a new independent group of individuals. A later stage
+that claims generalization needs a different group.
+What partial annotation confirms is the correspondence between the specified time points; it is
+not a guarantee that no transient exchange ever occurs in between.
+The observation rate, acceptance rate, fraction with confirmed correspondence, exchange reports
+and not-evaluated fraction for the 3 fish are reported separately.
 
-現在の共有 `score_encounter` は生物学的な `Identity` 名も評価するので、匿名 A/B/C を
-M1/M2 に読み替えて命名精度を計算してはいけない。将来の共有評価の追加時には、
-初期 slot の任意置換に不変な対応評価と、判別可能なメスの命名評価を分離して検証する。
+The current shared `score_encounter` also evaluates biological `Identity` names, so anonymous
+A/B/C must not be reread as M1/M2 to compute naming accuracy.
+When a future shared evaluation is added, a correspondence evaluation invariant to arbitrary
+permutation of the initial slots and a naming evaluation for the distinguishable female are
+verified separately.

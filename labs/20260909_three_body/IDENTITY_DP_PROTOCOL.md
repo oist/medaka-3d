@@ -1,78 +1,107 @@
-# 固定3D軌跡に対する全時間のID対応最適化
+# Whole-time identity-assignment optimization over fixed 3D trajectories
 
-2026-09-09。実データのDP実行前に記録する別実験。
+2026-09-09. A separate experiment recorded before running the DP on real data.
 
-## 検証する仮説
+## Hypothesis under test
 
-色で姿勢候補まで選び直す版は、666フレームで輪郭・色の損失を下げた一方、直接支持が
-1948から1946個体フレームへ下がった。今回は完成した3D幾何を固定し、IDの6順列を
-全時間で比較する。目標はID対応への画像情報の寄与を調べることであり、支持率の増加を
-示す実験ではない。元の姿勢・観測・source・保留は変更せず、提案する対応を別出力にする。
+The version that used colour to re-select even the pose candidates lowered the contour and
+colour losses over 666 frames, while direct support fell from 1948 to 1946 individual-frames.
+This time the completed 3D geometry is fixed and the 6 identity permutations are compared over
+the whole time. The aim is to examine the contribution of image information to identity
+assignment; this is not an experiment showing an increase in support rate. The original poses,
+observations, sources and holds are not changed, and the proposed assignment is a separate
+output.
 
-元の持続口欠測版は初期化1回、途中の外部reset0で得た全200・666・9960フレームを使う。
-今回のID段階は過去と未来を使うオフライン処理であり、新しい身体fitや途中の外部seedを
-追加しない。6状態の固定候補と1次の時間コストに限った全体最小値であり、連続3D空間の
-全ての姿勢を探索した最適解とは主張しない。
+The full 200, 666 and 9960 frames obtained by the original persistent-mouth-missing version with
+1 initialization and 0 external mid-run resets are used. This identity stage is offline
+processing that uses the past and the future; no new body fit or external mid-run seed is added.
+It is a global minimum restricted to fixed candidates of 6 states and a first-order temporal
+cost, and is not claimed to be an optimum searched over all poses in continuous 3D space.
 
-## 入力と初期の外見
+## Inputs and initial appearance
 
-各stateの順列は `P[identity] = raw geometry slot`。既存の身体幅・骨格・可視寄与は
-raw幾何に付属し、IDに応じた形状へ置き換えない。固定した初回stateは[0,1,2]。
-この匿名IDの順序は登録済み初期姿勢に由来し、性別やオスの生物学的命名の正解ではない。
+The permutation of each state is `P[identity] = raw geometry slot`. The existing body width,
+skeleton and visible contribution belong to the raw geometry and are not replaced with an
+identity-dependent shape. The fixed first state is [0,1,2].
+This anonymous identity order comes from the registered initial pose and is not ground truth for
+sex or for the biological naming of the males.
 
-外見は、先に実行したappearance版の最初166フレームの当時のonline状態だけから登録し、
-凍結・原画像再計算監査済みのtemplateを使う。幾何のrunと同じseed、校正、SLEAP、設定と
-初期166枚のnative BGR・独立D2全maskと行順を照合する。200/666の同区間では全推論入力の
-path/SHA一致も要求する。1分の幾何へ666版のtemplateを使う場合には、初期166枚の実内容を
-照合する。背景PNGのSHAは区間によって異なるため、背景を使わないdetectron2 modeだけで
-この移植を許し、全入力が同一とは表示しない。背景依存modeには適用しない。
+Appearance is enrolled only from the then-current online states of the first 166 frames of the
+previously run appearance version, and the frozen template, audited by recomputation from raw
+images, is used. The same seed, calibration, SLEAP and configuration as the geometry run, and the
+native BGR, all independent D2 masks and row order of the first 166 frames, are verified. On the
+same 200/666 intervals, path/SHA agreement of all inference inputs is also required. When the 666
+version's template is used for the one-minute geometry, the actual content of the first 166
+frames is verified. Because the background PNG SHA differs by interval, this transfer is allowed
+only in detectron2 mode, which does not use the background, and all inputs are not presented as
+identical. It is not applied to background-dependent modes.
 
-登録時の暫定IDに誤りがあれば、その誤りはtemplateに残り得る。最終軌跡に合わせた遡及的な
-templateの再ラベルや、正解注釈による色の選別は行わない。評価用の旧軌跡やGTの値は
-IDコストに使わず、必要な上流の幾何だけを明示した入力として読む。
+If the provisional identities at enrollment are wrong, that error may remain in the template. No
+retroactive relabelling of the template to fit the final trajectory, and no selection of colours
+by ground-truth annotation, is done. Old trajectories and GT values used for evaluation are not
+used in the identity cost; only the required upstream geometry is read, as an explicitly
+declared input.
 
-## 固定する第一の目的関数
+## The first objective, fixed
 
-上面の独立D2全領域のunionを既定5×5楕円で収縮し、native frameからの固定seedで最大512
-画素を選ぶ。位置やSLEAPの支持によって色の採点画素を選ばない。既定の屈折rendererを
-各フレームの固定幾何に1回だけ適用し、その可視寄与のraw slotを6通りに対応付ける。
-8 Gaussian、width_ratio=0.06、色のsigma=0.1、background_cost=2、outlier_fraction=0.1。
-色の係数は1。初期166フレームの色コストは0にして登録期間と採点期間を分ける。
+The union of all independent D2 regions in the top view is eroded with the default 5×5 ellipse,
+and at most 512 pixels are chosen with a fixed seed derived from the native frame. Colour-scoring
+pixels are not chosen by position or by SLEAP support. The default refractive renderer is
+applied once to each frame's fixed geometry, and the raw slots of its visible contributions are
+mapped in the 6 ways. 8 Gaussians, width_ratio=0.06, colour sigma=0.1, background_cost=2,
+outlier_fraction=0.1. The colour coefficient is 1. The colour cost of the first 166 frames is 0,
+separating the enrollment period from the scoring period.
 
-時間コストは隣り合うnativeフレームの直接支持された胸ヒレ位置だけを使う。
-`0.2 / 3 * sum_identity(distance_mm² / 0.8²)` を、両時点が直接支持される対応について
-加える。欠測に過去の最後の位置や予測位置を代入しない。分母は常に3で、支持数に応じて
-平均を取り直さない。速度の上限や加速度制約は未測定のため加えない。
+The temporal cost uses only directly supported pectoral-fin positions in adjacent native frames.
+`0.2 / 3 * sum_identity(distance_mm² / 0.8²)` is added for the assignments where both time points
+are directly supported. The last past position or a predicted position is not substituted for a
+missing observation. The denominator is always 3; the average is not re-taken according to the
+support count. No speed limit or acceleration constraint is added, as these have not been
+measured.
 
-これは未校正の工学的コストである。欠測を含む接続の時間コストは0になり、支持された
-高コストの接続を避ける対応が有利になり得る。この限界を明記し、各遷移の支持pair数と
-選択した接続を保存する。欠測を利用した小さいコストをIDの証明にしない。初回実験では
-この問題を隠すための追加欠測ペナルティや事後の重み調整を行わない。
+This is an uncalibrated engineering cost. The temporal cost of a link involving a missing
+observation is 0, so an assignment that avoids supported high-cost links may be favoured. This
+limitation is stated explicitly, and the number of supported pairs and the selected link for
+each transition are saved. A small cost obtained by exploiting missing observations is not taken
+as proof of identity. In the first experiment, no additional missing-observation penalty or
+post-hoc weight adjustment is made to hide this problem.
 
-## 保存する不確実性と評価
+## Uncertainty saved, and evaluation
 
-6状態のforward/backward最小コストから、各時点の各stateと、各IDが別slotになる全経路の
-最小コスト差を計算する。区間の端で同じ対応に戻る別経路も競合に含める。数値上のtie、
-経路が不可能、初期拘束、実行可能な代替がない場合を区別する。代替がないためのinfを
-強い観測証拠とは扱わず、コスト差を正解確率へ変換しない。
+From the 6-state forward/backward minimum costs, the minimum-cost differences are computed for
+each state at each time point and for all paths in which each identity is in a different slot.
+Alternative paths that return to the same assignment at the ends of the interval are also
+included as competitors. Numerical ties, infeasible paths, initial constraints and the absence of
+a feasible alternative are distinguished. An inf due to the absence of an alternative is not
+treated as strong observational evidence, and cost differences are not converted into
+probabilities of being correct.
 
-frameごとの色コスト、可視寄与、採点画素数、直接支持、元のreviewと、提案するID対応を
-並列保存する。元reviewの解除や元ファイルの置換はしない。観測されない位置はNaNを
-維持し、ID変更時には姿勢だけでなくsource・観測・元reviewも同じraw slot参照で対応付ける。
+Per-frame colour cost, visible contribution, number of scored pixels, direct support and the
+original review are saved alongside the proposed identity assignment. The original review is not
+cleared and original files are not replaced. Unobserved positions stay NaN, and when identities
+change, not only poses but also sources, observations and the original review are mapped
+through the same raw-slot reference.
 
-まず200/666全フレームで入力とgeometryの不変性、DPの厳密解、template監査を確認する。
-この方式の総観測数が元方式と等しいのは構成上の性質であり、精度改善ではない。メスの
-既知の支持された注釈で対応が悪化した場合は原因を調べ、採用済みとは扱わない。
-1分はこの方法のID対応と曖昧さを比較するために評価する。全3個体の人手正解はまだなく、
-メスの端点一致・大きいモデルコスト差・元方式との一致だけでswapゼロとは報告しない。
+First, on all 200/666 frames, invariance of inputs and geometry, the exact DP solution and the
+template audit are checked. That the total observation count of this method equals that of the
+original method is a property of the construction, not an accuracy improvement. If the
+assignment worsens on the known supported female annotations, the cause is investigated and the
+method is not treated as adopted.
+The one minute is evaluated to compare this method's identity assignment and ambiguity. There is
+no human ground truth for all 3 individuals yet, and zero swaps are not reported on the basis of
+female endpoint agreement, large model-cost differences or agreement with the original method
+alone.
 
-同色、重なり、ほぼ見えない身体、照明変化、templateの混入、重複した3D身体、反射を
-追う幾何には限界がある。位置の再構築が必要な失敗と、ID対応で改善できる失敗を区別する。
+Same colour, overlap, nearly invisible bodies, illumination changes, template contamination,
+duplicated 3D bodies and geometry that follows reflections are limitations. Failures that need
+position reconstruction are distinguished from failures that identity assignment can improve.
 
-## 実行前に追加する比較（07:24 JST）
+## Comparison added before running (07:24 JST)
 
-色の寄与を分離するため、評価段階で同じ保存geometry・時間コスト・初期stateを用い、
-色のunaryを全て0にした「動きだけ」のDPも計算する。画像を再処理する必要はない。
-そのDP配列と提案対応も別保存し、元のID固定、動きだけ、動き＋色を同じ注釈・指標で
-比較する。正解を見て重みを調整しない。同点から決定的に選ばれる経路もあり、元IDとの
-一致や別方式との一致をID正解の根拠にはしない。
+To isolate the colour contribution, a "motion only" DP with all colour unaries set to 0 is also
+computed at the evaluation stage, using the same saved geometry, temporal cost and initial
+state. No image reprocessing is needed. Its DP arrays and proposed assignment are also saved
+separately, and the original fixed identities, motion only, and motion + colour are compared with
+the same annotations and metrics. Weights are not tuned by looking at ground truth. Some paths
+are chosen deterministically from ties, so agreement with the original identities or with another
+method is not taken as grounds for correct identity.

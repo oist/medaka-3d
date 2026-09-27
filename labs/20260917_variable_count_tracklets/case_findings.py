@@ -69,24 +69,29 @@ def main():
                 }
                 n0, n1 = metrics["P0"]["contiguous_runs"], metrics["P1"]["contiguous_runs"]
                 statement = (
-                    f"局所17フレームの連続区間数はP0 {n0}→P1 {n1}。"
-                    f"P0からの追加接続{disagreement['added_p1_links']}、"
-                    f"切断{disagreement['removed_p0_links']}、"
-                    f"前任観測の変更{disagreement['changed_predecessors']}。"
-                    "個体対応の正誤はこの集計だけでは確定しない。"
+                    f"Contiguous intervals in the local 17 frames: P0 {n0}→P1 {n1}. "
+                    f"Relative to P0: {disagreement['added_p1_links']} added links, "
+                    f"{disagreement['removed_p0_links']} cuts, "
+                    f"{disagreement['changed_predecessors']} changed predecessor observations. "
+                    "Whether the individual correspondence is correct cannot be confirmed from "
+                    "this tally alone."
                 )
                 remaining = (
-                    "2Dが連続していてもビュー間割当の失敗は残り得る。3D再接続は工程Dで別途評価。"
+                    "Even when 2D is continuous, cross-view assignment failures can remain. "
+                    "3D reconnection is evaluated separately in stage D."
                 )
                 if center == 30735 and view == "side2_cam":
                     remaining = (
-                        "旧レビューはside2の3D slotの一時ジャンプ。単一検出の2D連続性と"
-                        "3Dへの割当変更を区別し、この2D出力のみで修正済みとしない。"
+                        "The earlier review describes a temporary 3D slot jump in side2. "
+                        "Single-detection 2D continuity is kept distinct from reassignment in 3D, "
+                        "and this 2D output alone is not treated as a fix."
                     )
                 if center in (76791, 323819, 77415):
                     remaining = (
-                        "人手のno-swap対照。カメラと表示パネルの指定は一部未確定で、"
-                        "各2D行の正解IDには変換できない。追加接続・切断を誤修正扱いしないための確認対象。"
+                        "Human no-swap control. The camera and display-panel specification is "
+                        "partly unconfirmed, so it cannot be converted into ground-truth IDs for "
+                        "each 2D row. A check target so that added links and cuts are not "
+                        "treated as erroneous corrections."
                     )
                 key = f"{view}__f{center}"
                 result.append(
@@ -107,9 +112,11 @@ def main():
                         reflection_verdict="unclassified",
                         remaining_3d=remaining,
                         review_question=(
-                            "前後の全検出画像と低速動画で、同じ魚のP観測が継続しているか。"
-                            "変更がある場合はnative frameとglobal_rowの組で、"
-                            "正しい継続・誤接続・必要な保留・不要な切断を判定してください。"
+                            "In all detection images before and after and in the slow-motion "
+                            "video, does the P observation of the same fish continue? "
+                            "Where there is a change, judge each native frame and global_row "
+                            "pair as correct continuation, wrong link, necessary hold or "
+                            "unnecessary cut."
                         ),
                         video=f"review/{key}.mp4",
                         images=[

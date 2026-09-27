@@ -4,102 +4,113 @@ expires: 2026-11-17
 blocker: No demonstrated reduction in biological ID swaps; improvements coexist with regressions.
 ---
 
-# 独自2D追跡の実装・比較結果（2026-09-17）
+# Custom 2D tracking: implementation and comparison results (2026-09-17)
 
-計画の段階1–3を実装し、保存SLEAP（A）、前後監査による切断（B）、
-独自の双方向2D追跡＋短期2仮説の再評価（C）を同じ検出で比較した。
-主20秒・既知例・対照・同じ群の別20秒、計20区間が対象。
-最終数値は `work/custom2d_comparison_v1/analysis_v3/`。
-本番への採用は **parked**。スワップ低減や全面置換の優位性を実証していない。
+Stages 1–3 of the plan were implemented, and saved SLEAP (A), cutting by forward-backward audit
+(B), and custom bidirectional 2D tracking + short-term two-hypothesis re-evaluation (C) were
+compared on the same detections. The scope was 20 intervals in total: the main 20 s, known
+cases, controls, and a different 20 s from the same group.
+Final numbers are in `work/custom2d_comparison_v1/analysis_v3/`.
+Adoption for production is **parked**. Neither a swap reduction nor an advantage of full
+replacement has been demonstrated.
 
-[動画・グラフを内包したHTMLレポート](../../work/custom2d_comparison_v1/comparison_report.html)
+[HTML report with embedded videos and graphs](../../work/custom2d_comparison_v1/comparison_report.html)
 
-## 主20秒の実測値
+## Measured values, main 20 s
 
-f75270:78590、3320 native frames、166 fps。主比較はλ=0.767。
+f75270:78590, 3320 native frames, 166 fps. The main comparison uses λ=0.767.
 
-| 診断量 | A 保存SLEAP | B 接続監査 | C 独自＋短期再評価 |
+| Diagnostic | A saved SLEAP | B link audit | C custom + short-term re-evaluation |
 |---|---:|---:|---:|
-| 2D大移動を伴う接続 | 18 | 0 | 0 |
-| 区間内の2D tracklet数（3視点計） | 16 | 192 | 185 |
-| C28直後・10 mm超移動 | 18 | 15 | 15 |
-| 後処理後・10 mm超移動 | 3 | 4 | 3 |
-| 後処理後・4 mm超移動 | 21 | 19 | 17 |
-| 3D欠測（個体×フレーム / 9960） | 2 | 2 | 2 |
-| female端点区間（維持 / 変化） | 2 / 1 | 2 / 1 | 2 / 1 |
+| Links with a large 2D move | 18 | 0 | 0 |
+| 2D tracklets in the interval (3-view total) | 16 | 192 | 185 |
+| Moves > 10 mm, right after C28 | 18 | 15 | 15 |
+| Moves > 10 mm, after post-processing | 3 | 4 | 3 |
+| Moves > 4 mm, after post-processing | 21 | 19 | 17 |
+| 3D missing (individual × frame / 9960) | 2 | 2 | 2 |
+| female endpoint intervals (kept / changed) | 2 / 1 | 2 / 1 | 2 / 1 |
 
-検出を一つも削除していない。2Dの大移動はtop60、side50 px/native frameの
-診断閾値による。切断だけでも大移動数は下がるため、分断と併記する。
-3D移動は個体ごとの隣接フレームで数える。交換で2個体が飛べば2件となり、
-スワップ事象数ではない。femaleの変化区間は全方式でf76698→f77285のまま。
+No detection was deleted. Large 2D moves use diagnostic thresholds of top 60 and side
+50 px/native frame. Cutting alone lowers the large-move count, so it is reported alongside
+fragmentation. 3D moves are counted per individual over adjacent frames. If an exchange makes
+2 individuals jump, that counts as 2, so this is not a count of swap events. The female's changed
+interval stays f76698→f77285 under every method.
 
-## レビュー場面
+## Review scenes
 
-- **f31479:** 1秒クリップの最大移動174.92 mmがB/Cでは12.81 mm。
-  10 mm超移動は6 / 3 / 2。Bは18フレームのslot割当を変更し、
-  各フレームの3視点対応の集合は同じ。ID正解は未確定。
-- **f30735:** 10 mm超移動は2 / 2 / 2。視点間対応の問題が残る。
-- **f323819（人手レビューでスワップなし）:** Cで8フレームの対応が変わり、
-  10 mm超移動が4→6に増えた。誤修正リスクがある。
-- **f76791 / f77415（スワップなし）:** Cでそれぞれ1 / 10フレームの対応が変わった。
-  変更数をID改善数と扱わない。
+- **f31479:** the maximum move in the 1 s clip, 174.92 mm, is 12.81 mm under B/C.
+  Moves > 10 mm: 6 / 3 / 2. B changes the slot assignment in 18 frames, and the set of
+  three-view correspondences in each frame is the same. The correct ID is not confirmed.
+- **f30735:** moves > 10 mm: 2 / 2 / 2. A cross-view correspondence problem remains.
+- **f323819 (no swap in human review):** C changes the correspondence in 8 frames, and
+  moves > 10 mm rose 4→6. There is a risk of erroneous correction.
+- **f76791 / f77415 (no swap):** C changed the correspondence in 1 / 10 frames respectively.
+  The number of changes is not treated as a number of ID improvements.
 
-8クリップは166 native framesずつ。f76930とf76988は108フレーム重複する。
-元レビューの対象側・正確な交換区間は未指定。中心番号は発生時刻の真値ではない。
+The 8 clips are 166 native frames each. f76930 and f76988 overlap by 108 frames.
+The original review did not specify the reviewed side or the exact exchange interval. The
+centre numbers are not the true onset times.
 
-## 短期候補の再評価
+## Short-term candidate re-evaluation
 
-v2の独自方式は曖昧接続を保守的に分断するのみだったため、v3では計画§3の
-短期仮説保持と後続観測による選択を追加した。詳細は
-[固定プロトコル](deferred_protocol.md)。2匹、2通りの継続、前後各3観測、
-最大5 native frame間隔、同時に終わり始まる断片に限る最小実装。
-3匹競合・候補不足・差不足を強制接続しない。中間検出は元の断片所属を保つ。
+The v2 custom method only split ambiguous links conservatively, so v3 added plan §3's
+short-term hypothesis retention and selection by subsequent observations. Details in the
+[fixed protocol](deferred_protocol.md). A minimal implementation restricted to 2 fish,
+2 possible continuations, 3 observations on each side, gaps of at most 5 native frames, and
+fragments that end and start at the same time.
+Three-fish contention, insufficient candidates and insufficient margin are not force-linked.
+Intermediate detections keep their original fragment membership.
 
-主20秒は境界候補10組を拒否し、採用0。全20区間ではregression_90200のside2、
-f90576→90578の1候補で2接続を追加し、同視点の評価core内のtracklet数9→7
-（前後の文脈を含めると17→15）。
-共通支持は胸びれのみ。予測誤差スコア25.0322対50.7135 px、
-差25.6813 px（必要差4 px）。ID正解の検証ではない。
-追加処理による3D source/xyz/pose/uvの変更は全20区間で0。
-変更区間の内部C28 state番号だけが異なる。
+In the main 20 s, 10 boundary candidate pairs were rejected and 0 accepted. Across all 20
+intervals, one candidate in regression_90200 side2, f90576→90578, added 2 links, and the
+tracklet count within that view's evaluation core went 9→7 (17→15 including the context before
+and after).
+The common support is the pectoral fin only. Prediction-error scores 25.0322 vs 50.7135 px,
+margin 25.6813 px (required margin 4 px). This is not a verification of correct ID.
+Changes to 3D source/xyz/pose/uv from the added processing: 0 in all 20 intervals.
+Only the internal C28 state numbers in the changed interval differ.
 
-## λ感度比較と再現性
+## λ sensitivity comparison and reproducibility
 
-主20秒の2Dラベルを固定して7λを比較。A/B/Cともλ=.767の再計算は
-保存した全24配列、集計、female、prefix整列と完全一致。
+With the main 20 s 2D labels fixed, 7 values of λ were compared. For A/B/C alike, recomputation
+at λ=.767 matches all 24 saved arrays, the tally, female and the prefix alignment exactly.
 
 | λ | 0 | .1 | .25 | .5 | .767 | 2 | 8 |
 |---|---:|---:|---:|---:|---:|---:|---:|
-| A 最終10 mm超移動 | 18 | 7 | 6 | 4 | 3 | 2 | 2 |
+| A final moves > 10 mm | 18 | 7 | 6 | 4 | 3 | 2 | 2 |
 | B | 9 | 7 | 6 | 4 | 4 | 3 | 3 |
 | C | 14 | 6 | 5 | 3 | 3 | 2 | 2 |
 
-λ=0では同じ幾何costのslot命名が同点になり、その揺れも移動数に含まれる。
-上表は生物学的スワップ数ではなく、最適λを選択した結果でもない。
+At λ=0, slot namings with the same geometric cost tie, and that flicker is also included in the
+move counts. The table above is not a count of biological swaps, nor the result of selecting an
+optimal λ.
 
-Aの最終検出対応・座標は全20区間の評価coreで保存C34と完全一致。
-C28段階は15区間で完全再現し、known_30735、known_72143、known_99209、
-known_323819、regression_82121では短窓の解に差がある。
-主20秒とf31479はC28も完全一致。文脈領域全体の一致は主張していない。
+A's final detection correspondence and coordinates match the saved C34 exactly in the evaluation
+core of all 20 intervals. The C28 stage is reproduced exactly in 15 intervals; in known_30735,
+known_72143, known_99209, known_323819 and regression_82121 the short-window solution differs.
+For the main 20 s and f31479, C28 also matches exactly. Agreement over the whole context region
+is not claimed.
 
-別20秒f240000:243320の10 mm超移動は全方式0。female端点注釈は1区間のみで
-全方式維持。同じ魚群であり、全3匹のID正解や独立生物反復ではない。
-重複する20区間の移動数を独立事象として合算しない。
+In the separate 20 s f240000:243320, moves > 10 mm are 0 under every method. The female endpoint
+annotation covers only 1 interval, kept under every method. This is the same group of fish, not
+ID ground truth for all 3 fish and not an independent biological replicate.
+Move counts from the overlapping 20 intervals are not summed as independent events.
 
-## 検証と成果物
+## Verification and artifacts
 
-追跡・短期仮説・幾何・集計・描画62テストとlab検査12テスト、計74件が通過。
-独立の保存配列監査でA/Bのバイト一致、検出保持、フレーム内一対一、
-元C断片の所属保持、選択検出indexの妥当性、移動・欠測の再集計を確認。
-初回不具合を含む試行は別directoryとコードsnapshotに保持した。
-閾値を実データ成績に合わせて変更していない。
+74 tests pass in total: 62 for tracking, short-term hypotheses, geometry, tallying and
+rendering, and 12 lab checks. An independent audit of the saved arrays confirmed A/B byte
+equality, detection retention, within-frame one-to-one assignment, retention of the original
+C fragment membership, validity of the selected detection indices, and a recount of moves and
+missing observations. Runs including the first-run bug were kept in a separate directory with a
+code snapshot. Thresholds were not changed to fit performance on real data.
 
-動画10本・静止画9枚は全3視点・全3匹を表示。動画全2094フレームのdecodeと
-入力12 NPZ・出力19ファイルのSHAを確認。8場面の時系列PNGも作成。
-overviewは20秒を30 fpsへ間引いた実時間表示、局所動画は全166 native framesの
-スロー表示。座標補間・平滑化は行っていない。
+The 10 videos and 9 stills show all 3 views and all 3 fish. Decoding of all 2094 video frames and
+the SHA of the 12 input NPZ and 19 output files were checked. Time-series PNGs for the 8 scenes
+were also made. The overview shows the 20 s in real time, subsampled to 30 fps; the local videos
+show all 166 native frames in slow motion. No coordinate interpolation or smoothing was applied.
 
-根拠は `analysis_v3/summary.json`、`review_windows.json`、`validation.json`、
-`sensitivity_v3/summary.json`、`review_v3/manifest.json`、
-`event_figures/manifest.json` と各provenance。
-本番のC27/C28/C34と元検出・原動画を変更していない。
+Evidence: `analysis_v3/summary.json`, `review_windows.json`, `validation.json`,
+`sensitivity_v3/summary.json`, `review_v3/manifest.json`,
+`event_figures/manifest.json` and each provenance record.
+Production C27/C28/C34, the source detections and the raw video were not changed.

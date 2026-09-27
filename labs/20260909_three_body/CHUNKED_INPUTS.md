@@ -1,32 +1,33 @@
-# 再開できる独立マスク入力の準備
+# Preparing resumable independent mask inputs
 
-`prepare_chunked_source_masks.py` は、原画像ごとの Detectron2 推論を独立した
-チャンクに保存する。SLEAP、初期姿勢、個体 ID、人の正解ラベルは読まない。
-追跡の実行・再初期化・追跡状態の復元も行わない。
+`prepare_chunked_source_masks.py` saves per-raw-image Detectron2 inference into independent
+chunks. It does not read SLEAP, initial poses, individual IDs or human ground-truth labels.
+It also does not run tracking, reinitialize it or restore tracking state.
 
-## CLI と API
+## CLI and API
 
-以下は新しい出力先で最初の 1 チャンクだけを作る例。実行するプロトコルを
-明示し、既存の専用 Detectron2 環境を使う。
+The following example creates only the first chunk in a new output location. It names the
+protocol to run explicitly and uses the existing dedicated Detectron2 environment.
 
 ```powershell
 & ..\medaka-mating-pipeline\.venv-detectron2\Scripts\python.exe -B labs/20260909_three_body/prepare_chunked_source_masks.py --protocol work/three_body/chunked_input_smoke_protocol.json --source-cache work/three_body/source_cache --out work/three_body/inputs/new_chunked_smoke --max-new-chunks 1
 ```
 
-続きは同じコマンドから `--max-new-chunks 1` を外す。Python API は
-`run(protocol_path, source_cache, out, max_new_chunks=None)`。
-`max_new_chunks` は新規作成数だけを制限し、検証済みチャンクの再利用は数えない。
-全体が未完了なら `PreparationPaused` を送出し、CLI は意図した終了コード 2 を返す。
-`incomplete.json`、`final_sequence_path: null`、未完了の run provenance が残る。
-保存済みチャンクの完了記録は維持する。PowerShell 等の外側の終了コードと
-Python の終了コードは区別して記録する。
+To continue, drop `--max-new-chunks 1` from the same command. The Python API is
+`run(protocol_path, source_cache, out, max_new_chunks=None)`.
+`max_new_chunks` limits only the number of newly created chunks; reuse of verified chunks is
+not counted. If the whole is incomplete, `PreparationPaused` is raised and the CLI returns the
+intended exit code 2. `incomplete.json`, `final_sequence_path: null` and an incomplete run
+provenance remain. Completion records of saved chunks are kept. The outer exit code of
+PowerShell etc. and the Python exit code are recorded separately.
 
-全 30 分の条件は [long_input_protocol.json](long_input_protocol.json) に登録済み。
-49800:348600、166 fps、298800 フレームを 1660 フレームずつの 180 チャンクに分ける。
-この文書作成時点では全 30 分も、登録長窓の先頭 10 秒の費用測定も未実行。
-プロトコルの詳細は [LONG_INPUT_PROTOCOL.md](LONG_INPUT_PROTOCOL.md) を参照する。
+The full 30-minute conditions are registered in [long_input_protocol.json](long_input_protocol.json).
+49800:348600, 166 fps, 298800 frames are split into 180 chunks of 1660 frames each.
+At the time of writing, neither the full 30 minutes nor the cost measurement on the first
+10 seconds of the registered long window had been run.
+See [LONG_INPUT_PROTOCOL.md](LONG_INPUT_PROTOCOL.md) for protocol details.
 
-## 保存と再利用
+## Storage and reuse
 
 ```text
 out/
@@ -37,54 +38,63 @@ out/
   assemblies/attempt_0001/manifest.json
 ```
 
-各 attempt は上書きしない。再利用には、完了した 3 視点、正確な連続フレーム範囲、
-プロトコル、入力・モデル・設定・コードの SHA、保存した実行環境、全出力の整合性が必要。
-失敗した attempt や条件の異なる attempt は残し、次の番号で新規作成する。
-設定やコードを変更した場合、既存チャンクは同じ実験条件として流用しない。
+No attempt is overwritten. Reuse requires the 3 completed views, the exact contiguous frame
+range, the protocol, the SHAs of inputs, model, configuration and code, the saved execution
+environment, and consistency of all outputs.
+Failed attempts and attempts under different conditions are kept, and a new one is created
+under the next number. If configuration or code is changed, existing chunks are not reused as
+the same experimental condition.
 
-全チャンクが揃ってから、配列の値・順序・型を維持して結合する。
-`frame_offsets` と `mask_byte_offsets` だけを累積位置へ直す。
-各フレームの全検出を保存し、3 匹という仮定で検出数を制限しない。
-ゼロ検出も `view_available=True` の空観測として保持する。
+Only once all chunks are present are they joined, keeping array values, order and dtypes.
+Only `frame_offsets` and `mask_byte_offsets` are rewritten to cumulative positions.
+All detections in each frame are saved; the number of detections is not limited by the
+assumption of 3 fish. Zero detections are also kept as empty observations with
+`view_available=True`.
 
-## 完了した入力を読む条件
+## Conditions for reading a completed input
 
-成功した `runs/run_NNNN/summary.json` の `final_sequence_path` は、`out` に対する
-完成 assembly の相対パス。run と assembly の provenance が `status: ok` で、
-manifest・chunk index・参照チャンク・各入力出力の SHA が一致して初めて完了と扱う。
-チャンクが数個完成していることだけでは、全体の完了にはならない。
+`final_sequence_path` in a successful `runs/run_NNNN/summary.json` is the path of the completed
+assembly relative to `out`. It is treated as complete only when the run and assembly provenance
+are `status: ok` and the SHAs of the manifest, chunk index, referenced chunks and every input and
+output match. A few completed chunks alone do not make the whole complete.
 
-最終 manifest は `raw_storage: original_source_video` を持つ
-`SourceSequenceReader(sequence_path, sleap_root)` 互換形式。
-元動画のフレーム位置、166 fps、1200×1200、各 BGR 画像の SHA を検証して指定範囲だけを読む。
-reader 自体は内部検証用の未封印 descriptor も読めるため、利用側が先に完了記録を
-検査する必要がある。既存の追跡 CLI へ自動的に組み込まれたことは意味しない。
+The final manifest is in a `SourceSequenceReader(sequence_path, sleap_root)`-compatible format
+with `raw_storage: original_source_video`.
+It verifies the source-video frame positions, 166 fps, 1200×1200 and the SHA of each BGR image,
+and reads only the specified range. Because the reader itself can also read unsealed
+descriptors for internal verification, the caller must check the completion record first. This
+does not mean it has been integrated automatically into the existing tracking CLI.
 
-## 実動画で確認した範囲
+## What was checked on real video
 
-333519:333525 の 6 フレーム × 3 視点を、2 フレームずつ 3 チャンクで新規推論した。
-最初に 1 チャンクで停止、次に残り 2 チャンクを作成、最後に全チャンクを再利用した。
-最初のチャンクと完成 assembly のチェックサムは変わらなかった。
+6 frames × 3 views of 333519:333525 were newly inferred as 3 chunks of 2 frames each.
+The run first stopped after 1 chunk, then created the remaining 2 chunks, and finally reused all
+chunks. The checksums of the first chunk and of the completed assembly did not change.
 
-- 18 枚の native BGR 画像が、旧 FFV1 入力とバイト単位で一致。
-- 55 検出、全 13 個の packed mask 配列が型・形・全バイトで一致。
-- top は毎フレーム 3 検出、side1 は毎フレーム 4 検出、side2 は 3,2,2,2,2,2 検出。
-- 背景は 5000,10000,…,45000 の登録済み 9 枚の中央値と全 3 視点で一致。
-  旧背景とは全 3 視点で異なる。この変更は別条件として明示している。
-- 全入力・コードの監査前後 SHA が一致。動画ペイロードのコピーは 0 バイト。
+- The 18 native BGR images matched the old FFV1 input byte for byte.
+- 55 detections; all 13 packed mask arrays matched in dtype, shape and every byte.
+- top has 3 detections every frame, side1 has 4 detections every frame, side2 has
+  3,2,2,2,2,2 detections.
+- The background matched the median of the 9 registered frames 5000,10000,…,45000 in all 3 views.
+  It differs from the old background in all 3 views. This change is stated explicitly as a
+  separate condition.
+- The before/after-audit SHAs of all inputs and code matched. 0 bytes of video payload were
+  copied.
 
-結果は [監査 summary](../../work/three_body/chunked_source_smoke_qa_v1/summary.json) と
-[監査 provenance](../../work/three_body/chunked_source_smoke_qa_v1/audit.provenance.json)。
-実装側の CPU テスト 75 件と、独立した追加回帰 3 件も通過している。
-この小実窓にはゼロ検出フレームがなかったため、ゼロ検出の保持は CPU テストでの確認。
-検出器の一般的な精度や、長時間の個体 ID 維持を示す結果ではない。
+Results: [audit summary](../../work/three_body/chunked_source_smoke_qa_v1/summary.json) and
+[audit provenance](../../work/three_body/chunked_source_smoke_qa_v1/audit.provenance.json).
+The 75 implementation-side CPU tests and 3 independent additional regression tests also pass.
+This small real window had no zero-detection frame, so retention of zero detections was
+confirmed by CPU tests. This is not a result showing the detector's general accuracy or
+long-duration individual-ID maintenance.
 
-## 運用上の注意
+## Operational notes
 
-原動画は hardlink なので、リンク先と同じファイル本体を共有する。必ず読み取り専用で
-扱い、どちらの経路からも書き換えない。動画の再エンコードや複製は行わない。
+The source video is a hardlink, so it shares the same file body as its link target. Always treat
+it as read-only and never write to it through either path. Videos are not re-encoded or copied.
 
-開始時、各チャンクの封印時、結合時、呼び出し完了時に full SHA を計算するため、
-約 15.8 GB の元入力を読む費用がある。短窓の所要時間を D2 推論速度とは呼ばない。
-今回の CPU 監査は 54.60 秒、そのうち画像の decode・比較は 1.43 秒だった。
-同時実行の影響もあるため、長区間の費用は別に測定する。
+Full SHAs are computed at start, at each chunk seal, at joining and at call completion, so there
+is a cost of reading about 15.8 GB of source input. The elapsed time of a short window is not
+called D2 inference speed. This CPU audit took 54.60 s, of which image decode and comparison
+took 1.43 s. Concurrent execution also has an effect, so the cost of long intervals is measured
+separately.

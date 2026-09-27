@@ -1,144 +1,178 @@
-# 前後方向の運動によるジャンプ検出・局所再接続の計画
+# Plan: jump detection and local reconnection from past-and-future motion
 
-2026-09-16。提案段階。既存追跡の修正・新しい追跡の実行は行っていない。
+2026-09-16. Proposal stage. No existing tracking has been modified and no new tracking has been
+run.
 
-## 仮説
+## Hypothesis
 
-各フレームの3匹の位置が概ね正しく、時間方向の対応だけが誤る場面では、
-疑わしい区間の前後の安定した運動を使って対応を再評価すると、過去だけの
-運動評価で見落とす不整合や、向かい合った魚が跳ね返ったように見える入れ替わりを
-検出・修復できる可能性がある。軌跡の滑らかさと個体IDの正しさは別に評価する。
+In scenes where the positions of the three fish in each frame are broadly correct and only the
+temporal correspondence is wrong, re-evaluating the correspondence using the stable motion
+before and after a suspect interval may detect and repair inconsistencies that a past-only
+motion evaluation misses, and exchanges in which fish facing each other appear to bounce off one
+another. Trajectory smoothness and individual-ID correctness are evaluated separately.
 
-同じ3点の加速度や角度を単に逆順でも計算するだけでは、新しい情報にはならない。
-過去側と未来側の別々の安定区間から運動を推定し、異常の入口と出口を拘束する。
-オフライン処理として開始する。オンライン化には将来フレームを待つ遅延が必要。
+Merely computing the acceleration or angle of the same three points in reverse order as well
+adds no new information. Motion is estimated from separate stable intervals on the past side and
+the future side, and these constrain the entry and exit of the anomaly. The work starts as
+offline processing. An online version would need a delay to wait for future frames.
 
-## 既存の試みとの違い
+## How this differs from existing attempts
 
-- C30 v4 は前後8点の位置中央値を比較した後、限定された保留候補について過去最大50
-  フレームから外挿する。実装の速度は履歴両端の差分である。未来側の速度は使わず、
-  位置比較で現在の対応が最良なら方向を再評価しない。
-  参照: `tools/c30_slot_stitch.py:208`, `:284`, `:314`。
-- C30 v3 は既知の例を直す一方、新しいメスの入れ替わりも作った。曖昧な接続と長い
-  破綻区間への弱い外挿が原因で、v4 は修正条件を厳しくした。
-  参照: `docs/decisions/2026-09-01-slot-stitching.md:154` 以降。
-- C34 は3 resolvedフレーム以内で戻る短い順列交換について入口と出口の逆順列を
-  検査する。単独座標スパイクや持続する入れ替わりは修復しない。
-  参照: `docs/decisions/2026-09-01-doubt-channel.md:213`。
-- analysis-by-synthesis 側の逆方向 optical flow の単独伝播は、30ステップで胸部が
-  元の順方向推定から62.83 mm離れ、不採用だった。これは今回の「保存済み検出点を
-  固定した局所再接続」とは異なる。差の比較対象は内部推定で、人手正解ではない。
-  参照: `work/three_body/reverse_motion_v1/RESULT.md`。
-- 現在の `identity_dp.py:226` の隣接運動項は胸部の変位二乗。前後DPはあるが、
-  この運動項自体には過去・未来の速度方向や加速度の履歴はない。
-- `temporal_refine.py:66` は両側境界の6対応を比較し、速度・加速度も評価する。
-  ただし座標自体を最適化する欠測回復で、今回の座標集合を固定した方向診断とは
-  異なる。両側境界を使う発想自体が今回初めてという意味ではない。
-- 実際に174 mmのジャンプを消しても3–4 mm刻みの静かな入れ替わりを残した例がある。
-  「ジャンプ減少」だけでは採用しない。
-  参照: `docs/decisions/2026-09-01-doubt-channel.md:264`。
+- C30 v4 compares position medians over 8 points before and after, then, for a restricted set of
+  held candidates, extrapolates from up to 50 past frames. The implemented velocity is the
+  difference between the two ends of the history. It does not use future-side velocity, and
+  when the position comparison finds the current correspondence best, it does not re-evaluate
+  direction.
+  See: `tools/c30_slot_stitch.py:208`, `:284`, `:314`.
+- C30 v3 fixed known cases but also created new female exchanges. The cause was ambiguous joins
+  and weak extrapolation into long broken intervals; v4 tightened the repair conditions.
+  See: `docs/decisions/2026-09-01-slot-stitching.md:154` onward.
+- C34 checks the entry permutation against the inverse exit permutation for short permutation
+  exchanges that revert within 3 resolved frames. It does not repair isolated coordinate spikes
+  or sustained exchanges.
+  See: `docs/decisions/2026-09-01-doubt-channel.md:213`.
+- Standalone backward optical-flow propagation on the analysis-by-synthesis side moved the chest
+  62.83 mm away from the original forward estimate within 30 steps and was not adopted. That
+  differs from the "local reconnection with stored detections held fixed" proposed here. The
+  difference was measured against an internal estimate, not human ground truth.
+  See: `work/three_body/reverse_motion_v1/RESULT.md`.
+- The adjacent-frame motion term in the current `identity_dp.py:226` is the squared chest
+  displacement. There is a forward-backward DP, but the motion term itself has no history of
+  past or future velocity direction or acceleration.
+- `temporal_refine.py:66` compares the 6 correspondences at the boundaries on both sides and also
+  evaluates velocity and acceleration. It is, however, a missing-observation recovery that
+  optimises the coordinates themselves, and differs from the direction diagnosis here, which
+  holds the coordinate set fixed. The idea of using boundaries on both sides is not itself new
+  to this plan.
+- There is an actual case where removing a 174 mm jump still left a quiet exchange in 3–4 mm
+  steps. "Fewer jumps" alone is not grounds for adoption.
+  See: `docs/decisions/2026-09-01-doubt-channel.md:264`.
 
-## 作成済み20秒CG区間の探索的確認
+## Exploratory check on the existing 20 s CG interval
 
-対象は C34 lambda 0.767、`75270:78590`、166 fps。元の胸部座標は変更せず、
-各ステップを前後17/33/50フレームの変位ベクトル成分中央値と比較した。
-調べるステップそのものと前後2ステップを参照窓から除外した。
-参照速度の大きさが0.05 mm/frame未満なら角度を未定義とした。
-未来側の方向は順時間の符号にそろえて比較している。
+Target: C34 lambda 0.767, `75270:78590`, 166 fps. Without modifying the original chest
+coordinates, each step was compared with the component-wise median of the displacement vectors
+over 17/33/50 frames before and after. The step under test and the 2 steps on either side of it
+were excluded from the reference windows. The angle was left undefined when the reference speed
+was below 0.05 mm/frame. The future-side direction is compared with its sign aligned to forward
+time.
 
-17フレーム、約0.10秒の参照窓での例:
+Examples with the 17-frame (about 0.10 s) reference window:
 
-| 元フレーム / slot | 移動量 | 過去側に対する角度 | 未来側に対する角度 |
+| source frame / slot | displacement | angle vs past side | angle vs future side |
 | --- | ---: | ---: | ---: |
-| 76930 / 1 | 4.48 mm | 130.0度 | 114.8度 |
-| 76235 / 0 | 14.61 mm | 32.1度 | 19.7度 |
+| 76930 / 1 | 4.48 mm | 130.0° | 114.8° |
+| 76235 / 0 | 14.61 mm | 32.1° | 19.7° |
 
-大きな移動21件のうち80度以上のものは過去側10件、未来側7件、和集合10件。
-この21件に限れば逆方向だけで新たに拾うものはなかった。
-1 mm超へ範囲を広げると、過去側85候補、前後和集合99候補になった。
-追加14候補のうち6候補は過去側が低速等で未定義だった。連続フレームの重複を含む
-slot-step数であり、異常イベント数・正解数・検出精度ではない。
-真の旋回を拾った可能性があり、三視点の元画像で確認するまでは改善と解釈しない。
+Of the 21 large displacements, those at 80° or more numbered 10 against the past side, 7 against
+the future side, and 10 in the union. Within these 21, the backward direction alone picked up
+nothing new. Widening the range to displacements over 1 mm gave 85 candidates on the past side
+and 99 in the past-future union. Of the 14 additional candidates, 6 had an undefined past side
+because of low speed or similar. These are slot-step counts that include overlap between
+consecutive frames, not a count of anomalous events, a count of ground-truth events, or a
+detection accuracy. They may have picked up genuine turns, and are not interpreted as an
+improvement until checked against the three-view source images.
 
-この結果から、角度と距離を別の候補抽出条件として残す。
-80度はユーザーの観察に基づく初期仮説で、確定した生物学的制約ではない。
-元データ・設定・全候補・来歴は `work/aquarium_cg/direction_probe_20s/` に保存。
+On this result, angle and distance are kept as separate candidate-extraction conditions. 80° is
+an initial hypothesis based on the user's observation, not a confirmed biological constraint.
+Source data, settings, all candidates and provenance are stored in
+`work/aquarium_cg/direction_probe_20s/`.
 
-## 実験手順
+## Experimental procedure
 
-### 1. 修正しない異常検出の比較
+### 1. Compare anomaly detection without repair
 
-同じ全nativeフレームで次を比較する。30 fpsへの間引き前に計算する。
+Compare the following on the same full set of native frames. Compute before decimation to 30
+fps.
 
-1. 距離のみ: 現行CGと同じ4 mm超。
-2. 距離 + 過去方向: 過去の安定区間と80度以上ずれる移動。
-3. 距離 + 前後方向: 過去または未来のどちらかで方向不整合を示す移動。
+1. Distance only: over 4 mm, as in the current CG.
+2. Distance + past direction: displacements deviating by 80° or more from the past stable
+   interval.
+3. Distance + past-and-future direction: displacements showing a direction inconsistency against
+   either the past or the future.
 
-角度だけで微小な揺れを大量に拾わないよう、移動の絶対量、前後の典型的な移動量に
-対する比、横方向の変位、各参照窓の方向のばらつきを併記する。
-低速・定位時には角度を判定根拠にせず、距離・位置予測誤差・画像支持で判定する。
-魚体軸と進行方向は区別し、口から胸部の向きは補助情報、尾は弱い証拠として扱う。
+So that angle alone does not pick up large numbers of tiny wobbles, report alongside it the
+absolute displacement, its ratio to the typical displacement before and after, the lateral
+displacement, and the spread of direction within each reference window. At low speed or while
+station-keeping, angle is not a basis for the decision; decide on distance, position-prediction
+error and image support. Body axis and heading are distinguished: the mouth-to-chest orientation
+is auxiliary information, and the tail is treated as weak evidence.
 
-参照窓0.1/0.2/0.3秒と角度60/80/100度は感度比較として全て報告する。
-20秒を見て都合のよい設定だけを選び、精度を主張しない。
-探索的確認の1 mm/0.05 mm条件も暫定であり、正常区間の誤検出を見てから凍結する。
-孤立したスパイクを含む窓から方向を推定せず、隣接候補をまとめた区間の外側で
-頑健な速度を推定する。候補ステップ自体は平滑化しない。
+Reference windows of 0.1/0.2/0.3 s and angles of 60/80/100° are all reported as a sensitivity
+comparison. Do not select only a convenient setting after looking at the 20 s and claim accuracy
+from it. The 1 mm / 0.05 mm conditions of the exploratory check are also provisional, and are
+frozen only after looking at false detections in normal intervals. Direction is not estimated
+from a window that contains an isolated spike; robust velocity is estimated outside an interval
+that merges adjacent candidates. The candidate steps themselves are not smoothed.
 
-### 2. 個体の対応と位置の誤りを分ける
+### 2. Separate individual-correspondence errors from position errors
 
-全3匹を同時に扱い、候補区間前後の対応6通りを比較する。
-修正なしも常に候補に含める。端点の位置だけでなく、前後の予測方向と速度、
-口・胸部の整合、三視点の検出・再投影の支持を使う。
+Handle all three fish jointly and compare the 6 possible correspondences across the candidate
+interval. No-repair is always included as a candidate. Use not only endpoint positions but also
+the predicted direction and speed on both sides, mouth-chest consistency, and detection and
+reprojection support in the three views.
 
-- 検出位置が正しくIDだけが違う: 座標の集合を動かさず順列を修正する。
-- 1フレームだけ入れ替わって戻る: 区間内だけの置換を評価し、区間外へ波及させない。
-- 3D位置自体が誤る: ID置換では直らない。どの視点・ノードが原因かを分け、別案として
-  支持された光線での再三角測量を検討する。位置修正とID修正の効果は混ぜない。
-- 支持不足・前後の対応不一致・長い欠損: 自動修正せずレビュー候補として保持する。
+- Detections correctly placed, only the ID wrong: correct the permutation without moving the
+  coordinate set.
+- Exchanged for a single frame and then reverted: evaluate a permutation confined to the
+  interval, without propagating it outside the interval.
+- The 3D position itself is wrong: an ID permutation does not fix it. Separate which view or node
+  is responsible, and consider, as a separate option, re-triangulation from the supported rays.
+  The effects of position repair and ID repair are not mixed.
+- Insufficient support, disagreement between past and future correspondence, or a long dropout:
+  do not repair automatically; retain as a review candidate.
 
-候補抽出はどちらか片側の不整合でも拾うが、自動修正は前後が同じ対応を支持し、
-次点との差と画像支持が十分な場合に限る。前後の一致も独立したID正解ではない。
-まず異常区間が0.5秒以内のケースを対象にする。長い区間を等速外挿で橋渡ししない。
-持続した入れ替わりは、後ろの安定したtrackletとの接続として記録・評価する。
-順列は `source`・全ノード・関連ID配列へ一貫して適用する。
-欠測に接続すると運動コストがゼロになる設計は避ける。実際にこの抜け道から
-正常な魚を欠測slotへ1フレームだけ割り当てる誤りが生じた記録がある
-(`labs/20260909_three_body/ITERATION_LOG.md:455`)。最後の直接観測からの実時間差と
-欠測の不確実性を残し、欠測経路を滑らかな正解と扱わない。
+Candidate extraction picks up an inconsistency on either side alone, but automatic repair is
+limited to cases where past and future support the same correspondence and both the margin over
+the runner-up and the image support are sufficient. Past-future agreement is not independent ID
+ground truth either. Start with cases whose anomalous interval is 0.5 s or shorter. Do not bridge
+long intervals by constant-velocity extrapolation. A sustained exchange is recorded and evaluated
+as a link to the later stable tracklet. The permutation is applied consistently to `source`, all
+nodes and the related ID arrays. Avoid designs in which linking to a missing observation has
+zero motion cost. There is a record of this loophole actually producing an error in which a
+normal fish was assigned to a missing slot for a single frame
+(`labs/20260909_three_body/ITERATION_LOG.md:455`). Keep the elapsed real time since the last
+direct observation and the uncertainty of the missing stretch, and do not treat a path through
+missing observations as smooth ground truth.
 
-実装をDPへ拡張する場合は、方向履歴を持たない現在の一次6状態DPをそのまま再実行
-するだけでは不足する。まず前後の短いtrackletで方向を推定して接続を評価し、
-必要なら直前の順列対を保持する二次モデルを検討する。
+If the implementation is extended to a DP, simply re-running the current first-order 6-state DP,
+which has no direction history, is not enough. First estimate direction from the short tracklets
+before and after and evaluate the link; if needed, consider a second-order model that retains the
+preceding permutation pair.
 
-### 3. 元画像とCGで対照評価
+### 3. Controlled evaluation against source images and CG
 
-最初は今回の20秒と既知事例で検証する。76930、短い往復、位置スパイクに加え、
-以前の誤修正例82k/90k/212kと、正常な急旋回・高速移動・近接交差・定位も含める。
-修正前後のCGと三視点原画像を同じnativeフレームで比較する。
-方向条件の追加でのみ拾った例は別枠で数える。
+Validate first on the present 20 s and on known cases. Besides 76930, short out-and-back
+exchanges and position spikes, include the earlier mis-repair cases 82k/90k/212k, and normal
+sharp turns, fast movement, close crossings and station-keeping. Compare the CG before and after
+repair with the three-view raw images at the same native frame. Cases picked up only by adding
+the direction condition are counted separately.
 
-検出の評価は人が確認した異常区間の捕捉率、正常区間の誤検出、要確認時間。
-修復の評価は独立した対応確認に基づく入れ替わり、誤修正、未解決、欠損・被覆率。
-ステップ・速度・加速度の改善は副指標とする。
-メスの既存298区間評価を保ち、雄同士は前後対応を人が確認できた区間だけで評価する。
-未確認区間を正解扱いせず、両方向の同意も正解ラベルにしない。
+Detection is evaluated by the capture rate of human-confirmed anomalous intervals, false
+detections in normal intervals, and time needing review. Repair is evaluated by exchanges,
+mis-repairs, unresolved cases, and dropout and coverage, based on independent correspondence
+checks. Improvement in step, velocity and acceleration is a secondary metric. Keep the existing
+298-interval female evaluation; male-male cases are evaluated only on intervals where a human
+could confirm the before/after correspondence. Unconfirmed intervals are not treated as ground
+truth, and agreement between both directions is not made a ground-truth label either.
 
-### 4. 凍結して未使用区間へ
+### 4. Freeze, then move to unused intervals
 
-20秒と既知例は開発用と明記する。設定を凍結後、未使用の連続1分、全7 lambdaの
-既存腕、K_1_1/K_1_3へ順に確認範囲を広げる。1つの腕・1つの区間だけの改善は
-その範囲に限定して報告する。
+State explicitly that the 20 s and the known cases are for development. After freezing the
+settings, widen the checked range in order: an unused contiguous 1 minute, the existing arms at
+all 7 lambdas, then K_1_1/K_1_3. An improvement on only one arm or one interval is reported as
+limited to that scope.
 
-採用条件は、距離のみ／過去方向のみと比べた確認済み異常の検出または確認済みID
-修復の改善があり、確認済みの新規ID誤修正がなく、正常な旋回と観測被覆率を
-悪化させないこと。未確認分と標本の小ささは必ず残す。
-ジャンプだけ減ってIDが同じか悪化する場合、追跡修正としては採用せず、
-レビュー優先順位づけとしての価値を別に判断する。
+Adoption requires: an improvement, relative to distance-only / past-direction-only, in detection
+of confirmed anomalies or in confirmed ID repairs; no confirmed new ID mis-repairs; and no
+degradation of normal turns or observation coverage. The unconfirmed portion and the small sample
+size are always stated. If only jumps decrease while IDs stay the same or get worse, it is not
+adopted as a tracking repair, and its value for prioritising review is judged separately.
 
-## 最初の成果物
+## First deliverables
 
-現在の20秒について、距離のみ・過去方向・前後方向の候補一覧と比較CG、
-候補ごとの原画像レビュー、修復可能／座標誤り／保留の分類表を作る。
-この段階を通った場合に限り局所再接続の試作へ進む。
-既存C34結果と並行中のanalysis-by-synthesis出力は保持する。
+For the current 20 s: candidate lists for distance only, past direction, and past-and-future
+direction, with comparison CG; a raw-image review of each candidate; and a classification table
+of repairable / coordinate error / hold. Proceed to a local-reconnection prototype only if this
+stage is passed. The existing C34 results and the in-progress analysis-by-synthesis outputs are
+kept.

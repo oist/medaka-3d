@@ -1,106 +1,136 @@
-# 独立マスクから3匹の3D仮説を評価する次サイクル
+# Next cycle: evaluating three-fish 3D hypotheses from independent masks
 
-2026-09-08。前サイクルの結果を開封した後に立てた、新しい開発計画。
-ユーザーは少数の人手確認・修正と、RTX 5070 Tiでの計算を許容している。
-この計画の到達条件は、画像再現の良さではなく、3匹のIDを維持した使える軌跡である。
+2026-09-08. A new development plan drawn up after the previous cycle's results were unsealed.
+The user accepts a small amount of human checking and correction, and computation on an RTX 5070
+Ti. The goal of this plan is usable trajectories that keep the three fish's IDs, not good image
+reproduction.
 
-初回の10frame・3視点feasibilityは実行済み。
-[結果と次の判断](../labs/20260908_mask_volume/FEASIBILITY_RESULT.md)に、
-新規Detectron2推論、屈折付き支持領域、top背景差分との比較、GPU数値精度の修正を記録した。
-まだ3匹のID保持の比較試験には達していない。
+The first 10-frame, 3-view feasibility run is done.
+[The result and next decision](../labs/20260908_mask_volume/FEASIBILITY_RESULT.md) records new
+Detectron2 inference, refraction-aware support regions, the comparison with top background
+subtraction, and a fix to GPU numerical precision.
+It has not yet reached a comparison test of keeping the three fish's IDs.
 
-前回の[連続1分の結果](../labs/20260908_generative_tracking/REACQUISITION_RESULT.md)は
-胸ヒレ観測率99.76%、受理率3.56%。観測率も受理率もID正解率ではない。
-前回は背景差分とRGBヒストグラムであり、独立したDetectron2個体マスクを使っていない。
-今回の案を試した結果ではない。
+The previous [contiguous 1-minute result](../labs/20260908_generative_tracking/REACQUISITION_RESULT.md)
+had a pectoral-fin observation rate of 99.76% and an acceptance rate of 3.56%. Neither the
+observation rate nor the acceptance rate is an ID accuracy. The previous cycle used background
+subtraction and RGB histograms, not independent Detectron2 per-individual masks. It is not a test
+of the present proposal.
 
-## 仮説と実装の順序
+## Hypotheses and implementation order
 
-1. **独立した画像観測を確保する。** SLEAPの3点、Detectron2の個体マスク、
-   top_camの明暗・背景差分を別々に保存する。マスク検出に既存3DのIDや軌跡を与えない。
-   同じ画像の遮蔽や反射による誤りは共有し得るので、統計的独立性は仮定しない。
-   1つのマスクに2匹が重なる場合、1匹が複数に割れる場合、未検出、反射を保持する。
-2. **屈折を考慮したマスクの3D支持領域を作る。** 水槽内の候補点を既存の屈折モデルで
-   各カメラへ投影し、マスク内外の支持をサンプリングする。輪郭の点同士を対応付けて
-   三角測量する手法ではない。欠けた観測は欠けたまま扱い、3視点の硬いANDで全候補を
-   削除しない。支持領域の連結成分数が魚数とは限らず、ここではIDを与えない。
-3. **3匹を明示した画像生成モデルを比較する。** 初めは少数の楕円体／曲がる胴体で
-   各魚を表現し、3視点に投影したシルエットと実マスクを照合する。魚を投影した場所に
-   前景があることに加え、画像中の前景を3匹でどれだけ説明できるかも評価する。
-   画素の魚への帰属、手前による遮蔽、反射の外れ値を扱い、同じ魚に2つのIDが集まる
-   解に対処する。口・胸ヒレ・尾、体形、移動、光学フローは別の支持情報として加える。
-4. **時間方向に複数の対応候補を保持する。** 瞬間的なマスク一致だけでは3匹のIDの
-   置換を区別できない。最後に支持された各個体の位置・向き・速度・形状を保持し、
-   接近前後の画像も使って候補を再評価する。誤割当てを外観テンプレートに学習し続けない。
-   初期化は開始時に1回。保留からの復帰に正解IDや既存法による再初期化を使わない。
-5. **形状表現の不足が確認できたら、魚ごとの3D Gaussiansを比較する。** Gaussian数を
-   制限し、同じ魚への帰属と変形の制約を保持する。標準のピンホール用レンダラーをそのまま
-   用いず、屈折投影のヤコビアンによる近似または屈折rayでの描画を実装・検証する。
-   自由なシーン全体の画像最適化を、そのまま生物個体のID推定とは呼ばない。
+1. **Secure independent image observations.** Store SLEAP's 3 points, Detectron2 per-individual
+   masks, and top_cam brightness / background subtraction separately. Do not give the mask
+   detection existing 3D IDs or trajectories. Errors from occlusion or reflection in the same
+   image can be shared, so statistical independence is not assumed. Retain the cases where two
+   fish overlap in one mask, where one fish splits into several, missed detections, and
+   reflections.
+2. **Build refraction-aware 3D support regions from the masks.** Project candidate points inside
+   the tank into each camera with the existing refraction model, and sample support inside and
+   outside the masks. This is not a method that triangulates by matching contour points to each
+   other. A missing observation is treated as missing, and a hard three-view AND does not delete
+   all candidates. The number of connected components of the support region is not necessarily
+   the number of fish, and no ID is assigned here.
+3. **Compare image-generative models that represent the three fish explicitly.** Start by
+   representing each fish with a few ellipsoids / a bending body, and check the silhouettes
+   projected into the three views against the real masks. Besides foreground being present
+   where a fish projects, also evaluate how much of the image foreground the three fish explain.
+   Handle pixel-to-fish attribution, occlusion by nearer objects, and reflection outliers, and
+   deal with solutions in which two IDs converge on the same fish. Mouth, pectoral fin and tail,
+   body shape, movement and optical flow are added as separate support information.
+4. **Keep several correspondence candidates over time.** An instantaneous mask match alone cannot
+   distinguish permutations of the three IDs. Retain each individual's last supported position,
+   orientation, velocity and shape, and re-evaluate candidates using images from before and after
+   a close approach as well. Do not keep training a wrong assignment into the appearance
+   template. Initialisation happens once, at the start. Recovery from a hold does not use
+   ground-truth IDs or reinitialisation by an existing method.
+5. **Once the shape representation is confirmed to be insufficient, compare per-fish 3D
+   Gaussians.** Limit the number of Gaussians and keep the constraints of attribution to the same
+   fish and of deformation. Do not use a standard pinhole renderer as is; implement and validate
+   either an approximation via the Jacobian of the refractive projection or rendering along
+   refracted rays. Free image optimisation of the whole scene is not, by itself, to be called ID
+   estimation of biological individuals.
 
-## 比較する候補と絞り込み
+## Candidates compared and narrowing down
 
-| 候補 | 追加する情報 | 採否を決める問い |
+| Candidate | Information added | Question that decides adoption |
 |---|---|---|
-| A | 保存済みSLEAP・既存7arm・前回試作 | 同じ区間・初期条件での対照 |
-| B | 独立マスクの3D支持、同一物体への観測割当て | 点検出が欠けたときに正しい魚を分離・回復できるか |
-| C | 3匹の有限な体積と遮蔽を含むシルエット生成 | 重複説明や反射による偽の対応を減らすか |
-| D | 個体ごとの永続的なGaussian形状・外観 | Cに残る形状・外観の誤りを、IDと計算時間の両方で改善するか |
+| A | stored SLEAP, the existing 7 arms, the previous prototype | control on the same interval and initial conditions |
+| B | 3D support from independent masks, assignment of observations to the same object | can it separate and recover the correct fish when point detections are missing? |
+| C | silhouette generation including the three fish's finite volume and occlusion | does it reduce duplicate explanations and false correspondences from reflections? |
+| D | persistent per-individual Gaussian shape and appearance | does it improve the shape and appearance errors left by C, in terms of both ID and compute time? |
 
-Bから順に進め、原因と対応する変更を1つずつ比較する。全てを同時に導入しない。
-マスクのみ、SLEAP併用、動き併用、各視点を除いた場合を開発区間で比較する。
-再投影誤差・マスク一致・滑らかさは原因診断用であり、IDの合格基準に置き換えない。
+Proceed in order from B, comparing one change at a time, each matched to a cause. Do not
+introduce everything at once. On the development interval, compare masks only, with SLEAP, with
+motion, and with each view left out. Reprojection error, mask agreement and smoothness are for
+diagnosing causes and do not replace the ID pass criteria.
 
-## 外部評価と合格条件
+## External evaluation and pass criteria
 
-- 最優先は独立した3匹の注釈に対する**受理した誤ID**。F–MとM1–M2を分ける。
-  入口・出口が合っても途中の往復swapを見逃すため、接近中も3視点動画を確認する。
-- **受理率、欠測時間、3匹同時出力率、保留区間数、確認に要した時間**を同時に報告する。
-  全て保留する方法は合格しない。自動出力と人が修正した出力は別に採点する。
-- 当面の工学的な進級条件は、独立に確認できた区間で受理誤IDが0、魚frame受理率90%以上、
-  各魚80%以上。これは有限の標本での条件で、未確認区間のswapゼロ保証ではない。
-  人手確認の許容場面数はユーザーに照会中で、未回答を承認とは扱わない。
-- 以前に開封した666/200fr、4検証区間、76620:86580の1分は、次サイクルでは既知の
-  開発・回帰試験として扱う。再び「未見の検証」とは呼ばない。
-- 候補が進級できた時点で、候補出力を見ずに新規の接近／遮蔽／平常区間を選び固定する。
-  既知区間を除外し、同じ接近イベントと前後の文脈を分割しない。隣接frameのランダム分割はしない。
-  選択リスト、入力hash、設定、コードを保存してから開封する。
-- 新規短区間で合格 → 同一設定の連続1分（再初期化なし）→ 30分の順に進む。
-  改善のため保留区間を見た場合、その区間を開発側へ移し、次の未見評価を別に確保する。
-  同一録画内の検証を、別個体・別日への一般化と解釈しない。
-- 人手注釈は候補の線やIDを正解として採用せず、原画像上の魚の対応を記録する。
-  評価用注釈を推論へ戻さない。運用上の人手修正を入れる実験は、その数と位置を記録する。
+- Top priority: **accepted wrong IDs** against independent three-fish annotation. F–M and M1–M2
+  are separated. Matching entry and exit can still miss an out-and-back swap in between, so the
+  three-view video is also checked during close approaches.
+- Report **acceptance rate, missing time, rate of simultaneous output of all three fish, number
+  of held intervals, and time spent on checking** together. A method that holds everything does
+  not pass. Automatic output and human-corrected output are scored separately.
+- The interim engineering promotion criterion: on independently confirmed intervals, 0 accepted
+  wrong IDs, a fish-frame acceptance rate of 90% or more, and 80% or more for each fish. This is a
+  condition on a finite sample and is not a guarantee of zero swaps in unconfirmed intervals. The
+  number of scenes acceptable for human checking has been asked of the user; no answer is not
+  treated as approval.
+- The previously unsealed 666/200fr, the 4 validation intervals, and the 1 minute 76620:86580 are
+  treated in the next cycle as known development / regression tests. They are not again called
+  "unseen validation".
+- Once a candidate qualifies for promotion, select and fix new close-approach / occlusion /
+  ordinary intervals without looking at the candidate's output. Exclude known intervals, and do
+  not split a close-approach event from its before/after context. No random split of adjacent
+  frames. Save the selection list, input hashes, settings and code before unsealing.
+- Proceed in the order: pass on the new short intervals → a contiguous 1 minute with the same
+  settings (no reinitialisation) → 30 minutes. If held intervals are looked at to make
+  improvements, move those intervals to the development side and secure a separate next unseen
+  evaluation. Validation within one recording is not interpreted as generalisation to other
+  individuals or other days.
+- Human annotation does not adopt a candidate's lines or IDs as ground truth; it records the fish
+  correspondence on the raw images. Evaluation annotation is not fed back into inference. An
+  experiment that includes operational human corrections records their number and positions.
 
-## 自律的に進める範囲と人の判断
+## What proceeds autonomously and what needs human judgement
 
-実装、GPU利用、短区間での原因診断、比較、失敗候補の棄却、記録は自律的に進める。
-目的や正解ラベルを自分の予測に合わせて変えることは改善に含めない。
-人の判断が必要になるのは、判別困難なオスの対応、30分あたりの確認負担、
-映像でも確定できない箇所をどう成果物に残すか、物理的な水槽床位置など撮影系の事実である。
-最初の試験に床許容値の再拡大やキャリブレーションの再最適化は混ぜない。
+Implementation, GPU use, cause diagnosis on short intervals, comparisons, rejection of failed
+candidates, and record-keeping proceed autonomously. Changing the objective or the ground-truth
+labels to fit one's own predictions does not count as improvement. Human judgement is needed for
+hard-to-distinguish male correspondence, the checking burden per 30 minutes, how to leave in the
+deliverables the points that cannot be confirmed even from video, and facts about the recording
+setup such as the physical tank-floor position. The first test does not mix in a renewed
+widening of the floor tolerance or a re-optimisation of the calibration.
 
-最初の実行は旧Detectron2 pilot cache 132000:137000から時刻だけで選ぶ10frameの
-マスク支持領域のfeasibilityとする。これはデータ資産から選んだ開発診断で、IDの未見検証ではない。
-Detectron2の実行環境と重みの現存を監査し、マスクが取得できるまで背景差分の試験を
-Detectron2の評価として報告しない。GPUはマスクサンプリングや候補一括評価に使い、
-CPUとの数値一致と読み込みを含む実時間を測る。
+The first run is a mask-support-region feasibility on 10 frames selected by time alone from the
+old Detectron2 pilot cache 132000:137000. This is a development diagnostic chosen from the data
+assets, not unseen validation of ID. Audit that the Detectron2 runtime environment and weights
+still exist, and until masks can be obtained, do not report background-subtraction tests as a
+Detectron2 evaluation. The GPU is used for mask sampling and batch evaluation of candidates;
+measure numerical agreement with the CPU and the wall-clock time including loading.
 
-## Gaussian Splattingについての根拠と解釈
+## Gaussian Splatting: evidence and interpretation
 
-[Dynamic 3D Gaussians (3DV 2024)](https://dynamic3dgaussians.github.io/)は、
-Gaussianの外観・大きさ等を保持して移動・回転を推定し、局所的な剛性の制約によって
-点の時間対応を得る。したがって「Gaussian Splattingでは追跡しない」という一括した否定は不適切。
-一方、それが3台の屈折カメラに映るメダカ3個体のIDを保つことは、まだ実証されていない。
+[Dynamic 3D Gaussians (3DV 2024)](https://dynamic3dgaussians.github.io/) keeps the Gaussians'
+appearance, size etc. fixed and estimates translation and rotation, obtaining temporal point
+correspondence through local rigidity constraints. A blanket denial such as "Gaussian Splatting
+does not track" is therefore inappropriate. On the other hand, it has not yet been demonstrated
+that it keeps the IDs of three medaka seen by three cameras through refraction.
 
-[GaussianObject (SIGGRAPH Asia 2024)](https://gaussianobject.github.io/)は、
-4枚の画像でもマスクとvisual hullを構造の初期値に使い、Gaussianを最適化する。
-静的な物体の画像再構成であり、動く魚のIDの検証ではない。拡散モデルで補った画像は
-推定上の事前情報であって、魚の同一性を検証する独立の観測には使えない。
-ここからマスクによる形状初期化と永続的な物体表現を取り出すのが、今回の実装上の推論である。
+[GaussianObject (SIGGRAPH Asia 2024)](https://gaussianobject.github.io/) uses masks and a visual
+hull as the structural initialisation, even from 4 images, and optimises Gaussians. It is image
+reconstruction of a static object, not validation of moving-fish IDs. Images filled in by a
+diffusion model are an inferential prior and cannot serve as independent observations that verify
+a fish's identity. Taking mask-based shape initialisation and a persistent object representation
+from it is an implementation-level inference made here.
 
-[3DGUT (CVPR 2025)](https://research.nvidia.com/labs/toronto-ai/3DGUT/)は、Gaussianの
-代表点を非線形なカメラモデルで投影して2Dの広がりを推定し、反射・屈折のための二次rayにも
-対応する。既存の屈折投影をGaussian描画に接続する際の具体的な参考になる。
-[Through the Water (AAAI 2026)](https://ojs.aaai.org/index.php/AAAI/article/view/38197)は、
-水面の反射・屈折を扱うGaussian再構成である。どちらも今回の3匹のID維持の実証ではないが、
-通常のピンホール前提を越えた描画を実装するための一次資料として検討する。
+[3DGUT (CVPR 2025)](https://research.nvidia.com/labs/toronto-ai/3DGUT/) projects representative
+points of each Gaussian through a nonlinear camera model to estimate its 2D extent, and also
+supports secondary rays for reflection and refraction. It is a concrete reference for connecting
+the existing refractive projection to Gaussian rendering.
+[Through the Water (AAAI 2026)](https://ojs.aaai.org/index.php/AAAI/article/view/38197) is a
+Gaussian reconstruction that handles reflection and refraction at the water surface. Neither
+demonstrates keeping the three fish's IDs here, but both are considered as primary sources for
+implementing rendering beyond the usual pinhole assumption.
