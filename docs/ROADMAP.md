@@ -1,5 +1,11 @@
 # Roadmap — ordered phases with gates
 
+> **2026-09-30 current priority:** Follow the
+> [dataset delivery plan](decisions/2026-09-30-dataset-delivery.md) for next steps.
+> Its input inventory, complete pilot handoff, and subsequent expansion supersede
+> the phase ordering below. Consistent IDs throughout each trial are required; 100% frame
+> coverage is not required. All coverage excludes each recording's first 300 s.
+
 > **Status note, 2026-09-08.** The Phase C text below predates the tracking work of
 > 2026-08-13 → 2026-09-03. The chain that exists, its numbers and its open failure classes
 > are in [TRACKING_PIPELINE.md](TRACKING_PIPELINE.md); the entry point is

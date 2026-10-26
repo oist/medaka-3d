@@ -1,5 +1,24 @@
 # Where to start — the current state, 2026-09-08
 
+**2026-09-30 current direction:** Start with the
+[dataset delivery plan](decisions/2026-09-30-dataset-delivery.md). The target is
+collaborator-ready 3D trajectories for `medaka_202512`, excluding each recording's
+first 300 seconds. **The same individual must keep the same ID throughout each
+trial**; independent segment IDs alone are insufficient. Maximize usable duration
+and continuity under that constraint, leaving unsupported correspondences
+unassigned. First inventory the inputs and produce one
+complete post-preparation pilot package; evaluate identity reliability separately
+from coverage. This replaces the older next-task ordering below. It does not
+promote the parked SLEAP adapter or claim the dataset has already been processed.
+
+**2026-09-30 identity-method research:** The
+[literature and local-code review](decisions/2026-09-30-identity-method-review.md)
+compares segmentation, image re-identification and whole-trial block association.
+Its recommended comparison keeps existing geometry fixed and tests learned
+appearance with/without masks, using independent block correspondence evidence.
+idtracker.ai/idmatcher.ai is the direct external block-matching baseline. This is
+a research recommendation, not an executed benchmark or automatic method adoption.
+
 **2026-09-18 completed comparisons:** Stages A-C of the variable-count plan
 and the subsequent SLEAP adapter comparison are complete. Start with the
 [variable-count result](../labs/20260917_variable_count_tracklets/RESULT.md)
