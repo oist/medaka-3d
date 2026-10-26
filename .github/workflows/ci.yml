@@ -21,18 +21,19 @@ jobs:
           enable-cache: true
 
       - name: Set up Python
-        run: uv python install 3.11
+        # Use the version pinned in .python-version.
+        run: uv python install
 
       - name: Install
-        run: uv pip install --system -e ".[dev]"
+        run: uv sync --locked --extra dev --extra analysis
 
       - name: Lint
-        run: ruff check .
+        run: uv run --no-sync ruff check .
 
       - name: Format check
-        run: ruff format --check .
+        run: uv run --no-sync ruff format --check .
 
       - name: Test
         # Includes the structural rules in tests/test_labs.py: production must
         # not import labs/, and an expired lab with no RESULT.md fails the build.
-        run: pytest -q
+        run: uv run --no-sync pytest -q
