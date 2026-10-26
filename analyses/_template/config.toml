@@ -1,0 +1,25 @@
+# Default teaching fixture only. Replace every input/sampling claim for research.
+[analysis]
+slug = "trajectory_qc"
+owner = "UNASSIGNED"
+question = "How much of the window has observed positions with supported trial IDs?"
+
+[input]
+kind = "synthetic"  # Allowed: synthetic, research; no automatic fallback.
+root = "analysis_dir"  # Research: work_dir or asset_root from paths.local.toml.
+csv = "synthetic_tracks.csv"  # Relative to the selected root.
+sha256 = "2101eaf42e8b9faf4aaad13220e3d3d02a67cac12de5042e79e04a377f645171"
+recording_id = "SYNTHETIC"
+run_id = "synthetic_tutorial_v1"
+extraction_commit = "not_applicable_synthetic"
+provenance_ref = "README.md#inputs-and-method"
+schema_ref = "README.md#input-table"
+identity_evidence_ref = "Known by construction; synthetic teaching fixture only."
+body_reference = "Invented point in mm; not a measured anatomical node."
+
+[window]
+start_s = 300.0
+end_s = 306.0
+sample_interval_s = 1.0
+expected_individuals = 3
+sampling_basis = "Synthetic regular 1 Hz samples, not an acquisition frame rate."

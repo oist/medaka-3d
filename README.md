@@ -6,7 +6,18 @@ Three-camera 3D behaviour tracking for medaka (*Oryzias latipes*) mating experim
 interact — and which behavioural factors actually determine the female's mating decision?
 One female and two males per trial, filmed from three synchronised cameras at 166 fps.
 
-**Status.** Foundation only. No pipeline code yet.
+**Current direction (2026-09-30).** Deliver 3D trajectories for `medaka_202512`
+with consistent individual IDs throughout each trial, excluding each recording's
+first five minutes. Maximize usable time and reliable continuous segments while
+leaving unsupported identity assignments unresolved. Tracking prototypes exist;
+the latest SLEAP adapter remains unpromoted. See the
+[dataset delivery plan](docs/decisions/2026-09-30-dataset-delivery.md) and
+[current handoff](docs/NEXT_SESSION.md).
+
+**Student and collaborator start here:** [Analysis workspace](analyses/README.md)
+provides setup, a runnable notebook template, and the review/handoff workflow.
+[AGENTS.md](AGENTS.md) defines the shared rules for AI agents after a fresh clone;
+[CLAUDE.md](CLAUDE.md) adds Claude Code context. Repository-authored text is in English.
 
 ---
 
@@ -35,8 +46,8 @@ No analysis code was carried over.
 - Nearly all previous analysis rests on **3 experiments out of 71**, and it is not
   established that they are three independent females.
 - Only about **22–26 experiments** have any human (BORIS) annotation.
-- Ground truth labels **only the female**. There has never been a male-vs-male ground truth
-  set, so every M1/M2 claim is currently unvalidatable.
+- Historical female annotations alone do not validate all-three-fish identity.
+  Check the current identity evidence and source reviews before making M1/M2 claims.
 
 Details and per-claim re-verification recipes are in [docs/PRIOR_FINDINGS.md](docs/PRIOR_FINDINGS.md).
 
@@ -66,7 +77,7 @@ Each one exists because its absence caused a specific failure in the old repo.
 ## Setup
 
 ```bash
-uv sync --python 3.13          # or: pip install -e ".[dev]"
+uv sync --locked --python 3.13 --extra dev --extra analysis
 cp configs/paths.example.toml configs/paths.local.toml   # then edit for your machine
 pytest -q
 ```

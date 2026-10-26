@@ -1,0 +1,2 @@
+# Keep teaching fixtures byte-stable across platforms for SHA-256 validation.
+analyses/**/*.csv text eol=lf

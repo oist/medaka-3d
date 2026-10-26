@@ -2,6 +2,27 @@
 
 Guidance for Claude Code working in this repository.
 
+## Shared instructions and student workflow
+
+**Read [AGENTS.md](AGENTS.md) first.** It is the shared repository policy for all
+AI agents, including agents running after a student clones this repository.
+Use English for repository-authored documentation, notebooks, code comments,
+figures, output messages, and commit/PR text. Preserve raw source data verbatim.
+Chat with the user may follow the user's language.
+
+For student work, start at [analyses/README.md](analyses/README.md). Put one QC
+task or scientific question in `analyses/YYYYMMDD_question/`, copied from
+`analyses/_template/`. Keep the question, fixed input version, results, caveats,
+and next step in its README. Use a short topic branch and supervisor-reviewed
+PR. Keep reusable calculations in `src/medaka3d/` and algorithm experiments in
+`labs/` under its existing rules.
+
+The tutorial uses explicitly synthetic data. Real analyses require a documented,
+fixed extraction run and independently supported identity information; neither
+the tutorial nor successful execution certifies tracking accuracy. Do not switch
+a student's inputs when the extraction pipeline changes without a recorded
+comparison and decision. Follow the notebook and handoff checks in `AGENTS.md`.
+
 ## What this is
 
 Three-camera 3D behaviour tracking for medaka mating experiments. One female + two males per
@@ -24,8 +45,9 @@ everything that came before:
   "N=3 mate choice" result is n=1. The dataset holds **24 trials across 14 groups**, 22 with
   all three days; 23 of the 24 were never analysed.
 - Only ~22–26 experiments have any human (BORIS) annotation.
-- Ground truth labels **only the female**. There has never been a male-vs-male ground truth set,
-  so every M1/M2 claim is currently unvalidated.
+- The historical female annotation set does not establish all-three-fish
+  identity. Check the current evidence inventory and source reviews before
+  claiming male correspondence or asserting that no male annotations exist.
 
 Use `medaka3d.cohort` for anything involving experiment structure. The independent statistical
 unit is `Trial` (group + trial), **never** the folder. The experimenter's physical descriptors
@@ -71,19 +93,27 @@ Do not repeat a prior number as settled. Cite it as a hypothesis and say what wo
 ## Environment
 
 ```powershell
-uv sync --python 3.11              # or: uv pip install -e ".[dev]"
+uv sync --locked --python 3.13 --extra dev --extra analysis
 .venv\Scripts\python.exe -m pytest -q
 .venv\Scripts\python.exe -m ruff check .
 ```
 
 Always use the project virtualenv: `.venv\Scripts\python.exe` (Windows) / `.venv/bin/python`.
+Python 3.13 matches `.python-version`. The `analysis` extra supplies Jupyter and
+plotting tools. See `analyses/README.md` for kernel selection and notebook checks.
+The commands above describe the full checks; existing failures are recorded in
+[the source checkpoint](docs/decisions/2026-09-25-source-checkpoint.md).
+Do not claim they pass without running them.
 
 `configs/paths.local.toml` is gitignored and machine-specific. Copy from `paths.example.toml`.
 Never hardcode `Z:` or `G:` — they differ per machine.
 
 ## Storage
 
-`Z:` = `\\bucket.oist.jp\bucket` = `/bucket` on the clusters. Same bytes, three names.
+Canonical shared storage is `/bucket/StephensU/medaka`. Windows drive mappings
+vary by machine: `Z:` may map to the bucket root or directly to the unit folder.
+Resolve paths through `configs/paths.local.toml`. The Windows paths below are
+historical examples, not defaults to copy blindly onto a student's machine.
 
 | Path | Contents |
 |---|---|
@@ -97,12 +127,19 @@ Never hardcode `Z:` or `G:` — they differ per machine.
 
 ## Status and what to do next
 
-**Start here: [docs/NEXT_SESSION.md](docs/NEXT_SESSION.md)**, then
+**Student analysis: [analyses/README.md](analyses/README.md).** The current
+delivery objective is defined in the
+[dataset delivery plan](docs/decisions/2026-09-30-dataset-delivery.md): supported,
+consistent within-trial IDs after each recording's first 300 seconds. Inventory
+inputs and prepare a complete pilot before expanding. This is a plan, not a
+claim that an analysis-ready dataset already exists.
+
+**Extraction development: [docs/NEXT_SESSION.md](docs/NEXT_SESSION.md)**, then
 [docs/TRACKING_PIPELINE.md](docs/TRACKING_PIPELINE.md) for the chain as it stands.
 [docs/ROADMAP.md](docs/ROADMAP.md) holds the phase structure; its Phase C text predates
 the tracking work and the status block at its top says so.
 
-As of 2026-09-08: one experiment (K_1_2) runs end to end from raw video through a
+Historical status, 2026-09-08: one experiment (K_1_2) runs end to end from raw video through a
 tracking chain (`tools/c27 → c28 → c33 → c30 → c34`) whose slot labelling keeps the
 female's identity in 296 of 298 annotated intervals. **Nothing is promoted** — the numbered
 tools under `tools/` are the experiments (a standing tension with design rule 1; promotion
@@ -115,7 +152,8 @@ reference.
 ## Work rules
 
 - Investigation and reading: proceed freely.
-- Creating or overwriting files, installing packages: confirm first, unless the user's request
-  already asked for that specific change.
+- Carry out the changes authorized by the user's request, including the necessary
+  reversible implementation and validation. Ask only when material scope or
+  authorization is missing; do not repeatedly request permission already given.
 - Deleting data: enumerate what would be lost, verify the keeper copy, then delete. Never the
   other order.

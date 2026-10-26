@@ -12,6 +12,10 @@ __pycache__/
 # Tooling
 .pytest_cache/
 .ruff_cache/
+.ipynb_checkpoints/
+
+# Local tutorial exports. Research exports belong in configured shared storage.
+analyses/**/_outputs/
 
 # ---------------------------------------------------------------------------
 # Large data NEVER enters this repo. It lives under asset_root / work_dir on
