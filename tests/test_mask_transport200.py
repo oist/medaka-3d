@@ -20,13 +20,16 @@ import track_mask_transport200 as m  # noqa: E402
 def test_online_numeric_loop_only_changes_finite_query_bound():
     old = ast.parse((WORK / "semantic_node_stream.py").read_text(encoding="utf-8"))
     new = ast.parse((WORK / "mask_transport_stream.py").read_text(encoding="utf-8"))
-    before, after = [next(n for n in tree.body if isinstance(n, ast.FunctionDef)
-                         and n.name == "run_online200") for tree in (old, new)]
+    before, after = [
+        next(n for n in tree.body if isinstance(n, ast.FunctionDef) and n.name == "run_online200")
+        for tree in (old, new)
+    ]
     for node in ast.walk(after):
         if isinstance(node, ast.Constant) and node.value == 157:
             node.value = 9
         elif isinstance(node, ast.Constant) and node.value == (
-                "at most157 finite float32 auxiliary queries per view required"):
+            "at most157 finite float32 auxiliary queries per view required"
+        ):
             node.value = "at most9 finite float32 semantic queries per view required"
     assert ast.dump(before) == ast.dump(after)
     assert streaming.StreamingLK is original_stream.StreamingLK
@@ -38,15 +41,22 @@ def query_fixture():
         xy=np.arange(314, dtype=np.float32).reshape(157, 2) + 100,
         mask_index=np.repeat(np.arange(3, dtype=np.int64), sizes),
         corner_index=np.concatenate([np.arange(n, dtype=np.int64) for n in sizes]),
-        frame_idx=np.asarray(m.FIRST, np.int64), available=np.asarray(True, bool),
+        frame_idx=np.asarray(m.FIRST, np.int64),
+        available=np.asarray(True, bool),
     )
     rows, cursor = [], 0
     for i, size in enumerate(sizes):
-        rows.append(dict(mask_index=i, query_start=cursor, query_stop=cursor + size,
-                         query_count=size))
+        rows.append(
+            dict(mask_index=i, query_start=cursor, query_stop=cursor + size, query_count=size)
+        )
         cursor += size
-    row = dict(view="top_cam", query_count=157, mask_count=3, rows=rows,
-               array_signatures=m.delta.signatures(query))
+    row = dict(
+        view="top_cam",
+        query_count=157,
+        mask_count=3,
+        rows=rows,
+        array_signatures=m.delta.signatures(query),
+    )
     return query, row
 
 
@@ -100,15 +110,27 @@ def test_thread_policy_matches_old_LK_execution_not_new_PNG_transport():
         m.validate_thread_policy(dict(opencv_threads=32), dict(opencv_threads=2))
 
 
+@pytest.mark.requires_artifacts(
+    WORK / "temporal_known_gap64_preparation_v1/preparation.provenance.json",
+    WORK / "temporal_known_gap64_comparison_v1/summary.json",
+    WORK / "semantic_node200_preparation_v2/preparation.provenance.json",
+)
 def test_recorded_thread_metadata_contract():
     import json
 
-    prep = json.loads((WORK / "temporal_known_gap64_preparation_v1"
-                       / "preparation.provenance.json").read_text(encoding="utf-8"))
-    old = json.loads((WORK / "temporal_known_gap64_comparison_v1"
-                      / "summary.json").read_text(encoding="utf-8"))
-    new = json.loads((WORK / "semantic_node200_preparation_v2"
-                      / "preparation.provenance.json").read_text(encoding="utf-8"))
+    prep = json.loads(
+        (WORK / "temporal_known_gap64_preparation_v1" / "preparation.provenance.json").read_text(
+            encoding="utf-8"
+        )
+    )
+    old = json.loads(
+        (WORK / "temporal_known_gap64_comparison_v1" / "summary.json").read_text(encoding="utf-8")
+    )
+    new = json.loads(
+        (WORK / "semantic_node200_preparation_v2" / "preparation.provenance.json").read_text(
+            encoding="utf-8"
+        )
+    )
     m.validate_thread_policy(prep["environment"], old["environment"])
     assert new["environment"]["opencv_threads"] == 2
 
@@ -131,9 +153,14 @@ class FakeBackend:
     def arrays(queries, hi):
         xy = np.broadcast_to(queries, (hi, len(queries), 2)).copy()
         scores = np.full((hi, len(queries)), 0.8, np.float32)
-        return dict(xy=xy, model_xy=xy.copy(), reported=scores > np.float32(0.6),
-                    sigmoid_visibility=scores.copy(), sigmoid_confidence=np.ones_like(scores),
-                    product=scores)
+        return dict(
+            xy=xy,
+            model_xy=xy.copy(),
+            reported=scores > np.float32(0.6),
+            sigmoid_visibility=scores.copy(),
+            sigmoid_confidence=np.ones_like(scores),
+            product=scores,
+        )
 
     def predict(self, images):
         assert len(images) == 16
@@ -159,15 +186,27 @@ def view_fixture(tmp_path, monkeypatch):
     query, row = query_fixture()
     old_output = m.base.Output(old_root)
     for i in range(7):
-        old_output.write(f"top_cam/online/call_{i}.npz",
-                         FakeBackend.arrays(query["xy"], 16 + i * 8))
+        old_output.write(
+            f"top_cam/online/call_{i}.npz", FakeBackend.arrays(query["xy"], 16 + i * 8)
+        )
     old_output.write("top_cam/lk_raw.npz", m.core.lk_chain([image] * 64, query["xy"]))
     old_members = {record["path"]: record for record in old_output.records.values()}
-    native_rows = [dict(view="top_cam", frame_idx=n, png_path=png.name,
-                        bgr_sha256=hashlib.sha256(image.tobytes()).hexdigest())
-                   for n in range(m.FIRST, m.STOP)]
-    context = dict(natives=native_rows, queries={"top_cam": query}, query_rows=[row],
-                   members=members, old_members=old_members)
+    native_rows = [
+        dict(
+            view="top_cam",
+            frame_idx=n,
+            png_path=png.name,
+            bgr_sha256=hashlib.sha256(image.tobytes()).hexdigest(),
+        )
+        for n in range(m.FIRST, m.STOP)
+    ]
+    context = dict(
+        natives=native_rows,
+        queries={"top_cam": query},
+        query_rows=[row],
+        members=members,
+        old_members=old_members,
+    )
     monkeypatch.setattr(m, "load_masks", lambda *_: np.zeros((0, 1200, 1200), bool))
     monkeypatch.setattr(m.base, "TorchOnline", FakeBackend)
     return context

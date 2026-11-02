@@ -190,6 +190,10 @@ def test_failed_metadata_before_numeric_load_preserves_failed_seal(monkeypatch, 
     assert not (destination / "summary.json").exists()
 
 
+@pytest.mark.requires_artifacts(
+    m.INITIAL_GEOMETRY / "diagnosis.provenance.json",
+    m.WORK / m.REFERENCE["root"],
+)
 def test_source_only_actual_reference_json_contract(monkeypatch):
     """Real existing small JSON only; no prepared/point/reference numeric arrays."""
     original_open = Path.open
@@ -235,6 +239,7 @@ def test_declared_but_unimported_dependency_has_no_fabricated_snapshot(tmp_path,
         m.bind_declared_pins(root, seal, {}, plan, dict(source_hashes={}), m.base.Evidence())
 
 
+@pytest.mark.requires_artifacts(m.WORK / "semantic_node200_tracking_v1/tracking.provenance.json")
 def test_actual_completed_contract_reads_only_sources_and_small_json(monkeypatch):
     """Complete CT200/prepV2 schema, not a numerical geometry execution."""
     original_open = Path.open

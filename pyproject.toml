@@ -67,6 +67,9 @@ packages = ["src/medaka3d"]
 [tool.pytest.ini_options]
 testpaths = ["tests"]
 addopts = "-q"
+markers = [
+    "requires_artifacts(*paths): audit an original archived run only when its declared inputs exist",
+]
 
 [tool.ruff]
 line-length = 100

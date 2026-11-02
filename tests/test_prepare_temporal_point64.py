@@ -246,6 +246,10 @@ def test_new_output_membership_and_change_guard(tmp_path):
 
 def test_failed_decode_seals_partial_and_closes_capture(tmp_path, monkeypatch):
     monkeypatch.setattr(p, "WORK", tmp_path)
+    plan = tmp_path / "synthetic_plan.md"
+    plan.write_text("Synthetic decode-failure test plan.\n", encoding="utf-8")
+    monkeypatch.setattr(p, "PLAN", plan)
+    monkeypatch.setattr(p, "PLAN_SHA", p.sha(plan))
     monkeypatch.setattr(p, "source_code", lambda: {})
     monkeypatch.setattr(p, "no_model_imports", lambda: None)
     data = packed(0)

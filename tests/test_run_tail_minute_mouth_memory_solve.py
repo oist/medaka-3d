@@ -159,6 +159,11 @@ def test_all_new_dataclass_fields_saved_with_node_axis(tmp_path, monkeypatch):
     assert scalar["node_indices"] == [1, 0]
 
 
+@pytest.mark.requires_artifacts(
+    mod.preflight.previous.COMPARISON / "comparison.provenance.json",
+    mod.preflight.PRIOR / "identity.provenance.json",
+    mod.PREFLIGHT / "preflight.provenance.json",
+)
 def test_actual_small_JSON_only_Tail_allowed_Original_failed_preserved(monkeypatch):
     read = Path.read_bytes
 
@@ -179,9 +184,29 @@ def test_actual_small_JSON_only_Tail_allowed_Original_failed_preserved(monkeypat
 
 @pytest.mark.parametrize("fault", ["original_hidden", "tail_incomplete", "node_order"])
 def test_preflight_status_not_overridden(fault):
-    # Only sealed JSON is read; no array or graph input is touched.
-    p = json.loads((mod.PREFLIGHT / "plan.json").read_text())
-    s = json.loads((mod.PREFLIGHT / "summary.json").read_text())
+    # Synthetic metadata exercises the contract without an archived run.
+    p = dict(schema=mod.preflight.STAGE, native_interval=[mod.START, mod.STOP])
+    s = dict(
+        **p,
+        status="ok",
+        node_indices=[1, 0],
+        native_frames=mod.STOP - mod.START,
+        methods=dict(
+            tail=dict(completed=True, counted_native_frames=mod.STOP - mod.START, stop=None),
+            original=dict(
+                completed=False,
+                stop=dict(
+                    reason="maximum_layer_states",
+                    attempted_frame=70691,
+                    attempted_layer_states_lower_bound=100001,
+                ),
+            ),
+        ),
+        all_within_fixed_caps=False,
+        graph_scored=False,
+        positions_read=False,
+        cap_or_weight_changed=False,
+    )
     mod.validate_preflight(p, s, p)
     bad = copy.deepcopy(s)
     if fault == "original_hidden":

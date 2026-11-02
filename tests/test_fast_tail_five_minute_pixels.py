@@ -4,7 +4,6 @@ from __future__ import annotations
 
 import copy
 import hashlib
-import json
 import sys
 from pathlib import Path
 
@@ -56,6 +55,10 @@ def test_membership_never_filters_missing_or_neutral_views(fault):
         m.validate_membership_order(rows, m.FRAMES[:2])
 
 
+@pytest.mark.requires_artifacts(
+    m.ORIGINAL / "continuation.provenance.json",
+    m.PREPARED / "preparation.provenance.json",
+)
 def test_real_small_metadata_binds90_masks_without_mask_pose_or_cuda(monkeypatch):
     def forbidden(*args, **kwargs):
         raise AssertionError("unexpected numerical payload or CUDA")
@@ -74,8 +77,39 @@ def test_real_small_metadata_binds90_masks_without_mask_pose_or_cuda(monkeypatch
 
 @pytest.mark.parametrize("fault", ["schedule", "config", "overlap", "truth", "diagnostic"])
 def test_previous_protocol_mutation_rejected(fault):
-    summary = json.loads((m.PREPARED / "summary.json").read_text(encoding="utf-8"))
-    config = copy.deepcopy(summary["sampler_config"])
+    config = dict(
+        mode="detectron2",
+        width_ratio=0.06,
+        positive_samples=384,
+        near_samples=384,
+        global_samples=256,
+    )
+    summary = dict(
+        schema=m.prior.STAGE,
+        status="ok",
+        native_interval=[m.START, m.REUSED_STOP],
+        scored_frames=list(m.FRAMES[:120]),
+        reused_frames=list(m.FRAMES[:60]),
+        newly_sampled_frames=list(m.FRAMES[60:120]),
+        sampler_config=copy.deepcopy(config),
+        counts=[96, 96, 64],
+        seed_offset=8803010,
+        original_seal_sha256=m.prior.ORIGINAL_SHA,
+        reused_preparation_sha256=m.prior.PREPARED_SHA,
+        native_decoded_mask_checks=180,
+        reused_sample_arrays_BYTEEXACT=True,
+        fitted_coordinate_overlap=0,
+        pixel_draws_per_arm=92160,
+        fit_coordinates_reconstructed_deterministically=True,
+        saved_run_fit_diagnostics_compared=False,
+        pose_values_read=False,
+        raw_BGR_frames_decoded=0,
+        models=0,
+        GPU_initialized=False,
+        temporal_holdout=False,
+        identity_truth=False,
+    )
+    m.validate_previous(summary, config)
     if fault == "schedule":
         summary["scored_frames"][119] -= 1
     elif fault == "config":

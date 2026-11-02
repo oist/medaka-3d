@@ -214,6 +214,11 @@ def test_bad_background_input(tmp_path, kind):
         a.decode_backgrounds(chunks, expected, e)
 
 
+@pytest.mark.requires_artifacts(
+    ROOT
+    / "work/three_body/long_remaining_receipted_supervisor_v1/phases"
+    / "f126160-136120/tracking/continuation.provenance.json"
+)
 def test_existing_completed_metadata_roles_only():
     """Read sealed small JSON and payload stat only; never hash/open long NPZ."""
     root = ROOT / (

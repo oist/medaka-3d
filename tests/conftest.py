@@ -11,11 +11,117 @@ through an iterative projection would confound the two.
 from __future__ import annotations
 
 import json
+import sys
+import uuid
+from contextlib import contextmanager, nullcontext
+from functools import cache
+from pathlib import Path
 
 import numpy as np
 import pytest
 
 from medaka3d.calib import load_rig
+
+
+@pytest.hookimpl(tryfirst=True)
+def pytest_configure(config):
+    # Audit tests deliberately reject paths outside the repository. Pytest's
+    # default OS temp directory would violate that contract in CI and clones.
+    # Use a fresh, short path so no existing directory is recursively replaced
+    # and long immutable calibration names still fit ordinary Windows limits.
+    if config.option.basetemp is None:
+        repository = Path(__file__).resolve().parents[1]
+        temporary = repository / "work" / ("pytest_" + uuid.uuid4().hex[:8])
+        if not temporary.resolve().is_relative_to(repository) or temporary.exists():
+            raise pytest.UsageError("A new workspace-local test temporary directory is required.")
+        config.option.basetemp = str(temporary)
+
+
+def pytest_collection_modifyitems(items):
+    """Run original-artifact audits only when their declared inputs are present.
+
+    Absence is optional; malformed or mismatched artifacts still fail the
+    original assertions. Synthetic contract tests do not use this marker.
+    """
+    for item in items:
+        for marker in item.iter_markers("requires_artifacts"):
+            if not marker.args:
+                raise pytest.UsageError("requires_artifacts must declare its original input paths")
+            missing = [str(path) for path in marker.args if not Path(path).exists()]
+            if missing:
+                item.add_marker(
+                    pytest.mark.skip(
+                        reason="Optional archived run inputs are absent: " + missing[0]
+                    )
+                )
+
+
+class LabImportScope:
+    """Keep a script-style lab's flat imports out of other experiments' caches.
+
+    Retain one module graph per lab so shared classes and monkeypatch targets do
+    not change between its tests. Restore both aliases and search paths after
+    collection and after each complete test/fixture protocol.
+    """
+
+    def __init__(self, directory: Path):
+        self.directory = directory.resolve()
+        self.names = {path.stem for path in self.directory.glob("*.py")}
+        self.modules = {}
+
+    @contextmanager
+    def activate(self):
+        previous_path = sys.path[:]
+        missing = object()
+        previous_modules = {name: sys.modules.get(name, missing) for name in self.names}
+        try:
+            sys.path.insert(0, str(self.directory))
+            for name in self.names:
+                sys.modules.pop(name, None)
+            sys.modules.update(self.modules)
+            yield
+        finally:
+            self.modules = {
+                name: module
+                for name in self.names
+                if (module := sys.modules.get(name)) is not None
+                and getattr(module, "__file__", None)
+                and Path(module.__file__).resolve().parent == self.directory
+            }
+            for name, module in previous_modules.items():
+                if module is missing:
+                    sys.modules.pop(name, None)
+                else:
+                    sys.modules[name] = module
+            sys.path[:] = previous_path
+
+
+_GENERATIVE_LAB = "20260908_generative_tracking"
+_GENERATIVE_IMPORTS = LabImportScope(Path(__file__).resolve().parents[1] / "labs" / _GENERATIVE_LAB)
+
+
+@cache
+def _lab_scope(path: Path):
+    # These frozen tests declare the lab path in their source. Cover runtime
+    # benchmark imports too, without changing the archived experiment scripts.
+    if _GENERATIVE_LAB in path.read_text(encoding="utf-8"):
+        return _GENERATIVE_IMPORTS
+    return None
+
+
+@pytest.hookimpl(wrapper=True)
+def pytest_make_collect_report(collector):
+    scope = _lab_scope(collector.path) if isinstance(collector, pytest.Module) else None
+    with scope.activate() if scope else nullcontext():
+        return (yield)
+
+
+@pytest.hookimpl(wrapper=True)
+def pytest_runtest_protocol(item):
+    scope = _lab_scope(item.path)
+    with scope.activate() if scope else nullcontext():
+        return (yield)
+
 
 #: Camera x/y/z axes expressed in world coordinates, i.e. the rows of R.
 _POSES = {
@@ -61,8 +167,14 @@ def rig(tmp_path):
             "fy": 2000.0,
             "cx": 600.0,
             "cy": 600.0,
-            "k1": 0.0, "k2": 0.0, "p1": 0.0, "p2": 0.0, "k3": 0.0,
-            "k4": 0.0, "k5": 0.0, "k6": 0.0,
+            "k1": 0.0,
+            "k2": 0.0,
+            "p1": 0.0,
+            "p2": 0.0,
+            "k3": 0.0,
+            "k4": 0.0,
+            "k5": 0.0,
+            "k6": 0.0,
             "rotation_vector": _rotation_vector(np.asarray(rows)),
             "camera_center": center,
             "interface_normal": normal,
