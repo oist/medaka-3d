@@ -64,17 +64,37 @@ def test_all_valid_q_checked_even_without_target(invalid):
         m.ray_gap_loss(*args)
 
 
-@pytest.mark.parametrize("qvalue,expected_derivative", [(0.0, 0.0), (0.5, 0.0), (1.0, 0.5)])
-def test_q_one_boundary_uses_original_clamp_min_derivative(qvalue, expected_derivative):
+@pytest.mark.parametrize(
+    "qvalue,expected_score,expected_derivative",
+    [(0.0, 0.0, 0.0), (0.5, 0.0, 0.0), (4.0, 1 / 12, 0.25)],
+)
+def test_clamped_gap_value_and_analytic_derivative_away_from_boundary(
+    qvalue, expected_score, expected_derivative
+):
     q, target, fg, weight, valid = values()
     with torch.no_grad():
         q[:, 0, 0, 0] = qvalue
     score = m.ray_gap_loss(q, target, fg, weight, valid)
-    assert torch.equal(score, torch.zeros_like(score))
+    torch.testing.assert_close(score, torch.full_like(score, expected_score))
     score.sum().backward()
     torch.testing.assert_close(
         q.grad[:, 0, 0, 0], torch.full((2,), expected_derivative / 12, dtype=torch.float64)
     )
+
+
+def test_q_one_boundary_preserves_the_installed_scalar_clamp_convention():
+    reference_q = torch.tensor(1.0, dtype=torch.float64, requires_grad=True)
+    reference = reference_q.clamp_min(1).sqrt() - 1
+    derivative = torch.autograd.grad(reference, reference_q)[0]
+    q, target, fg, weight, valid = values()
+    with torch.no_grad():
+        q[:, 0, 0, 0] = 1
+    score = m.ray_gap_loss(q, target, fg, weight, valid)
+    assert torch.equal(score, torch.zeros_like(score))
+    score.sum().backward()
+    expected = torch.zeros_like(q)
+    expected[:, 0, 0, 0] = derivative / 12
+    torch.testing.assert_close(q.grad, expected, rtol=0, atol=0)
 
 
 def test_equal_nearest_gaussians_keep_amin_tie_derivative_and_mass_scaling():

@@ -124,7 +124,34 @@ def test_fixed_point_weights_cannot_be_learned_or_silently_retyped(fault):
         m.body_point_loss(own, q, weight, valid)
 
 
-def test_point_mass_above_one_is_not_clipped_and_q_one_keeps_clamp_derivative():
+@pytest.mark.parametrize(
+    "q_value, expected_gap, expected_gradient", [(0.5, 0.0, 0.0), (4.0, 0.8, 0.2)]
+)
+def test_point_mass_above_one_is_not_clipped_away_from_the_clamp_boundary(
+    q_value, expected_gap, expected_gradient
+):
+    own = torch.ones((1, 3, 1, 3), dtype=torch.float64, requires_grad=True)
+    q = torch.full_like(own, q_value, requires_grad=True)
+    weight = torch.zeros_like(own)
+    weight[0, 0, 0, 0] = 2.4
+    valid = torch.ones((3, 1), dtype=torch.bool)
+    owner, gap = m.body_point_loss(own, q, weight, valid)
+    assert owner.item() == 0
+    assert gap.item() == pytest.approx(expected_gap)
+    (owner + gap).sum().backward()
+    assert q.grad[0, 0, 0, 0].item() == pytest.approx(expected_gradient)
+    assert torch.count_nonzero(q.grad) == int(expected_gradient != 0)
+    assert torch.count_nonzero(own.grad) == 0
+
+
+def test_q_one_preserves_the_installed_torch_scalar_clamp_convention():
+    # q=1 is a nondifferentiable boundary, so the scalar clamp uses the
+    # installed framework's subgradient convention rather than a derivative.
+    # Assert the framework convention here; test analytic derivatives above at
+    # smooth points so a wrong mass or gradient cannot hide behind this oracle.
+    reference_q = torch.tensor(1.0, dtype=torch.float64, requires_grad=True)
+    reference_gap = reference_q.clamp_min(1).sqrt() - 1
+    reference_gradient = torch.autograd.grad(reference_gap, reference_q)[0]
     own = torch.ones((1, 3, 1, 3), dtype=torch.float64, requires_grad=True)
     q = torch.ones_like(own, requires_grad=True)
     weight = torch.zeros_like(own)
@@ -133,8 +160,11 @@ def test_point_mass_above_one_is_not_clipped_and_q_one_keeps_clamp_derivative():
     owner, gap = m.body_point_loss(own, q, weight, valid)
     assert owner.item() == gap.item() == 0
     (owner + gap).sum().backward()
-    assert q.grad[0, 0, 0, 0].item() == pytest.approx(0.4)
-    assert torch.count_nonzero(q.grad) == 1 and torch.count_nonzero(own.grad) == 0
+    assert q.grad[0, 0, 0, 0].item() == pytest.approx((2.4 / 3) * reference_gradient.item())
+    expected = torch.zeros_like(q)
+    expected[0, 0, 0, 0] = (2.4 / 3) * reference_gradient
+    torch.testing.assert_close(q.grad, expected, rtol=0, atol=0)
+    assert torch.count_nonzero(own.grad) == 0
 
 
 def test_far_body_point_has_real_pose_gradient_even_when_every_alpha_is_zero():

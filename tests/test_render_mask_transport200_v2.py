@@ -93,6 +93,10 @@ def test_lineage_rejects_wrong_edge_or_shared_scope(fault):
         m.bind_geometry_lineage(tracking, context, Evidence())
 
 
+@pytest.mark.requires_artifacts(
+    WORK / "mask_transport200_three_arm_tracking_v2/tracking.provenance.json",
+    m.inputs.PREPARATION / "preparation.provenance.json",
+)
 def test_actual_small_json_success_edges_without_payload_reads():
     tracking_path = WORK / "mask_transport200_three_arm_tracking_v2/tracking.provenance.json"
     preparation_path = m.inputs.PREPARATION / "preparation.provenance.json"
@@ -120,6 +124,7 @@ def test_actual_small_json_success_edges_without_payload_reads():
     assert len(evidence.added) == 4
 
 
+@pytest.mark.requires_artifacts(WORK / "mask_transport200_visual_review_v1/review.provenance.json")
 def test_failed_visual_is_retained_exactly_with_no_output_members():
     path = WORK / "mask_transport200_visual_review_v1/review.provenance.json"
     data = path.read_bytes()

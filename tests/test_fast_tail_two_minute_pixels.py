@@ -93,6 +93,10 @@ def test_decoded_mask_corruption_rejected(monkeypatch):
         m.frame_from_masks(packed, m.HALF, m.HALF + 83)
 
 
+@pytest.mark.requires_artifacts(
+    m.ORIGINAL / "continuation.provenance.json",
+    m.PREPARED / "preparation.provenance.json",
+)
 def test_metadata_only_real_seals_never_open_arrays_or_cuda(monkeypatch):
     def forbidden(*args, **kwargs):
         raise AssertionError("unexpected numerical payload or CUDA initialization")

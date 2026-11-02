@@ -13,6 +13,10 @@ sys.path.insert(0, str(ROOT / "work/three_body"))
 import run_tail_minute_mouth_memory_preflight as mod  # noqa: E402
 
 
+@pytest.mark.requires_artifacts(
+    mod.previous.COMPARISON / "comparison.provenance.json",
+    mod.PRIOR / "identity.provenance.json",
+)
 def test_actual_small_JSON_support_export_binding_no_array_read(monkeypatch):
     original = Path.read_bytes
 
@@ -34,6 +38,10 @@ def test_actual_small_JSON_support_export_binding_no_array_read(monkeypatch):
 
 
 @pytest.mark.parametrize("fault", ["changed_binding", "source", "modified_raw"])
+@pytest.mark.requires_artifacts(
+    mod.previous.COMPARISON / "comparison.provenance.json",
+    mod.PRIOR / "identity.provenance.json",
+)
 def test_reject_wrong_prior_summary_or_input_source(monkeypatch, fault):
     read = mod.previous.named_read
     member = mod.previous.input_member

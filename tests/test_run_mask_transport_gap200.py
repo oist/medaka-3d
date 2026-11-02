@@ -57,6 +57,10 @@ def test_rejects_different_or_incomplete_evidence(fault):
         m.validate_previous_evaluation(seal, summary)
 
 
+@pytest.mark.requires_artifacts(
+    m.EVALUATION / "evaluation.provenance.json",
+    m.PREVIOUS / "tracking.provenance.json",
+)
 def test_actual_small_json_source_edges_before_any_payload():
     path = m.EVALUATION / "evaluation.provenance.json"
     raw = path.read_bytes()

@@ -184,6 +184,11 @@ def test_legacy_manifest_named_path_and_input_shapes(tmp_path):
         mod.named_read(seal, tmp_path, "candidate.npz", evidence)
 
 
+@pytest.mark.requires_artifacts(
+    mod.COMPARISON / "comparison.provenance.json",
+    mod.FEMALE / "evaluation.provenance.json",
+    *(run["root"] / run["seal"] for run in mod.RUNS.values()),
+)
 def test_actual_small_json_contract_has_no_npz_or_solver(monkeypatch):
     original = Path.read_bytes
 
