@@ -44,6 +44,14 @@ dependencies = [
 ]
 
 [project.optional-dependencies]
+analysis = [
+    "jupyterlab>=4.4,<5",
+    "ipykernel>=6.29,<8",
+    "nbformat>=5.10,<6",
+    "nbclient>=0.10,<1",
+    "nbconvert>=7.16,<8",
+    "matplotlib>=3.9,<4",
+]
 dev = [
     "pytest>=8.0",
     "ruff>=0.6",
@@ -59,6 +67,9 @@ packages = ["src/medaka3d"]
 [tool.pytest.ini_options]
 testpaths = ["tests"]
 addopts = "-q"
+markers = [
+    "requires_artifacts(*paths): audit an original archived run only when its declared inputs exist",
+]
 
 [tool.ruff]
 line-length = 100

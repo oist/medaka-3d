@@ -84,6 +84,9 @@ def test_predecessors_do_not_create_zero_frame_or_unassigned_edges():
     np.testing.assert_array_equal(gap, [0, 0, 1, 2, 0])
 
 
+@pytest.mark.requires_artifacts(
+    ROOT / "work/clean2d_video_comparison_v1/known_323819/tracking_P_side1_cam.npz"
+)
 def test_frozen_p0_reproduces_prior_context_labels_and_edges():
     path = ROOT / "work/clean2d_video_comparison_v1/known_323819/tracking_P_side1_cam.npz"
     with np.load(path, allow_pickle=False) as prior:

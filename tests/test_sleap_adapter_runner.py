@@ -160,6 +160,13 @@ def test_prespecified_sensitivities_change_exactly_one_field():
     assert configs["G_age33"].max_age_frames == 33
 
 
+@pytest.mark.requires_artifacts(
+    *(
+        ROOT / "work/variable_count_tracklets_v1/known_323819" / name
+        for method in RUN.REFERENCES
+        for name in (f"tracking_{method}_side1_cam.npz", f"metrics_{method}_side1_cam.json")
+    )
+)
 def test_reference_case_metrics_remain_identical_without_tracking_rerun():
     base = ROOT / "work/variable_count_tracklets_v1/known_323819"
     for method in RUN.REFERENCES:

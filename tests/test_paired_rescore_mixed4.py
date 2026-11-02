@@ -185,6 +185,7 @@ def test_new_manifest_size_and_input_string_are_distinct_from_old(tmp_path):
         m.mixed_input(bad, path, evidence)
 
 
+@pytest.mark.requires_artifacts(m.MIXED_ROOT / "qualification.provenance.json")
 def test_actual_small_summary_plan_manifest_contract_without_numeric_payload(monkeypatch):
     monkeypatch.setattr(np, "load", lambda *a, **k: pytest.fail("no numeric input"))
     evidence = m.proof.Evidence()

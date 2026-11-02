@@ -1673,6 +1673,14 @@ dependencies = [
 ]
 
 [package.optional-dependencies]
+analysis = [
+    { name = "ipykernel" },
+    { name = "jupyterlab" },
+    { name = "matplotlib" },
+    { name = "nbclient" },
+    { name = "nbconvert" },
+    { name = "nbformat" },
+]
 dev = [
     { name = "pytest" },
     { name = "ruff" },
@@ -1680,7 +1688,13 @@ dev = [
 
 [package.metadata]
 requires-dist = [
+    { name = "ipykernel", marker = "extra == 'analysis'", specifier = ">=6.29,<8" },
+    { name = "jupyterlab", marker = "extra == 'analysis'", specifier = ">=4.4,<5" },
     { name = "kornia" },
+    { name = "matplotlib", marker = "extra == 'analysis'", specifier = ">=3.9,<4" },
+    { name = "nbclient", marker = "extra == 'analysis'", specifier = ">=0.10,<1" },
+    { name = "nbconvert", marker = "extra == 'analysis'", specifier = ">=7.16,<8" },
+    { name = "nbformat", marker = "extra == 'analysis'", specifier = ">=5.10,<6" },
     { name = "numpy", specifier = ">=1.26" },
     { name = "onnx" },
     { name = "pandas", specifier = ">=2.1" },
@@ -1690,7 +1704,7 @@ requires-dist = [
     { name = "sleap-io", specifier = "==0.9.2" },
     { name = "sleap-nn", specifier = "==0.3.1" },
 ]
-provides-extras = ["dev"]
+provides-extras = ["analysis", "dev"]
 
 [[package]]
 name = "mistune"

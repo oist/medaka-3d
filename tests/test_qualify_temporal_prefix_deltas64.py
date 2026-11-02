@@ -1,10 +1,11 @@
 """Synthetic saved-file boundaries; no real trajectory, image or model arrays."""
 
-import copy
 import io
 import json
+import subprocess
 import sys
 from pathlib import Path
+from types import ModuleType
 
 import numpy as np
 import pytest
@@ -192,7 +193,35 @@ def test_output_guard_requires_exact_membership_and_bytes(tmp_path):
         output.guard()
 
 
-def test_failure_seal_retains_partials_and_does_not_claim_success(tmp_path, monkeypatch):
+def run_without_model_runtime(case_name, destination):
+    """Exercise the real no-torch guard in a clean process, not a doctored cache."""
+    script = """
+import runpy
+import sys
+from pathlib import Path
+import pytest
+
+case = runpy.run_path(sys.argv[1])
+assert "torch" not in sys.modules
+with pytest.MonkeyPatch.context() as patch:
+    case[sys.argv[2]](Path(sys.argv[3]), patch)
+assert "torch" not in sys.modules
+"""
+    result = subprocess.run(
+        [sys.executable, "-c", script, str(Path(__file__).resolve()), case_name, str(destination)],
+        capture_output=True,
+        text=True,
+        timeout=30,
+        check=False,
+    )
+    assert result.returncode == 0, result.stdout + result.stderr
+
+
+def test_failure_seal_retains_partials_and_does_not_claim_success(tmp_path):
+    run_without_model_runtime("check_failure_seal", tmp_path)
+
+
+def check_failure_seal(tmp_path, monkeypatch):
     def stop(spec, evidence):
         raise ValueError("synthetic source binding failure")
 
@@ -210,6 +239,9 @@ def test_failure_seal_retains_partials_and_does_not_claim_success(tmp_path, monk
     } - {"qualification.provenance.json"}
 
 
+@pytest.mark.requires_artifacts(
+    *(m.WORK / spec["name"] / "comparison.provenance.json" for spec in m.DATASETS)
+)
 def test_real_small_json_scope_contract_only():
     # Reads selected original source/JSON metadata, never an NPZ/image or model.
     for spec in m.DATASETS:
@@ -226,17 +258,45 @@ def test_real_small_json_scope_contract_only():
 
 
 def test_scope_refuses_query_group_reordering():
-    spec = m.DATASETS[0]
-    root = m.WORK / spec["name"]
-    plan = m.parse_json((root / "plan.json").read_bytes())
-    summary = m.parse_json((root / "summary.json").read_bytes())
-    plan = copy.deepcopy(plan)
+    spec = dict(name="synthetic_scope", first=100, plan_sha="synthetic_binding", queries=[2, 3, 1])
+    frames = list(range(100, 164))
+    plan = dict(
+        schema=spec["name"],
+        plan_sha256=spec["plan_sha"],
+        frames=frames,
+        views=list(m.VIEWS),
+        windows=m.WINDOWS,
+        init_relative_frame=0,
+        no_reseed=True,
+        all_query_rows=[dict(view=view) for view in m.VIEWS],
+    )
+    summary = dict(
+        schema=spec["name"],
+        status="ok",
+        frames=frames,
+        native_frames=64,
+        logical_online_requests=21,
+        model_initializations=3,
+        no_query_replacement=True,
+        raw_scores_preserved=True,
+        all_prefixes_preserved=True,
+        views=[
+            dict(view=view, query_count=count)
+            for view, count in zip(m.VIEWS, spec["queries"], strict=True)
+        ],
+        query_count=sum(spec["queries"]),
+    )
+    m.validate_scope(spec, plan, summary)
     plan["all_query_rows"].reverse()
     with pytest.raises(ValueError, match="ordered query"):
         m.validate_scope(spec, plan, summary)
 
 
-def test_successful_orchestration_seals_all_42_synthetic_calls(tmp_path, monkeypatch):
+def test_successful_orchestration_seals_all_42_synthetic_calls(tmp_path):
+    run_without_model_runtime("check_successful_orchestration", tmp_path)
+
+
+def check_successful_orchestration(tmp_path, monkeypatch):
     spec, row, files, _ = saved_view()
     specs = [dict(spec, name=name) for name in ("fixture_a", "fixture_b")]
     rows = [dict(row, view=view) for view in m.VIEWS]
@@ -264,3 +324,18 @@ def test_successful_orchestration_seals_all_42_synthetic_calls(tmp_path, monkeyp
     for item in seal["outputs"].values():
         assert m.file_sha(item["path"]) == item["sha256"]
         assert Path(item["path"]).stat().st_size == item["size_bytes"]
+
+
+def test_orchestration_rejects_a_preloaded_model_runtime(tmp_path, monkeypatch):
+    monkeypatch.setitem(sys.modules, "torch", ModuleType("torch"))
+    monkeypatch.setattr(m, "PINS", {})
+
+    def forbidden(*args, **kwargs):
+        raise AssertionError("source data opened before checking the model runtime")
+
+    monkeypatch.setattr(m, "load_dataset", forbidden)
+    destination = tmp_path / "runtime_rejected"
+    with pytest.raises(ValueError, match="model runtime unexpectedly imported"):
+        m.run(destination)
+    seal = m.parse_json((destination / "qualification.provenance.json").read_bytes())
+    assert seal["status"] == "failed" and "summary.json" not in seal["outputs"]

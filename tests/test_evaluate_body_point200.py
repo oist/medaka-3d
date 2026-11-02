@@ -157,6 +157,12 @@ def packet_metadata():
     )
 
 
+@pytest.mark.requires_artifacts(
+    *(
+        m.producer.PACKETS / name
+        for name in ("plan.json", "summary.json", "preparation.provenance.json")
+    )
+)
 def test_actual_completed_packet_small_json_contract_no_payload(monkeypatch):
     monkeypatch.setattr(np, "load", lambda *a, **k: pytest.fail("no actual array read"))
     args = packet_metadata()
@@ -167,9 +173,58 @@ def test_actual_completed_packet_small_json_contract_no_payload(monkeypatch):
     assert args[0]["all_initial_anchor_ids"] == [0, 1]
 
 
+def synthetic_packet_metadata():
+    """A minimal valid contract, independent of archived research outputs."""
+    common = dict(
+        schema=m.PACKET_STAGE, native_interval=[m.FIRST, m.STOP], evidence=list(m.EVIDENCE)
+    )
+    plan = dict(
+        **common,
+        implementation_plan_sha256=m.producer.PLAN_SHA,
+        helper_sha256=m.POINT_HELPER_SHA,
+        preparation_sha256=m.inputs.PREPARATION_SHA,
+        point_sha256=m.previous.POINTS_SHA,
+        samples_sha256=m.previous.SAMPLES_SHA,
+        causal_tracking_sha256=m.producer.PREVIOUS_SHA,
+        fit_samples_per_view=1024,
+        point_mass_domain="same fit1024 W*y*T",
+        point_diagnostic="in_sample; no unused-mass reconstruction",
+        t0_packet_saved=True,
+        t0_packet_used_in_tracking=False,
+    )
+    summary = dict(
+        **common,
+        status="ok",
+        native_frames=200,
+        packet_count=400,
+        mask_count=1730,
+        all_old_T_exact=True,
+        all_old_mass_exact=True,
+        all400_packet_readbacks_exact=True,
+        all400_query_ray_readbacks_exact=True,
+        fit_mass_point_diagnostic_in_sample=True,
+        unused_mass_reconstruction=False,
+        new_model=False,
+        new_fit=False,
+        CUDA_initialized=False,
+    )
+    seal = dict(
+        inputs={
+            str(m.WORK / "prepare_body_point200_packets.py"): m.PACKET_PRODUCER_SHA,
+            str(m.WORK / "body_point_transport.py"): m.POINT_HELPER_SHA,
+            str(m.inputs.PREPARATION / "preparation.provenance.json"): m.inputs.PREPARATION_SHA,
+            str(m.previous.POINTS / "tracking.provenance.json"): m.previous.POINTS_SHA,
+            str(m.previous.SAMPLES / "samples.provenance.json"): m.previous.SAMPLES_SHA,
+            str(m.producer.PREVIOUS / "tracking.provenance.json"): m.producer.PREVIOUS_SHA,
+        }
+    )
+    return plan, summary, seal
+
+
 @pytest.mark.parametrize("fault", ["wrong_seal_name", "unused_mass", "t0_fit", "no_readback"])
 def test_packet_small_json_lineage_and_in_sample_domain_refuse_tamper(fault):
-    plan, summary, seal = packet_metadata()
+    plan, summary, seal = synthetic_packet_metadata()
+    m.validate_packet_preparation(plan, summary, seal)
     if fault == "wrong_seal_name":
         path = m.previous.SAMPLES / "samples.provenance.json"
         seal["inputs"][str(path.with_name("preparation.provenance.json"))] = seal["inputs"].pop(

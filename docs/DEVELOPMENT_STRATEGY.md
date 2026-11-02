@@ -1,5 +1,12 @@
 # Development strategy
 
+> **2026-09-30 direction change:** The current objective and next milestone are
+> defined in the [dataset delivery plan](decisions/2026-09-30-dataset-delivery.md):
+> usable 3D trajectories after each recording's first five minutes, with explicit
+> consistent within-trial IDs and maximal reliable temporal coverage. The phase ordering
+> below is historical; preserve its validation lessons without making complete
+> ID-swap elimination a prerequisite for preparing a usable dataset.
+
 How we get to reliable 3D tracking of three medaka with minimal identity swaps.
 
 Companion to [PRIOR_FINDINGS.md](PRIOR_FINDINGS.md) (what was already tried) and
