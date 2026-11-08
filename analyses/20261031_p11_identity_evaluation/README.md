@@ -364,3 +364,10 @@ and the four-block CNN of Registration 4 remain the carry-forward state.
 Two failed training attempts of variant R (a whole-array float conversion
 and GPU memory oversubscription) were fixed in memory handling only, before
 any evaluation existed; the lab RESULT.md records them.
+
+The [six-recording study](../20261108_six_recording_identity/README.md) extends
+the comparison to K_1/P_1. The supervisor's
+[2026-11-09 operating policy](../../docs/decisions/2026-11-09-separate-s-g-outputs.md)
+uses S as the experimental default and retains G through a separate export
+command and output. Never fill S's withheld identities from G. Historical
+comparison runs and registered verdicts remain unchanged.

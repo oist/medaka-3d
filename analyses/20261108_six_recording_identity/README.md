@@ -432,8 +432,16 @@ geometry and two encoders agree against the single reviewer. The reviewer's
 names are also consistent across the three days of each trio, and the
 per-trio encoders recover that cross-day identity label-free.
 
-The stored candidates remain experimental. This study promotes no algorithm.
-Video adjudication of P_1_2 and P_1_1 reference disagreements remains outstanding.
+On 2026-11-09 the supervisor selected S as the experimental default and G as
+a separate optional command/output. S's withheld identities must never be
+filled from G. The [operating decision](../../docs/decisions/2026-11-09-separate-s-g-outputs.md)
+documents the evidence, limits, and the separate `export_identity_s.py` and
+`export_identity_g.py` commands. Each exports exactly one checksummed frozen
+candidate to a new directory, preserving its bytes and withheld values.
+Historical comparison runs still produce all registered candidates; these
+exports do not recompute or combine them. This study changes no registration
+of the appearance lab and promotes nothing. Video adjudication of P_1_2 and
+P_1_1 reference disagreements remains outstanding.
 
 ## Artifacts
 

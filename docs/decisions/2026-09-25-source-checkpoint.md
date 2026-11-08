@@ -88,3 +88,42 @@ false; run them in a subprocess; or run the suite on a GPU machine with
 `CUDA_VISIBLE_DEVICES` hiding the device. The choice belongs to the owners of
 those labs. The numerical failures listed above remain as recorded; the
 2026-09-25 import and formatting findings were resolved by later commits.
+
+## Addendum 2026-11-09: identity research and separate S/G exports
+
+The accumulated tracker-row repair, geometry warning experiments, selective
+connection draft, appearance experiments, six-recording study, and
+[separate S/G output policy](2026-11-09-separate-s-g-outputs.md) are committed
+by context on `analysis/identity-candidates`. The export helper validates and
+copies frozen candidate artifacts; it does not promote an identity algorithm.
+
+Checks executed in the project virtual environment on 2026-11-09:
+
+| Check | Observed result |
+| --- | --- |
+| Full `python -m pytest -o addopts='' -q -p no:cacheprovider` | 3812 passed, 2 skipped, 8 failed in 305 s |
+| Tracker row, join ledger, C30 trace, geometry warning, appearance and S/G export regression files | Passed |
+| Foundation and S/G export tests, including the optional staging root | 22 passed |
+| `python -m ruff check .` | Passed |
+| Format check on the 42 changed Python files other than the pre-existing C24 source | Passed |
+| Full `python -m ruff format --check .` | 248 files would be reformatted; 422 already formatted |
+| `uv lock --check --offline` | Passed; 215 resolved packages |
+| Two saved review notebooks, fresh project-virtualenv kernels, top to bottom | Both completed; four executed code cells each; no saved errors |
+| Rendered notebook figures | All three inspected; readable labels and complete marks |
+| Eight staged runs, N/S/G candidate files | All 24 match their shared copies and staged-copy manifest hashes |
+| Separate S and G CLI exports using the fixed P_1_2 run and recorded hashes | Both byte-identical to their sources, with separate policy/provenance files |
+| Staging path resolution | All eight staged training run paths resolve through the configured local root |
+
+The eight full-suite failures are exactly the two expired-lab and six
+process-global CUDA-state failures listed in the 2026-11-08 addendum, with the
+same failure conditions. They remain open; this is not a passing full CI run.
+The full formatting backlog is also retained. Formatting of the newly added
+research Python files was checked to preserve their ASTs; historical run source
+snapshots were not rewritten.
+
+Notebook figure writes were redirected to temporary validation directories so
+the historical run artifacts were not overwritten. The saved notebook source
+cells retain their original paths and executed outputs. No tracking or model
+training was rerun, no raw inputs or human references were changed, and no video
+adjudication was performed. Full local check logs and the contextual commit
+manifest are in ignored `work/commit_push_20261109/`.

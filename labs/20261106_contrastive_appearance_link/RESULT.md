@@ -720,3 +720,11 @@ variant A.
 
 Tests: `tests/test_contrastive_appearance_lab.py`. No extraction output, human
 label, reference file or earlier registration's output was modified.
+
+## Operating policy, 2026-11-09
+
+The supervisor selected S as the experimental default and G as a separately
+exported optional comparison. Never fill S's withheld values from G. The
+[decision and separate commands](../../docs/decisions/2026-11-09-separate-s-g-outputs.md)
+preserve the frozen candidate bytes and provenance. This policy does not change
+any registered rule, reverse the gap-only rejection above, or promote the lab.
