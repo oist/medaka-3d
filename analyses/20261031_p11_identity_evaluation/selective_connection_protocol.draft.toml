@@ -1,0 +1,189 @@
+status = "draft_not_frozen"
+execution_enabled = false
+owner = "Research supervisor; preparation by Codex, 2026-11-05 revision by Claude Code"
+planned_lab = "labs/20261104_selective_geometry_connections"
+method_document = "SELECTIVE_CONNECTION_PLAN.md"
+appearance_allowed = false
+revision = "2026-11-05_limited_manual_effort"
+
+[source]
+current_head = "fd8d86f81715239b39ef8496299768b43d0679c4"
+row_mapping_repair_status = "uncommitted_working_tree_change"
+required_extraction_commit = "UNSET_MERGED_ROW_REPAIR_COMMIT"
+input_manifest = "UNSET"
+primary_lambda = 0.767
+sensitivity_lambdas = [0.0, 0.1, 0.25, 0.5, 2.0, 8.0]
+fit_on_primary_lambda_only = true
+reference_primary_match_mm = 5.0
+reference_margin_mm = 2.0
+reference_sensitivity_match_mm = [2.0, 5.0, 10.0]
+preparation_seconds = 300.0
+native_timing_required = true
+
+[cohort]
+development_recording_keys = ["K_1_1", "K_1_2", "K_1_3", "P_1_1", "P_1_2", "P_1_3"]
+development_trios = ["K", "P"]
+inventory_evidence = "read_directly_from_bucket_2026_11_04_by_claude_code_hashes_not_pinned"
+full_recording_id_manifest = "UNSET"
+folder_name_note = "exp_list.csv set-dates for P_1_2 and P_1_3 disagree with the actual folders; pin actual folder names"
+
+[cohort.development_folders]
+K_1_1 = "20251225_K_1_1_FCMC"
+K_1_2 = "20251225_K_1_2_FCMC"
+K_1_3 = "20251225_K_1_3_FCMC"
+P_1_1 = "20260112_P_1_1_FCMC"
+P_1_2 = "20260113_P_1_2_FCMC"
+P_1_3 = "20260112_P_1_3_FCMC"
+
+[cohort.detector]
+K_1_run = "s16_bottomup_3node_uncapped"
+K_1_cap = 8
+K_1_cap_evidence = "documented_in_TRACKING_PIPELINE_only_no_explicit_cap_in_s16_script_verify"
+P_1_run = "s14_bottomup_3node_reviewed"
+P_1_cap = 6
+P_1_cap_evidence = "inference_logs_all_views_P_1_2_P_1_3_and_P_1_1_top"
+weights_named = "retrain_20260810_3node_reviewed s14 bottom-up"
+weight_hashes = "UNSET_VERIFY"
+
+[development_reference]
+source = "existing_id_pass_six_recordings"
+new_manual_labels = 0
+existing_id_pass_open_hours_total = 9.6
+existing_id_pass_open_hours_range = [1.08, 2.50]
+existing_tracker_corrections_total = 100
+reviewer = "UNRECORDED"
+conflict_policy = "mark_unknown_exclude_from_loss_keep_in_coverage"
+video_adjudication_required = false
+adequacy_decision = "supervisor_after_conflict_counts_before_outcome_attachment"
+
+[holdout]
+stage_1_keys = ["K_2_1", "K_2_2", "K_2_3"]
+stage_1_folders = ["20260109_K_2_1_FCMC", "20260109_K_2_2_FCMC", "20260109_K_2_3_FCMC"]
+stage_1_detector_run_listed = "s14_bottomup_3node_reviewed"
+stage_1_detector_note = "differs_from_K_1_s16_run_verify_cap_and_hashes"
+stage_2_conditional_keys = ["P_2_1", "P_2_2", "P_2_3"]
+stage_2_trigger = "supervisor_decision_recorded_before_any_K_2_id_pass_using_only_label_blind_automatic_pass_count"
+stage_2_reference_count_for_1_percent_iid = 299
+new_group_keys = []
+new_group_selection_status = "undecided_outside_current_workload"
+recording_manifest = "UNSET"
+exposure_audit = "UNSET"
+custodian = "UNSET"
+identity_reviewer = "UNDECIDED"
+blinded_reviewer = "UNDECIDED"
+adjudicator = "UNSET"
+review_shows_risk_scores = false
+content_opening_allowed = false
+machine_enforced_seal = false
+
+[risk]
+epsilon = 0.01
+target_status = "user_selected_development_goal_not_external_certification"
+target_decision_date = "2026-11-04"
+accepted_target_description = "error_rate_per_automatically_accepted_connection"
+confidence_delta = 0.05
+unit_status = "proposed_pending_confirmation"
+unit = "fully_automatic_clean_end_mapping_error_if_any_asserted_correspondence_wrong"
+population = "fixed_sealed_collection_K_2_new_recordings_of_development_trio_K"
+future_trio_claim_supported = false
+inferential_method = "UNSET_PROPOSED_PER_RECORDING_COUNTS_PLUS_POOLED_EXACT_BOUND_AS_IID_ILLUSTRATION"
+unknown_as_wrong_sensitivity = true
+pooled_iid_binomial_as_primary = false
+unresolved_reference_is_correct = false
+warning_interior_identity_is_verified_by_endpoint_match = false
+
+[warning]
+proximity_mm = 10.0
+step_mm = 10.0
+signals = ["missing_position", "large_step", "nonidentity_nearest", "proximity"]
+padding_s = 0.05
+maximum_duration_s = "NONE_DO_NOT_FORCE_SHORT_CLIPS"
+warning_interval_equals_physical_swap_event = false
+warning_negative_audit_required = true
+
+[model]
+family = "L2_logistic_regression"
+variant_motion_context_seconds = [0.1, 0.3]
+variant_tie_break_seconds = 0.1
+feature_families = ["bidirectional_motion", "candidate_margin", "predictive_uncertainty", "gap_and_support"]
+feature_count = 8
+covariance_estimator = "UNSET_BEFORE_FREEZE"
+minimum_endpoint_support = "UNSET_BEFORE_FREEZE"
+penalty_normalization = "UNSET_BEFORE_FREEZE"
+out_of_range_policy = "UNSET_BEFORE_FREEZE"
+candidate_identity_prior = "none"
+slot_relabeling_invariance_required = true
+normalization_training_only = true
+
+[threshold]
+status = "proposed_pending_confirmation"
+rule = "max_automatic_coverage_with_one_sided_95_clopper_pearson_upper_bound_on_inner_out_of_fold_known_accepted_mappings_at_most_epsilon"
+rule_role = "iid_engineering_selection_rule_not_inferential_claim"
+if_infeasible = "accept_nothing"
+loosen_epsilon_after_viewing = false
+
+[sample_gate]
+status = "proposed_engineering_floor_not_statistical_guarantee"
+applies_to = ["outer_training_sets", "inner_training_sets"]
+minimum_correct_per_training_set = 20
+minimum_wrong_per_training_set = 20
+minimum_recordings_per_outcome = 2
+failure_action = "do_not_fit_report_insufficient_and_fixed_rule_risk_coverage"
+
+[validation]
+scheme = "nested_leave_one_recording_out"
+outer_unit = "recording"
+outer_folds = 6
+inner = "leave_one_recording_out_within_training_set"
+variant_selection = "inner"
+threshold_selection = "inner"
+outer_estimate_scope = "procedure_at_five_recording_training_size_on_two_trios"
+transfer_directions = ["K_to_P", "P_to_K"]
+transfer_inner_folds = 3
+transfer_role = "descriptive"
+frozen_model_procedure = "same_procedure_on_all_six_recordings_inner_over_six"
+frozen_model_assessed_only_in_holdout = true
+same_scene_all_fish_and_lambdas_same_fold = true
+random_frame_split_allowed = false
+uncertain_bridge_stops_identity_propagation = true
+reference_resolved_scenario_reported_separately = true
+
+[go_no_go]
+status = "proposed_pending_confirmation"
+pooled_outer_empirical_wrong_among_accepted_at_most_epsilon = true
+report_achieved_iid_upper_bound = true
+propagated_wrong_id_time_not_above_original_in_every_recording = true
+failure_action = "report_development_result_keep_K_2_unopened"
+
+[audit]
+raw_review_protocol = "labs/20260909_three_body/IDENTITY_EVIDENCE.md"
+status = "proposed_pending_freeze"
+total_decisions = 20
+sample_sizes = { automatic_pass = 10, human_referral = 5, warning_negative = 5 }
+sampling = "uniform_within_stratum_seed_fixed_at_freeze"
+purpose = "detect_gross_reference_failure_only"
+certifies_reference_error_below_epsilon = false
+certifies_warning_miss_rate = false
+disagreement_action = "report_individually_and_investigate"
+hide_tracker_names = true
+hide_risk_score = true
+hide_sampling_stratum = true
+replace_ambiguous_cases_with_easy_cases = false
+reference_conflicts_preserved = true
+reviewer_identity_required_for_new_reviews = true
+
+[workload]
+development_new_manual_annotation = "none"
+holdout_stage_1_id_pass_recordings = 3
+holdout_stage_1_hours_estimate_from_existing_open_time = [3.2, 7.5]
+hours_are_measured_for_K_2 = false
+audit_decisions = 20
+historical_p11_extraction_minutes = 85
+extraction_minutes_are_guaranteed = false
+automatic_acceptance_fraction = "UNMEASURED"
+p11_core_warnings_at_primary_lambda = 129
+iid_required_automatic_passes_at_1_percent = { zero_errors = 299, one_error = 473, two_errors = 628 }
+iid_required_automatic_passes_at_2_percent = { zero_errors = 149, one_error = 236, two_errors = 313 }
+iid_required_automatic_passes_at_3_percent = { zero_errors = 99, one_error = 157, two_errors = 208 }
+iid_counts_are_manual_corrections = false
+iid_counts_define_recording_requirements = false

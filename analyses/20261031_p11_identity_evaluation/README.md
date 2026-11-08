@@ -249,3 +249,23 @@ time; retain the existing automatic output. The final run is
 explained. The next informative checks are the ten warning intervals containing
 the sustained reference changes and their clean context. Existing annotation
 is usable immediately; more human review is not a prerequisite to experiments.
+
+## Selective-connection study proposal
+
+The [six-recording registration draft](SELECTIVE_CONNECTION_PLAN.md) incorporates
+the proposed K_1/P_1 development study, reference quality checks, and
+dependence-aware evaluation. On 2026-11-04, the supervisor selected a 1% error
+rate per automatically accepted connection as the development goal; this is not
+an achieved result or an external guarantee.
+
+The 2026-11-05 revision limits manual effort. Development uses only the six
+existing ID-pass reviews, with conflicts treated as unknown, and nested
+leave-one-recording-out cross-validation. The first holdout is K_2 only; P_2 is
+a conditional second stage decided from a label-blind count. A blinded audit of
+about 20 decisions checks for gross reference failure. New-trio holdouts are
+undecided and outside the current workload, so no unseen-trio claim is made.
+The companion `selective_connection_protocol.draft.toml` is explicitly not
+executable or frozen: the risk unit, threshold rule, go/no-go rule, holdout
+manifests and reviewers, and merged extraction revision remain to be settled.
+No new extraction, reference conversion, model fit, or holdout content
+inspection ran for this draft.
