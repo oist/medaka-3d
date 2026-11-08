@@ -1,0 +1,15 @@
+version = "join_ledger_v2"
+note = "Exploratory fixed review policy. Supported endpoint correspondence may be assessed across a gap; its interior and event count remain unassessed. Temporal groups require video adjudication."
+
+[support]
+minimum_matched_frames = 100
+minimum_matched_seconds = 0.5
+minimum_matched_fraction = 0.95
+maximum_minority_fraction = 0.0
+candidate_group_span_seconds = 0.25
+
+[context]
+c30_nearby_seconds = 0.25
+review_context_seconds = 2.0
+reflection_status = "unknown_no_reflection_classifier"
+boris_status = "not_aligned"

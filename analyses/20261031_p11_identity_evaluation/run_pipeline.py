@@ -35,8 +35,14 @@ def sha256(path: Path) -> str:
         return hashlib.file_digest(stream, "sha256").hexdigest()
 
 
+def configuration_path() -> Path:
+    """Select an explicit run configuration, inherited by stage subprocesses."""
+    configured = os.environ.get("MEDAKA3D_P11_CONFIG")
+    return Path(configured).resolve(strict=True) if configured else HERE / "config.toml"
+
+
 def settings():
-    cfg = tomllib.loads((HERE / "config.toml").read_text(encoding="utf-8-sig"))
+    cfg = tomllib.loads(configuration_path().read_text(encoding="utf-8-sig"))
     paths = load_paths()
     root = paths.raw_data_dir.parent
     output = root / cfg["output"]["relative_to_data_parent"] / cfg["run_id"]
@@ -66,7 +72,7 @@ def prepare() -> None:
         for source in (
             REPO / "uv.lock",
             REPO / "pyproject.toml",
-            HERE / "config.toml",
+            configuration_path(),
             Path(__file__),
         ):
             shutil.copy2(source, source_dir / source.name)
@@ -211,7 +217,7 @@ def prepare() -> None:
             / f"c01_bottomup__{exp}.provenance.json"
         )
         shutil.copy2(cache_provenance, output / "input_cache.provenance.json")
-        shutil.copy2(HERE / "config.toml", output / "config.toml")
+        shutil.copy2(configuration_path(), output / "config.toml")
         write_json(output / "inputs.json", frozen)
     print(f"Prepared {output}", flush=True)
 

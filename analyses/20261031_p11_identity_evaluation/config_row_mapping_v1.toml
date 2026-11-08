@@ -1,0 +1,52 @@
+experiment = "20260112_P_1_1_FCMC"
+run_id = "id_row_mapping_20261102_r1"
+owner = "P-1-1 research team; execution by Codex"
+
+[input]
+kind = "research"
+review_relative_to_data_parent = "jingyi/P-1-1/reviewed_3d.csv"
+slp_relative_to_data_parent = "jingyi/P-1-1/s14_bottomup_3node_reviewed"
+cache_run = "bottomup"
+calibration_relative_to_data_parent = "calibration/fixed_refractive_192x192x186/phase1-calibration-preserve-20260802T180200JST-60e13a7746d1/calibration"
+previous_chain = "chain-c28-c33-c30v4-c34"
+
+[output]
+relative_to_data_parent = "jingyi/P-1-1"
+csv_gzip_compresslevel = 3
+
+[evaluation]
+primary_scoring_directory = "scoring_rerun_v1"
+previous_scoring_directory = "scoring_previous_v1"
+display_lambda = 0.767
+preparation_seconds = 300.0
+body_reference = "pectoral"
+max_match_distance_mm = 5.0
+min_match_margin_mm = 2.0
+sensitivity_distance_mm = [2.0, 5.0, 10.0]
+anchor_duration_seconds = 2.0
+anchor_start_seconds = 298.0
+anchor_minimum_matches = 100
+anchor_minimum_agreement = 0.95
+encounter_distance_mm = 20.0
+exclude_interpolated_reference = true
+exclude_nodes_bad_reference = true
+require_watched = true
+require_analysed = true
+note = "Thresholds are evaluation matching choices, not calibrated identity probabilities. Report sensitivity; do not tune them to maximize agreement."
+
+[pipeline]
+lambda_workers = 7
+lambdas = [0.0, 0.1, 0.25, 0.5, 0.767, 2.0, 8.0]
+chain_tag = "chain-c28-c33-c30v4-c34"
+stages = ["c27", "c28", "c33", "c30", "c34"]
+rerun_pose_inference = false
+note = "Reuse the pinned r2 inputs; repair source-row assignment only, with continuous history from frame zero."
+
+[comparison]
+baseline_run = "id_evaluation_20261031_r2"
+repair = "input_instance_identity_v1"
+
+[comparison.baseline_hashes]
+"inputs.json" = "2d1850a2dc4d60373ee99051025186d47c3ef48a5c254495f9948c39c0482d7e"
+"config.toml" = "0c3396950cdcce0943d32a7ebf2e3f1f9c7bda761156f1e5a17cf9b803d4ea54"
+"artifact_manifest.json" = "5c499eaf02d390c91bb8d9bc0261b89aff4433bc115d7bd07626fcf0b5511962"

@@ -9,7 +9,7 @@ from pathlib import Path
 
 import numpy as np
 import pandas as pd
-from run_pipeline import HERE, REPO, settings, sha256, write_json
+from run_pipeline import REPO, configuration_path, settings, sha256, write_json
 
 from medaka3d.eval.review_identity import (
     contiguous_runs,
@@ -443,7 +443,7 @@ def main():
         for source in [
             Path(__file__),
             REPO / "src/medaka3d/eval/review_identity.py",
-            HERE / "config.toml",
+            configuration_path(),
         ]:
             shutil.copy2(source, output / source.name)
             rec.input(source.name, source, sha256=sha256(source))

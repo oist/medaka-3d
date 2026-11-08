@@ -95,3 +95,57 @@ agreement with reviewed identities, not independent 3D localization accuracy.
 `watched` only means a frame was displayed in the GUI, at any playback speed.
 The unused `uncertain` flag does not prove every displayed frame was decidable.
 No appearance model was trained or evaluated. No lambda was selected or promoted.
+
+## Separately versioned row-mapping follow-up
+
+`id_row_mapping_20261102_r1` preserves the baseline and uses a corrected source-row
+adapter. See [ROW_MAPPING_REPAIR.md](ROW_MAPPING_REPAIR.md) for the comparison
+protocol, input pins, and validation status. All ledger tables below are written
+under the new run, including the tables calculated from the old baseline.
+
+`join_ledger_v2/{baseline,repair}/lam*/` contains:
+
+| Table | Unit and interpretation |
+| --- | --- |
+| `tracks.csv` | One automatic local ID; time-weighted reference-label support, including IDs without reference matches |
+| `segments.csv` | One uninterrupted native-frame run with a valid position, a fixed output slot, and an unchanged local ID |
+| `edges.csv` | One asserted same-slot continuation between successive segments; correct/wrong/undecidable endpoint correspondence |
+| `event_candidates.csv` | One bounded-span temporal group of edges for review, with member edge IDs and half-open review frame ranges; not an adjudicated event |
+| `c30_decisions.csv` | One C30 candidate boundary or turbulent-zone decision, obtained by replay that matches the stored output exactly |
+| `c30_associations.csv` | One temporal relationship between a final C34 edge and a C30 decision; it does not establish causation or slot correspondence between stages |
+| `observed_assignment_changes.csv` | Original reference-to-slot changes, including changes within mixed tracks; gap-endpoint changes do not establish the number of intervening exchanges |
+| `wrong_identity_intervals.csv` | Original per-fish disagreement intervals, unmerged; overlapping M1/M2 intervals are fish-seconds, not distinct recording time |
+
+Track and segment `label_status` distinguish `supported_reference_label`,
+`mixed`, `insufficient_support`, `reference_incomplete`, and `unassessed`.
+`majority_label` is retained as a diagnostic even when it is not supported.
+`supported_reference_label` is null in that case; it is not a delivered
+trial-wide ID. `purity` and `matched_fraction` use acquisition-duration weights;
+they are not calibrated correctness probabilities.
+
+`edges.outcome` evaluates the supported reference labels at the two ends of the
+asserted continuation. `gap_interior_identity_status=unassessed` means no claim
+is made inside a gap, even when its endpoint correspondence is correct.
+`undecidable_reasons` preserves all applicable support limitations. Unassessed
+edges remain in `edge_count`; correct/(correct+wrong) must be accompanied by
+assessed/all-edge coverage. Neither denominator is a biological sample size.
+
+Geometric endpoint context is in millimetres. `wall_clearance_signed_mm` is the
+minimum signed distance to the four vertical tank walls.
+`depth_below_surface_signed_mm` is calibrated water height minus Z. Negative
+wall clearance or depth, or depth greater than calibrated water height, is not
+clipped. `contributing_cameras` counts nonnegative source rows for that slot.
+Reflection and BORIS status are explicitly unknown/not aligned.
+
+C30 history endpoints are native frame indices; `velocity_history_span_seconds`
+uses their native acquisition timestamps. `velocity_called` includes attempted
+evaluations; consult `velocity_costs_available` and the unavailable reason.
+`velocity_adopted` denotes a velocity or bridge correction, not proof that the
+individual was correctly identified. `physical_identity_correctness` remains
+`not_adjudicated`. An association marked `nearby_only` is weaker than temporal
+inclusion and must not be silently treated as the cause of an edge outcome.
+
+`summary.json` keeps the full expected fish-time separately from the summed
+eligible-grid intervals. Their small difference is the initial partial interval
+after 300 s, already documented above. V1 remains an explicitly superseded
+diagnostic attempt; it is not mixed into V2 comparisons.

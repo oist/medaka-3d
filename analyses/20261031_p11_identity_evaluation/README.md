@@ -3,6 +3,16 @@
 Question: How well does the existing geometry-based repository pipeline preserve
 F/M1/M2 identity against the human-reviewed P-1-1 reference?
 
+**2026-11-02 follow-up:** The original results below remain the frozen baseline.
+The [row-mapping repair and join review](ROW_MAPPING_REPAIR.md) use a separate
+run, `id_row_mapping_20261102_r1`; neither the baseline nor the human reference
+is overwritten. The repair comparison and its review ledger are not an
+appearance experiment or a method promotion.
+The full seven-setting rerun found exactly two changed top-camera labels at
+native frame 20 and no difference in the compared final 3D/label fields or ID
+scoring. The follow-up records the connection evidence and review limitations.
+The executed comparison is in [row_mapping_review.ipynb](row_mapping_review.ipynb).
+
 Owner: P-1-1 research team; execution by Codex at the user's request.
 Recording: `20260112_P_1_1_FCMC` (group P, trial 1, day 1).
 Starting revision: `c601b7bc3fc298bd5d2c3734b3b45bf926551e6b`.
@@ -196,13 +206,14 @@ fresh project-virtualenv kernel. Packaging checks completed execution and
 reconciled scoring, verifies that the original review is unchanged, and records
 an artifact checksum manifest. Inspect the generated figures before handoff.
 
-Next step: isolate the adapter row-correspondence defect in a separately
+Historical next step (superseded by the completed follow-ups below):
+isolate the adapter row-correspondence defect in a separately
 versioned repair, then review the remaining identity changes in source video.
 Compare segmentation-derived appearance links on held-out encounters with
 geometry held fixed; do not split adjacent frames randomly or claim transfer
 to different fish from this one trio. No appearance experiment ran in this task.
 
-Proposed comparison, not executed:
+Historical proposed appearance comparison, not executed:
 
 1. Review the onsets of long M1/M2 disagreements and successful encounters in
    the source videos. Separate unreliable positions, camera correspondence
