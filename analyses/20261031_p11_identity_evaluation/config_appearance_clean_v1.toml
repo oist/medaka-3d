@@ -1,0 +1,71 @@
+lab = "labs/20261106_contrastive_appearance_link"
+lambda_mm = 0.767
+note = "Registration 4 of the lab: clean crops (X), dorsal-up side crops (D), one side model (W), silhouette stopping (T). Pre-registered in the lab README before any flipped crop, pooled model, silhouette value, K_1_2 crop or score. P-1-1 is the development recording; K_1_2 is the judgement recording. Earlier runs and the production chain are read, never written."
+
+[run_ids]
+p11 = "appearance_clean_20261107_r1"
+k12 = "appearance_clean_20261107_k12"
+
+[p11]
+experiment = "20260112_P_1_1_FCMC"
+output = "jingyi/P-1-1"
+# Crops of Registrations 1--3, masked and flipped in place; no video decode.
+crop_source = "registrations_1_3"
+link_config = "config_appearance_link_v1.toml"
+naming_config = "config_appearance_naming_v1.toml"
+gap_config = "config_appearance_gap_v1.toml"
+# Warning interval ids of the two long close encounters named in Registration 3.
+encounters = [49, 28]
+
+[k12]
+experiment = "20251225_K_1_2_FCMC"
+output = "work/appearance/20251225_K_1_2_FCMC"
+crop_source = "video"
+chain_dir = "work/c34_microflip/20251225_K_1_2_FCMC__chain-c28-c33-c30v4-c34"
+cache_dir = "work/c01_s16_predictions"
+# Relative to the asset root. Evaluation only.
+female_reference = "groundtruth/fish_sex_gt/20251225_K_1_2_FCMC/female_sex_gt.csv"
+match_px = 5.0
+
+[k12.warning]
+# The identity-core rule of geometry_motion_risk_20261104_r3, applied label-free.
+rules = ["missing_position", "large_step", "nonidentity_nearest"]
+proximity_mm = 10.0
+padding_s = 0.05
+step_mm = 10.0
+residual_mm = 3.0
+margin_mm = 1.5
+preparation_seconds = 300.0
+
+[crops]
+frame_step = 8
+out_px = 64
+
+[train]
+encoder = "cnn4"
+pairs = 128
+seed = 20261106
+threads_per_model = 12
+max_steps = 6000
+eval_every = 100
+validation_crops = 3000
+patience = 30
+target = 0.91
+target_patience = 2
+cross_pairs = 3000
+
+[train.models]
+top = ["top_cam"]
+side = ["side1_cam", "side2_cam"]
+
+[gap]
+alpha = 0.25
+posterior = 0.99
+
+[evaluate]
+end_window_s = 3.0
+min_reference_coverage = 0.5
+max_wrong_fraction_of_named = 0.01
+min_named_fraction = 0.9
+# Evaluation indices shown in the separation figure, plus the best and the last.
+figure_evaluations = [0, 1, 3, 10]

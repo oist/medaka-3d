@@ -1,0 +1,24 @@
+run_id = "appearance_gap_20261106_r1"
+experiment = "20260112_P_1_1_FCMC"
+lab = "labs/20261106_contrastive_appearance_link"
+lambda_mm = 0.767
+note = "Registration 3 of the lab: bridging (S) and appearance inside gaps (G). Pre-registered in the lab README before any warning-frame crop or score. Reads appearance_link_20261106_r1 and appearance_naming_20261106_r1 read-only."
+
+[input]
+naming_config = "config_appearance_naming_v1.toml"
+warning_intervals = "lam0.767/warning_intervals_identity_core.csv"
+
+[crops]
+frame_step = 8
+
+[gap]
+alpha = 0.25
+posterior = 0.99
+alpha_sensitivity = [1.0, 0.0625]
+posterior_sensitivity = [0.9, 0.999]
+model_check_crops = 2048
+
+[evaluate]
+max_wrong_fraction_of_named = 0.01
+# Warning interval ids of the two long close encounters named in Registration 3.
+encounters = [49, 28]

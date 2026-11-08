@@ -269,3 +269,98 @@ executable or frozen: the risk unit, threshold rule, go/no-go rule, holdout
 manifests and reviewers, and merged extraction revision remain to be settled.
 No new extraction, reference conversion, model fit, or holdout content
 inspection ran for this draft.
+
+## Label-free contrastive appearance link, 2026-11-06
+
+The supervisor redirected effort from human ID correction to strengthening the
+tracking itself and proposed idtracker.ai-style contrastive learning for
+appearance. Step 1 tested whether an appearance signal links geometry fragments
+across warnings on P-1-1. See the
+[registered experiment](../../labs/20261106_contrastive_appearance_link/README.md)
+and [its result](../../labs/20261106_contrastive_appearance_link/RESULT.md).
+The run is `appearance_link_20261106_r1`, configured by
+`config_appearance_link_v1.toml` and produced by `run_appearance_link.py`
+(`extract`, `train`, `evaluate`).
+
+At lambda 0.767 the pre-registered rule reads carry-forward. Per-camera CNNs
+were trained only on same-fragment positives and coexisting-fragment
+negatives. On the reference-known boundaries they decided 71 correctly and
+none wrongly; 56 were undecidable. They corrected five of the nine boundaries
+the chain gets wrong; the other four are undecidable. Constrained
+whole-recording naming reduced lower-risk wrong-ID time from 815.558 to 21.804
+fish-s, with no newly wrong time. All of the remainder lies in 34 intervals too
+short or too crowded for non-overlap crops, mostly the 527--559 s
+close-contact cluster. The lab is parked, not promoted. This is one recording,
+trained and scored transductively, and the evaluation reference is the Jingyi
+review. Warning interiors were not renamed.
+
+Registration 2, same day: a naming stage that labels every post-preparation
+frame from the appearance clusters or leaves it unknown, and crops with the
+other fish masked by their poses (`run_appearance_naming.py`, run
+`appearance_naming_20261106_r1`). Both registered rules passed. With masked
+crops, 97.41% of reference-assessed fish-seconds are named and 0.181 fish-s
+of those are wrong (chain: 848.417 wrong). Most of the remaining 138.03
+unknown fish-s lie in two long close encounters (613.7 s and 510.1 s), whose
+flanking interval is too short to name. Per-frame names and `xyz` by identity
+are in `evaluation/identity_tracks_N_B.npz`. These are the lab's outputs, not
+a promoted extraction stage.
+
+Registration 3, same day (`run_appearance_gap.py`, run
+`appearance_gap_20261106_r1`): bridging across unnamed slivers (S) and
+per-frame appearance inside gaps with flank-constrained switching (G). Both
+registered rules rejected: on gap time, S is 2.04% wrong and G 11.0% wrong
+against a 1% limit. The error is in the two long close encounters. There,
+single-crop appearance agrees with the reference only 70--76% of the time,
+against 93--98% elsewhere. A crop identity audit projected the reference
+fish into each camera. It confirms that training crops show the slot's fish
+(100.00% of the 98--99% that are clearly attributable). The encounter errors
+come from crops with partly covered bodies, or with two fish close in one
+view; such crops are rare in training data. Registration 2's output (97.41%
+named, 0.181 fish-s wrong) remains the lab's current result.
+
+Registration 4, 2026-11-07 (`run_appearance_clean.py`,
+`config_appearance_clean_v1.toml`; runs `jingyi/P-1-1/appearance_clean_20261107_r1`
+and `work/appearance/20251225_K_1_2_FCMC/appearance_clean_20261107_k12`):
+training and all appearance evidence restricted to clean crops (no own-body
+occlusion, no other keypoint within 80 px, at least three detections in the
+camera-frame), side crops flipped dorsal-up, one encoder for both side
+cameras with cross-camera positives, silhouette-based stopping, and PCA
+figures of the validation embeddings during training. On P-1-1 (development),
+96.18% of assessed fish-seconds are named and 0.042 fish-s wrong; appearance
+inside gaps with clean evidence falls from 11.0% to 0.35% wrong on gap time
+but names less than bridging, so the registered G-versus-S rule reads
+reject. On K_1_2, judged once against 255 confirmed female identifications
+after 300 s: 250 named, 0 wrong, 5 unknown; the registered rule (at most 1%
+wrong, at least 90% named) is met, while the chain holds the female in the
+other slot at 59 of those anchors. Male identity on K_1_2 is unverified (14
+male-only name changes against slot continuation). The K_1_2 fragments were
+computed label-free from the production chain output of 2026-09-03 with the
+identity-core warning rules. Registration 4's pipeline is the lab's
+carry-forward state; nothing is promoted.
+
+Registration 5, 2026-11-07 (`run_appearance_clean.py --config`, GPU): two
+single-change variants of the Registration 4 pipeline, judged on single-crop
+accuracy over P-1-1's clean reference-clear warning crops against
+Registration 4 on the common crop set (adopt at +2 points pooled with no
+camera more than 1 point below; reject when any camera is more than 2 points
+below or the K_1_2 anchor rule fails). Variant A, torchvision ResNet18 with
+a bias-free 8-d head on Registration 4's own crops
+(`config_appearance_resnet_v1.toml`; runs
+`jingyi/P-1-1/appearance_resnet_20261107_r1` and
+`work/appearance/20251225_K_1_2_FCMC/appearance_resnet_20261107_k12`), is
+rejected: top-view accuracy 90.96% against 99.02%, side views within 0.5
+points, pooled 96.25% against 98.96%. Its K_1_2 anchor counts equal
+Registration 4's (250 named, 0 wrong, 5 unknown of 255). The silhouette
+stopping rule let the ResNet stop after 300 steps; architecture and early
+stop are not separable inside this registration. Variant R, 128 px crops
+with 112 px input decoded again from video
+(`config_appearance_res128_v1.toml`; runs
+`jingyi/P-1-1/appearance_res128_20261107_r1` and
+`work/appearance/20251225_K_1_2_FCMC/appearance_res128_20261107_k12`), is
+inconclusive: pooled accuracy 98.96% against 98.96% on the 3,758 common
+crops, no camera moving by more than half a point, K_1_2 anchor counts
+again equal to Registration 4's. Neither variant is adopted; 56 px input
+and the four-block CNN of Registration 4 remain the carry-forward state.
+Two failed training attempts of variant R (a whole-array float conversion
+and GPU memory oversubscription) were fixed in memory handling only, before
+any evaluation existed; the lab RESULT.md records them.
