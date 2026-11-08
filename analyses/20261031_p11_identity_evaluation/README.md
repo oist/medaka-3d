@@ -230,3 +230,22 @@ Historical proposed appearance comparison, not executed:
    assessed-event coverage, and subsequent wrong-ID time. This experiment
    would evaluate the proposed appearance evidence; segmentation alone is
    not evidence that the identity problem has been solved.
+
+## Geometry/motion and localized review follow-up, 2026-11-04
+
+The user requested geometry/motion experiments using the existing P-1-1 manual
+annotation, followed by short flip warning intervals; appearance is deferred.
+See [the result](GEOMETRY_MOTION_RESULT.md),
+[executed notebook](geometry_motion_review.ipynb), and
+[registered experiment](../../labs/20261104_geometry_flip_risk/README.md).
+
+The core warning rule concentrates 96.97--100% of sustained reference-change
+groups into 5.01--5.27% of recording time across seven arms. At 0.767, it exports
+129 warning intervals (90.795 s) and 130 lower-risk local intervals. Those local
+intervals are not automatically verified physical names. Permissive C30 improves
+some local connections but does not consistently improve fixed-anchor identity
+time; retain the existing automatic output. The final run is
+`geometry_motion_risk_20261104_r3`; the failed r2 comparison is preserved and
+explained. The next informative checks are the ten warning intervals containing
+the sustained reference changes and their clean context. Existing annotation
+is usable immediately; more human review is not a prerequisite to experiments.

@@ -1,0 +1,25 @@
+version = "video_review_v1"
+source_variant = "baseline"
+lambda_mm = 0.767
+context_seconds = 2.0
+panel_pixels = 600
+playback_frames_per_second = 25.0
+note = "Purposively selected diagnostic examples, not a random sample, held-out partition, or adjudicated event set. Retain all native frames; playback is slowed."
+
+[[examples]]
+name = "paired_wrong_endpoints"
+edge_ids = [574, 994]
+boundary_frame = 154838
+selection = "Both assessed wrong endpoint joins in this arm share this native boundary."
+
+[[examples]]
+name = "nearby_correct_endpoint"
+edge_ids = [570]
+boundary_frame = 150534
+selection = "The supported correct join closest in acquisition time to the wrong pair."
+
+[[examples]]
+name = "close_fish_correct_endpoint"
+edge_ids = [1003]
+boundary_frame = 164453
+selection = "A nearby supported correct join with endpoint nearest-fish separation below 20 mm."
