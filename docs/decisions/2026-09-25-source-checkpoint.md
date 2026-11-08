@@ -49,3 +49,42 @@ These failures and the import/formatting issues remain open. A successful
 checkpoint or push must not be reported as a successful full CI run. The task
 does not change the numerical algorithms to resolve them. Detailed local logs
 and the explicit commit file manifest are under `work/commit_push_20260925/`.
+
+## Addendum 2026-11-08: full suite on a CUDA build of torch
+
+Since 2026-11-07 the Windows virtual environment installs torch from the
+PyTorch cu130 index (`pyproject.toml`, `[tool.uv.sources]`), so the machine's
+RTX 5070 Ti is visible to the tests. A full `pytest` run on 2026-11-08 gave
+8 failed, 3808 passed. Two are the lab-hygiene failures already open
+(`test_labs.py::TestLabHygiene::test_lab_is_well_formed` for
+`20260908_mask_volume` and `20260909_three_body`, expired without a
+RESULT.md). The other six assert that `torch.cuda.is_initialized()` is false
+or raise their own "requires no CUDA" / "must remain CPU" guards:
+
+- `test_evaluate_body_point_identity200.py::test_failed_input_preserves_receipt_and_does_not_solve`
+- `test_fast_tail_five_minute_pixels.py::test_real_small_metadata_binds90_masks_without_mask_pose_or_cuda`
+- `test_fast_tail_two_minute_pixels.py::test_metadata_only_real_seals_never_open_arrays_or_cuda`
+- `test_fixed_body_width_graph_fit.py::test_cpu_constructor_rejected_without_cuda_use_and_plain_renderer_cannot_be_captured`
+- `test_paired_rescore_mixed4.py::test_actual_small_summary_plan_manifest_contract_without_numeric_payload`
+- `test_prepare_body_point200_packets.py::test_input_failure_persists_failed_seal_without_attempting_packet_work`
+
+All six pass when their files run in their own process (78 passed). In the
+full run, CUDA is first initialised by
+`test_accelerated_observations.py::test_cuda_foreground_matches_v3_all_maps_and_flow[random]`,
+a test that runs on the GPU whenever one is available, and
+`torch.cuda.is_initialized()` stays true for the rest of the process. On the
+CPU-only build it could never become true, which is why these guards held
+before. Note also that on this torch (2.14.1) any `torch.optim` step, even on
+CPU parameters, initialises CUDA through
+`Optimizer._accelerator_graph_capture_health_check`, so the guards cannot be
+made order-independent by keeping other tests on the CPU. The same run with
+`tests/test_contrastive_appearance_lab.py` excluded fails identically, so the
+appearance lab is not the cause; its training tests are nevertheless pinned
+to `device="cpu"`.
+
+Open. Options, none taken here: have the six tests compare
+`is_initialized()` before and after the stage under test rather than against
+false; run them in a subprocess; or run the suite on a GPU machine with
+`CUDA_VISIBLE_DEVICES` hiding the device. The choice belongs to the owners of
+those labs. The numerical failures listed above remain as recorded; the
+2026-09-25 import and formatting findings were resolved by later commits.
