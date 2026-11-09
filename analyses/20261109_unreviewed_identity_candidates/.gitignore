@@ -1,0 +1,5 @@
+# Generated execution evidence is archived in configured shared storage.
+*.log
+diagnostics.csv
+fifteen_state.json
+run_fifteen_state_*.json
