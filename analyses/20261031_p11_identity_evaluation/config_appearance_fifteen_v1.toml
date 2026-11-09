@@ -1,0 +1,307 @@
+lab = "labs/20261106_contrastive_appearance_link"
+lambda_mm = 0.767
+note = "Unreviewed-recording candidates (analyses/20261109_unreviewed_identity_candidates): Registration 4 pipeline, unchanged from config_appearance_six_v1.toml, on the fifteen recordings of K_2, P_2, E_1, E_2 and G_1. Crops are decoded from video and staged on local disk; no reference enters any step. Evaluate writes identity tracks (N_carry, S, G) and label-free diagnostics only."
+
+[run_ids]
+k21 = "appearance_unrev_20261109_k21"
+k22 = "appearance_unrev_20261109_k22"
+k23 = "appearance_unrev_20261109_k23"
+p21 = "appearance_unrev_20261109_p21"
+p22 = "appearance_unrev_20261109_p22"
+p23 = "appearance_unrev_20261109_p23"
+e11 = "appearance_unrev_20261109_e11"
+e12 = "appearance_unrev_20261109_e12"
+e13 = "appearance_unrev_20261109_e13"
+e21 = "appearance_unrev_20261109_e21"
+e22 = "appearance_unrev_20261109_e22"
+e23 = "appearance_unrev_20261109_e23"
+g11 = "appearance_unrev_20261109_g11"
+g12 = "appearance_unrev_20261109_g12"
+g13 = "appearance_unrev_20261109_g13"
+
+[k21]
+experiment = "20260109_K_2_1_FCMC"
+output_root = "appearance_staging_dir"
+output = "20260109_K_2_1_FCMC"
+crop_source = "video"
+chain_dir = "work/c34_microflip/20260109_K_2_1_FCMC__chain-c28-c33-c30v4-c34"
+cache_dir = "work/c01_s16_predictions/bottomup"
+
+[k21.warning]
+rules = ["missing_position", "large_step", "nonidentity_nearest"]
+proximity_mm = 10.0
+padding_s = 0.05
+step_mm = 10.0
+residual_mm = 3.0
+margin_mm = 1.5
+preparation_seconds = 300.0
+
+[k22]
+experiment = "20260109_K_2_2_FCMC"
+output_root = "appearance_staging_dir"
+output = "20260109_K_2_2_FCMC"
+crop_source = "video"
+chain_dir = "work/c34_microflip/20260109_K_2_2_FCMC__chain-c28-c33-c30v4-c34"
+cache_dir = "work/c01_s16_predictions/bottomup"
+
+[k22.warning]
+rules = ["missing_position", "large_step", "nonidentity_nearest"]
+proximity_mm = 10.0
+padding_s = 0.05
+step_mm = 10.0
+residual_mm = 3.0
+margin_mm = 1.5
+preparation_seconds = 300.0
+
+[k23]
+experiment = "20260109_K_2_3_FCMC"
+output_root = "appearance_staging_dir"
+output = "20260109_K_2_3_FCMC"
+crop_source = "video"
+chain_dir = "work/c34_microflip/20260109_K_2_3_FCMC__chain-c28-c33-c30v4-c34"
+cache_dir = "work/c01_s16_predictions/bottomup"
+
+[k23.warning]
+rules = ["missing_position", "large_step", "nonidentity_nearest"]
+proximity_mm = 10.0
+padding_s = 0.05
+step_mm = 10.0
+residual_mm = 3.0
+margin_mm = 1.5
+preparation_seconds = 300.0
+
+[p21]
+experiment = "20260118_P_2_1_FCMC"
+output_root = "appearance_staging_dir"
+output = "20260118_P_2_1_FCMC"
+crop_source = "video"
+chain_dir = "work/c34_microflip/20260118_P_2_1_FCMC__chain-c28-c33-c30v4-c34"
+cache_dir = "work/c01_s16_predictions/bottomup"
+
+[p21.warning]
+rules = ["missing_position", "large_step", "nonidentity_nearest"]
+proximity_mm = 10.0
+padding_s = 0.05
+step_mm = 10.0
+residual_mm = 3.0
+margin_mm = 1.5
+preparation_seconds = 300.0
+
+[p22]
+experiment = "20260118_P_2_2_FCMC"
+output_root = "appearance_staging_dir"
+output = "20260118_P_2_2_FCMC"
+crop_source = "video"
+chain_dir = "work/c34_microflip/20260118_P_2_2_FCMC__chain-c28-c33-c30v4-c34"
+cache_dir = "work/c01_s16_predictions/bottomup"
+
+[p22.warning]
+rules = ["missing_position", "large_step", "nonidentity_nearest"]
+proximity_mm = 10.0
+padding_s = 0.05
+step_mm = 10.0
+residual_mm = 3.0
+margin_mm = 1.5
+preparation_seconds = 300.0
+
+[p23]
+experiment = "20260118_P_2_3_FCMC"
+output_root = "appearance_staging_dir"
+output = "20260118_P_2_3_FCMC"
+crop_source = "video"
+chain_dir = "work/c34_microflip/20260118_P_2_3_FCMC__chain-c28-c33-c30v4-c34"
+cache_dir = "work/c01_s16_predictions/bottomup"
+
+[p23.warning]
+rules = ["missing_position", "large_step", "nonidentity_nearest"]
+proximity_mm = 10.0
+padding_s = 0.05
+step_mm = 10.0
+residual_mm = 3.0
+margin_mm = 1.5
+preparation_seconds = 300.0
+
+[e11]
+experiment = "20251220_E_1_1_FCMC"
+output_root = "appearance_staging_dir"
+output = "20251220_E_1_1_FCMC"
+crop_source = "video"
+chain_dir = "work/c34_microflip/20251220_E_1_1_FCMC__chain-c28-c33-c30v4-c34"
+cache_dir = "work/c01_s16_predictions/bottomup"
+
+[e11.warning]
+rules = ["missing_position", "large_step", "nonidentity_nearest"]
+proximity_mm = 10.0
+padding_s = 0.05
+step_mm = 10.0
+residual_mm = 3.0
+margin_mm = 1.5
+preparation_seconds = 300.0
+
+[e12]
+experiment = "20251220_E_1_2_FCMC"
+output_root = "appearance_staging_dir"
+output = "20251220_E_1_2_FCMC"
+crop_source = "video"
+chain_dir = "work/c34_microflip/20251220_E_1_2_FCMC__chain-c28-c33-c30v4-c34"
+cache_dir = "work/c01_s16_predictions/bottomup"
+
+[e12.warning]
+rules = ["missing_position", "large_step", "nonidentity_nearest"]
+proximity_mm = 10.0
+padding_s = 0.05
+step_mm = 10.0
+residual_mm = 3.0
+margin_mm = 1.5
+preparation_seconds = 300.0
+
+[e13]
+experiment = "20251220_E_1_3_FCMC"
+output_root = "appearance_staging_dir"
+output = "20251220_E_1_3_FCMC"
+crop_source = "video"
+chain_dir = "work/c34_microflip/20251220_E_1_3_FCMC__chain-c28-c33-c30v4-c34"
+cache_dir = "work/c01_s16_predictions/bottomup"
+
+[e13.warning]
+rules = ["missing_position", "large_step", "nonidentity_nearest"]
+proximity_mm = 10.0
+padding_s = 0.05
+step_mm = 10.0
+residual_mm = 3.0
+margin_mm = 1.5
+preparation_seconds = 300.0
+
+[e21]
+experiment = "20260106_E_2_1_FCMC"
+output_root = "appearance_staging_dir"
+output = "20260106_E_2_1_FCMC"
+crop_source = "video"
+chain_dir = "work/c34_microflip/20260106_E_2_1_FCMC__chain-c28-c33-c30v4-c34"
+cache_dir = "work/c01_s16_predictions/bottomup"
+
+[e21.warning]
+rules = ["missing_position", "large_step", "nonidentity_nearest"]
+proximity_mm = 10.0
+padding_s = 0.05
+step_mm = 10.0
+residual_mm = 3.0
+margin_mm = 1.5
+preparation_seconds = 300.0
+
+[e22]
+experiment = "20260106_E_2_2_FCMC"
+output_root = "appearance_staging_dir"
+output = "20260106_E_2_2_FCMC"
+crop_source = "video"
+chain_dir = "work/c34_microflip/20260106_E_2_2_FCMC__chain-c28-c33-c30v4-c34"
+cache_dir = "work/c01_s16_predictions/bottomup"
+
+[e22.warning]
+rules = ["missing_position", "large_step", "nonidentity_nearest"]
+proximity_mm = 10.0
+padding_s = 0.05
+step_mm = 10.0
+residual_mm = 3.0
+margin_mm = 1.5
+preparation_seconds = 300.0
+
+[e23]
+experiment = "20260106_E_2_3_FCMC"
+output_root = "appearance_staging_dir"
+output = "20260106_E_2_3_FCMC"
+crop_source = "video"
+chain_dir = "work/c34_microflip/20260106_E_2_3_FCMC__chain-c28-c33-c30v4-c34"
+cache_dir = "work/c01_s16_predictions/bottomup"
+
+[e23.warning]
+rules = ["missing_position", "large_step", "nonidentity_nearest"]
+proximity_mm = 10.0
+padding_s = 0.05
+step_mm = 10.0
+residual_mm = 3.0
+margin_mm = 1.5
+preparation_seconds = 300.0
+
+[g11]
+experiment = "20251223_G_1_1_FCMC"
+output_root = "appearance_staging_dir"
+output = "20251223_G_1_1_FCMC"
+crop_source = "video"
+chain_dir = "work/c34_microflip/20251223_G_1_1_FCMC__chain-c28-c33-c30v4-c34"
+cache_dir = "work/c01_s16_predictions/bottomup"
+
+[g11.warning]
+rules = ["missing_position", "large_step", "nonidentity_nearest"]
+proximity_mm = 10.0
+padding_s = 0.05
+step_mm = 10.0
+residual_mm = 3.0
+margin_mm = 1.5
+preparation_seconds = 300.0
+
+[g12]
+experiment = "20251223_G_1_2_FCMC"
+output_root = "appearance_staging_dir"
+output = "20251223_G_1_2_FCMC"
+crop_source = "video"
+chain_dir = "work/c34_microflip/20251223_G_1_2_FCMC__chain-c28-c33-c30v4-c34"
+cache_dir = "work/c01_s16_predictions/bottomup"
+
+[g12.warning]
+rules = ["missing_position", "large_step", "nonidentity_nearest"]
+proximity_mm = 10.0
+padding_s = 0.05
+step_mm = 10.0
+residual_mm = 3.0
+margin_mm = 1.5
+preparation_seconds = 300.0
+
+[g13]
+experiment = "20251223_G_1_3_FCMC"
+output_root = "appearance_staging_dir"
+output = "20251223_G_1_3_FCMC"
+crop_source = "video"
+chain_dir = "work/c34_microflip/20251223_G_1_3_FCMC__chain-c28-c33-c30v4-c34"
+cache_dir = "work/c01_s16_predictions/bottomup"
+
+[g13.warning]
+rules = ["missing_position", "large_step", "nonidentity_nearest"]
+proximity_mm = 10.0
+padding_s = 0.05
+step_mm = 10.0
+residual_mm = 3.0
+margin_mm = 1.5
+preparation_seconds = 300.0
+
+[crops]
+frame_step = 8
+out_px = 64
+
+[train]
+encoder = "cnn4"
+pairs = 128
+seed = 20261106
+threads_per_model = 12
+max_steps = 6000
+eval_every = 100
+validation_crops = 3000
+patience = 30
+target = 0.91
+target_patience = 2
+cross_pairs = 3000
+
+[train.models]
+top = ["top_cam"]
+side = ["side1_cam", "side2_cam"]
+
+[gap]
+alpha = 0.25
+posterior = 0.99
+
+[evaluate]
+end_window_s = 3.0
+min_reference_coverage = 0.5
+max_wrong_fraction_of_named = 0.01
+min_named_fraction = 0.9
+figure_evaluations = [0, 1, 3, 10]

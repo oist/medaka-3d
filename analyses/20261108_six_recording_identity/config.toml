@@ -1,0 +1,92 @@
+# Fixed inputs and declared settings of the six-recording identity study.
+# Paths are relative to the data parent (parent of the configured raw_data_dir)
+# unless absolute. Registered 2026-11-08 before any score existed.
+# On 2026-11-09, staged input paths were replaced with the fixed shared copies
+# after checking all 24 N/S/G candidate hashes against staged-copy manifests.
+# Training stages resolve their local root through paths.local.toml.
+
+# r1 (2026-11-08, same day) was discarded before any appearance score was recorded:
+# it read the review onto the production chain by slot index, but the P_1_1
+# appearance run consumes the 2026-11-02 rerun chain, whose slots differ.
+run_id = "six_identity_20261108_r2"
+output = "work/six_recording_identity"
+lambda_mm = 0.767
+analysis_start_s = 300.0
+labels = ["F", "M1", "M2"]
+
+[matching]
+# Package positions must coincide with the chain's slot of the same index.
+same_slot_max_mm = 1.0
+# Jingyi pectoral positions to chain slots, the inherited rule.
+jingyi_max_distance_mm = 5.0
+jingyi_min_margin_mm = 2.0
+# Female clicks to detections, as in Registration 4 of the appearance lab.
+female_match_px = 5.0
+
+[quantities]
+pair_distance_equal_mm = 2.0
+contact_distance_mm = 15.0
+contact_min_duration_s = 0.1
+contact_merge_gap_s = 0.1
+episode_attribution_min_fraction = 0.5
+max_wrong_fraction_of_named = 0.01
+min_named_fraction = 0.9
+
+[groups]
+K_1 = ["20251225_K_1_1_FCMC", "20251225_K_1_2_FCMC", "20251225_K_1_3_FCMC"]
+P_1 = ["20260112_P_1_1_FCMC", "20260113_P_1_2_FCMC", "20260112_P_1_3_FCMC"]
+
+[recordings."20251225_K_1_1_FCMC"]
+staged = true
+package = "s16_bottomup_3node_uncapped_m3dfull"
+cache_dir = "work/c01_s16_predictions"
+appearance_run = "work/appearance/20251225_K_1_1_FCMC/appearance_six_20261108_k11"
+appearance_run_group = "work/appearance/20251225_K_1_1_FCMC/appearance_group_20261108_k11"
+
+[recordings."20251225_K_1_2_FCMC"]
+package = "s16_bottomup_3node_uncapped_m3dfull"
+cache_dir = "work/c01_s16_predictions"
+appearance_run = "work/appearance/20251225_K_1_2_FCMC/appearance_clean_20261107_k12"
+appearance_run_group = "work/appearance/20251225_K_1_2_FCMC/appearance_group_20261108_k12"
+female_reference = "groundtruth/fish_sex_gt/20251225_K_1_2_FCMC/female_sex_gt.csv"
+
+[recordings."20251225_K_1_3_FCMC"]
+staged = true
+package = "s16_bottomup_3node_uncapped_m3dfull"
+cache_dir = "work/c01_s16_predictions"
+appearance_run = "work/appearance/20251225_K_1_3_FCMC/appearance_six_20261108_k13"
+appearance_run_group = "work/appearance/20251225_K_1_3_FCMC/appearance_group_20261108_k13"
+
+[recordings."20260112_P_1_1_FCMC"]
+package = "s14_bottomup_3node_reviewed_m3dfull"
+cache_dir = "work/c01_s16_predictions/bottomup"
+appearance_run = "jingyi/P-1-1/appearance_clean_20261107_r1"
+# The chain this appearance run consumed (row-repaired rerun of 2026-11-02).
+chain_dir = "jingyi/P-1-1/id_row_mapping_20261102_r1/pipeline/c34_microflip/20260112_P_1_1_FCMC__chain-c28-c33-c30v4-c34"
+appearance_run_group = "jingyi/P-1-1/appearance_group_20261108_p11"
+jingyi_review = "jingyi/P-1-1/reviewed_3d.csv"
+jingyi_review_sha256 = "4f188db9b7ac32a282234ef3ed2c84529f6949f1ff2e9b35c181e525f80c26f0"
+
+[recordings."20260113_P_1_2_FCMC"]
+staged = true
+package = "s14_bottomup_3node_reviewed_m3dfull"
+cache_dir = "work/c01_s16_predictions/bottomup"
+appearance_run = "work/appearance/20260113_P_1_2_FCMC/appearance_six_20261108_p12"
+appearance_run_group = "work/appearance/20260113_P_1_2_FCMC/appearance_group_20261108_p12"
+
+[recordings."20260112_P_1_3_FCMC"]
+staged = true
+package = "s14_bottomup_3node_reviewed_m3dfull"
+cache_dir = "work/c01_s16_predictions/bottomup"
+appearance_run = "work/appearance/20260112_P_1_3_FCMC/appearance_six_20261108_p13"
+appearance_run_group = "work/appearance/20260112_P_1_3_FCMC/appearance_group_20261108_p13"
+
+[chain]
+dir_template = "work/c34_microflip/{rec}__chain-c28-c33-c30v4-c34"
+label_template = "C34-label__{rec}__lam{lam:g}.npz"
+gated_template = "C34-gated__{rec}__lam{lam:g}.npz"
+
+[package]
+csv_template = "reconstruction_3d/{rec}/{pkg}/{pkg}_3d.csv"
+id_pass_template = "review_packages/{rec}/{pkg}/id_pass"
+manifest_template = "review_packages/{rec}/{pkg}/review_manifest.json"

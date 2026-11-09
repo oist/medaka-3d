@@ -1,0 +1,25 @@
+run_id = "appearance_naming_20261106_r1"
+experiment = "20260112_P_1_1_FCMC"
+lab = "labs/20261106_contrastive_appearance_link"
+lambda_mm = 0.767
+note = "Registration 2 of the lab: naming stage (Part 1) and pose-masked crops (Part 2). Pre-registered in the lab README before any masked crop or score. Reads appearance_link_20261106_r1 read-only."
+
+[input]
+# The registration-1 run and its configuration; every other input is taken
+# from that configuration so both registrations read identical files.
+appearance_config = "config_appearance_link_v1.toml"
+
+[train]
+# Must equal the registration-1 values ("trained exactly as A3").
+steps = 3000
+pairs = 128
+seed = 20261106
+threads_per_view = 10
+
+[evaluate]
+end_window_s = 3.0
+min_reference_coverage = 0.5
+max_wrong_fraction_of_named = 0.01
+min_named_fraction_of_assessed = 0.9
+embedding_check_crops = 2048
+cluster_window_s = [527.0, 559.2]

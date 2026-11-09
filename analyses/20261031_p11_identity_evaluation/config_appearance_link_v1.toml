@@ -1,0 +1,31 @@
+run_id = "appearance_link_20261106_r1"
+experiment = "20260112_P_1_1_FCMC"
+lab = "labs/20261106_contrastive_appearance_link"
+lambda_mm = 0.767
+note = "Step 1 of the tracking-strengthening plan. Pre-registered in the lab README before extraction. Reference labels are used for evaluation only."
+
+[input]
+tracking_run = "jingyi/P-1-1/id_row_mapping_20261102_r1"
+chain = "pipeline/c34_microflip/20260112_P_1_1_FCMC__chain-c28-c33-c30v4-c34/C34-label__20260112_P_1_1_FCMC__lam0.767.npz"
+scoring = "scoring_rerun_v1/scoring_arrays_lam0.767.npz"
+warning_run = "jingyi/P-1-1/geometry_motion_risk_20261104_r3"
+warning_mask = "lam0.767/warning_mask.npz"
+lower_risk = "lam0.767/lower_risk_intervals.csv"
+video_provenance = "video_review_v1/p11_video_review_pack.provenance.json"
+views = ["top_cam", "side1_cam", "side2_cam"]
+
+[crops]
+frame_step = 8
+
+[train]
+steps = 3000
+pairs = 128
+seed = 20261106
+threads_per_view = 10
+early_train_end_s = 1100.0
+
+[evaluate]
+end_window_s = 3.0
+min_reference_coverage = 0.5
+late_boundary_start_s = 1200.0
+separation_bins_mm = [0.0, 30.0, 60.0, 100.0, 1000.0]

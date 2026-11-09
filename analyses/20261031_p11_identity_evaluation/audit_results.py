@@ -120,11 +120,12 @@ def array_difference(a, b):
     }
 
 
-def compare_runs(config, paths, run_dir, score_dir):
+def compare_runs(config, paths, run_dir, score_dir, *, previous_score=None):
     exp = config["experiment"]
     relative = Path("c34_microflip") / f"{exp}__{config['pipeline']['chain_tag']}"
     comparison, aligned = {}, {}
-    previous_score = run_dir / config["evaluation"]["previous_scoring_directory"]
+    if previous_score is None:
+        previous_score = run_dir / config["evaluation"]["previous_scoring_directory"]
     old_anchors = json.loads((previous_score / "anchor_mappings.json").read_text())
     new_anchors = json.loads((score_dir / "anchor_mappings.json").read_text())
     with np.load(run_dir / "native_timing.npz") as timing:

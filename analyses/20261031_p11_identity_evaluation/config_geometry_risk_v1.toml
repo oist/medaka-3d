@@ -1,0 +1,27 @@
+run_id = "geometry_motion_risk_20261104_r1"
+source_config = "config_row_mapping_v1.toml"
+owner = "P-1-1 research team; execution by Codex"
+
+[warning]
+proximity_mm = [5.0, 10.0, 20.0]
+primary_proximity_mm = 10.0
+padding_s = 0.05
+step_mm = 10.0
+residual_mm = 3.0
+margin_mm = 1.5
+
+[bridge]
+max_interval_s = 0.75
+history_s = 0.1
+minimum_span_s = 0.08
+minimum_samples = 10
+assignment_margin_mm = 5.0
+methods = ["position", "bidirectional", "consensus"]
+
+[evaluation]
+preparation_seconds = 300.0
+stable_seconds = 0.1
+stable_samples = 10
+split_reference_gap_s = 0.5
+block_boundaries_s = [300.0, 900.0, 1500.0]
+review_context_s = 0.5

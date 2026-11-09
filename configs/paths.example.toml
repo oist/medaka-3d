@@ -26,6 +26,11 @@ sleap_output_dir = "Z:\\StephensU\\medaka\\sleap_output"
 # Frozen archive of the retired medaka-mating-pipeline repo.
 archive_dir = "Z:\\StephensU\\medaka\\archive\\medaka-mating-pipeline"
 
+# Optional existing local directory for appearance crop/training runs.
+# Required only by configurations with output_root = "appearance_staging_dir".
+# Set its machine-specific absolute path in paths.local.toml; it is not created.
+# appearance_staging_dir = "/absolute/local/appearance"
+
 # There is deliberately no key for BORIS ethograms. They moved off Google Drive
 # into the asset root during the migration and are resolved through the
 # checksummed manifest:

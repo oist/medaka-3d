@@ -41,6 +41,14 @@ dependencies = [
     # tactic. Plain CUDA inference is unaffected; do not chase an export path.
     "onnx",
     "kornia",
+    # Declared directly so that [tool.uv.sources] below can pin the Windows
+    # wheels to the CUDA index; the versions are still resolved by sleap-nn.
+    "torch>=2.7",
+    "torchvision",
+    # Thread control in the lab renderers (labs/20260917_*). It had been added
+    # to one machine's venv by hand and vanished at the first `uv sync --locked`
+    # (2026-11-07); declared here so the labs and their tests run from the lock.
+    "threadpoolctl>=3",
 ]
 
 [project.optional-dependencies]
@@ -82,3 +90,18 @@ select = ["E", "F", "I", "UP", "B", "SIM", "RUF"]
 # The experiment sheet genuinely contains full-width commas (Japanese IME);
 # these fixtures reproduce it byte-for-byte on purpose.
 "tests/test_cohort.py" = ["RUF001"]
+
+# PyPI's Windows wheels of torch/torchvision are CPU-only. On Windows the
+# CUDA 13.0 index supplies the same versions (torch 2.14.0, torchvision
+# 0.29.0) built for the RTX 5070 Ti (Blackwell, sm_120; driver 617). Linux
+# (the cluster) keeps the PyPI wheels, which already carry CUDA. Added
+# 2026-11-07 for the appearance lab; see
+# labs/20261106_contrastive_appearance_link/RESULT.md.
+[[tool.uv.index]]
+name = "pytorch-cu130"
+url = "https://download.pytorch.org/whl/cu130"
+explicit = true
+
+[tool.uv.sources]
+torch = [{ index = "pytorch-cu130", marker = "sys_platform == 'win32'" }]
+torchvision = [{ index = "pytorch-cu130", marker = "sys_platform == 'win32'" }]

@@ -164,6 +164,7 @@ def run_tracker(detections, nodes, *, window_size: int, scoring: str,
         "pre_cull_to_target": tracker.tracking_pre_cull_to_target,
         "window_size": window_size,
         "scoring_method": scoring,
+        "row_assignment": "input_instance_identity_v1",
     }
     if effective["max_tracks"] is not None or effective["target_instance_count"]:
         raise SystemExit(f"the tracker is still capped: {effective}")
@@ -188,13 +189,25 @@ def run_tracker(detections, nodes, *, window_size: int, scoring: str,
             )
             for row in range(lo, hi)
         ]
-        for offset, instance in enumerate(tracker.track(batch, frame_idx=frame)):
+        # The tracker returns matched instances followed by newly created tracks,
+        # not necessarily in input order. Capture the source rows before calling
+        # it: even an in-place list reorder must not change row correspondence.
+        source_rows = {
+            id(instance): row for row, instance in zip(range(lo, hi), batch, strict=True)
+        }
+        returned = tracker.track(batch, frame_idx=frame)
+        returned_ids = [id(instance) for instance in returned]
+        if len(returned_ids) != len(source_rows) or set(returned_ids) != set(source_rows):
+            raise ValueError(
+                f"Tracker did not return each input instance exactly once at frame {frame}"
+            )
+        for instance in returned:
             if instance.track is None:
                 continue
             key = instance.track.name
             if key not in names:
                 names[key] = len(names)
-            assigned[lo + offset] = names[key]
+            assigned[source_rows[id(instance)]] = names[key]
     return assigned, effective
 
 

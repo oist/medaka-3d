@@ -29,6 +29,15 @@ def write_config(tmp_path, **overrides):
 
 
 class TestPaths:
+    def test_optional_appearance_staging_is_checked_without_creation(self, tmp_path):
+        staging = tmp_path / "appearance"
+        config = write_config(tmp_path, appearance_staging_dir=staging)
+        assert load_paths(config).appearance_staging_dir == staging
+        staging.rmdir()
+        with pytest.raises(PathConfigError, match="not exist"):
+            load_paths(config)
+        assert not staging.exists()
+
     def test_loads_and_creates_work_dir(self, tmp_path):
         config = write_config(tmp_path)
         paths = load_paths(config)

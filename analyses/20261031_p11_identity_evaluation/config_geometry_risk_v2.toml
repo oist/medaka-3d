@@ -1,0 +1,21 @@
+run_id = "geometry_motion_risk_20261104_r2"
+source_config = "config_row_mapping_v1.toml"
+first_experiment = "geometry_motion_risk_20261104_r1"
+
+[warning]
+padding_s = 0.05
+proximity_mm = 10.0
+primary_rule = "identity_core"
+
+[warning.rules]
+without_ray_churn = ["missing_position", "large_step", "nonidentity_nearest", "local_track_change", "residual_spike"]
+identity_core = ["missing_position", "large_step", "nonidentity_nearest"]
+
+[c30_ablation]
+velocity_needs_median_mm = 0.0
+note = "Ablate only the v4 median prerequisite; keep all other v4 rules and C34 unchanged. This is the historical permissive velocity condition, not a threshold fitted to P-1-1."
+
+[evaluation]
+preparation_seconds = 300.0
+block_boundaries_s = [300.0, 900.0, 1500.0]
+review_context_s = 0.5

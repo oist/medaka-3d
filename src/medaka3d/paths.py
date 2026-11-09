@@ -29,6 +29,7 @@ REQUIRED_KEYS: tuple[str, ...] = (
 OPTIONAL_KEYS: tuple[str, ...] = (
     "sleap_output_dir",
     "archive_dir",
+    "appearance_staging_dir",
 )
 
 
@@ -45,6 +46,7 @@ class Paths:
     work_dir: Path
     sleap_output_dir: Path | None = None
     archive_dir: Path | None = None
+    appearance_staging_dir: Path | None = None
     source: Path | None = None
 
     def experiment_dir(self, experiment: str) -> Path:

@@ -1,0 +1,91 @@
+# Cross-trial appearance test: frozen K_1 and P_1 per-trio encoders applied to
+# K_2 and P_2. Registered 2026-11-09 before any run existed. Paths are
+# "data:<relative to the data parent>" (parent of raw_data_dir) or
+# "staging:<relative to appearance_staging_dir>" (configs/paths.local.toml).
+# Nothing here is refitted: models, normalisation and reference centroids come
+# from the fixed per-group runs of the six-recording study.
+run_id = "cross_trial_20261109_r2"
+output = "data:work/analyses/cross_trial_appearance"
+lab = "labs/20261106_contrastive_appearance_link"
+labels = ["F", "M1", "M2"]
+analysis_start_s = 300.0
+time_bin_s = 300.0
+# Whole-interval descriptors only; the window is passed to fragment_rows unchanged
+# from Registration 4 and its pre/post rows are not used here.
+end_window_s = 3.0
+silhouette_sample = 3000
+kmeans_seed = 20261106
+# Review alignment of the source recordings' N_carry codes (phase 3 of the six-recording study).
+six_study_scores = "data:work/six_recording_identity/six_identity_20261108_r2/scores/phase3_per_group/scores.json"
+six_study_cross_day = "data:work/six_recording_identity/six_identity_20261108_r2/report/cross_day_centroids.json"
+
+[sources.K_1]
+model_run = "data:work/appearance/20251225_K_1_1_FCMC/appearance_group_20261108_k11"
+# Local copy of the model run's own prepared crops, used only to check that
+# re-embedding reproduces the stored embeddings (skipped when absent).
+sanity_clean_run = "staging:20251225_K_1_1_FCMC/appearance_six_20261108_k11"
+targets = ["20260109_K_2_1_FCMC", "20260109_K_2_2_FCMC", "20260109_K_2_3_FCMC"]
+
+[[sources.K_1.members]]
+recording = "20251225_K_1_1_FCMC"
+run = "data:work/appearance/20251225_K_1_1_FCMC/appearance_group_20261108_k11"
+clean_run = "data:work/appearance/20251225_K_1_1_FCMC/appearance_six_20261108_k11"
+
+[[sources.K_1.members]]
+recording = "20251225_K_1_2_FCMC"
+run = "data:work/appearance/20251225_K_1_2_FCMC/appearance_group_20261108_k12"
+clean_run = "data:work/appearance/20251225_K_1_2_FCMC/appearance_clean_20261107_k12"
+
+[[sources.K_1.members]]
+recording = "20251225_K_1_3_FCMC"
+run = "data:work/appearance/20251225_K_1_3_FCMC/appearance_group_20261108_k13"
+clean_run = "data:work/appearance/20251225_K_1_3_FCMC/appearance_six_20261108_k13"
+
+[sources.P_1]
+model_run = "data:work/appearance/20260113_P_1_2_FCMC/appearance_group_20261108_p12"
+sanity_clean_run = "staging:20260113_P_1_2_FCMC/appearance_six_20261108_p12"
+targets = ["20260118_P_2_1_FCMC", "20260118_P_2_2_FCMC", "20260118_P_2_3_FCMC"]
+
+[[sources.P_1.members]]
+recording = "20260112_P_1_1_FCMC"
+run = "data:jingyi/P-1-1/appearance_group_20261108_p11"
+clean_run = "data:jingyi/P-1-1/appearance_clean_20261107_r1"
+
+[[sources.P_1.members]]
+recording = "20260113_P_1_2_FCMC"
+run = "data:work/appearance/20260113_P_1_2_FCMC/appearance_group_20261108_p12"
+clean_run = "data:work/appearance/20260113_P_1_2_FCMC/appearance_six_20261108_p12"
+
+[[sources.P_1.members]]
+recording = "20260112_P_1_3_FCMC"
+run = "data:work/appearance/20260112_P_1_3_FCMC/appearance_group_20261108_p13"
+clean_run = "data:work/appearance/20260112_P_1_3_FCMC/appearance_six_20261108_p13"
+
+# Target runs of analyses/20261109_unreviewed_identity_candidates. The crops are
+# read from the local staged run (the share runs at about 10 MB/s) and their
+# SHA-256 is checked against the run's prepare provenance and the shared copy's
+# staged_copy_manifest.json before use. Their own per-recording encoder names
+# (evaluation/) are read for the consistency comparison only.
+[targets."20260109_K_2_1_FCMC"]
+run = "staging:20260109_K_2_1_FCMC/appearance_unrev_20261109_k21"
+shared = "data:work/appearance/20260109_K_2_1_FCMC/appearance_unrev_20261109_k21"
+
+[targets."20260109_K_2_2_FCMC"]
+run = "staging:20260109_K_2_2_FCMC/appearance_unrev_20261109_k22"
+shared = "data:work/appearance/20260109_K_2_2_FCMC/appearance_unrev_20261109_k22"
+
+[targets."20260109_K_2_3_FCMC"]
+run = "staging:20260109_K_2_3_FCMC/appearance_unrev_20261109_k23"
+shared = "data:work/appearance/20260109_K_2_3_FCMC/appearance_unrev_20261109_k23"
+
+[targets."20260118_P_2_1_FCMC"]
+run = "staging:20260118_P_2_1_FCMC/appearance_unrev_20261109_p21"
+shared = "data:work/appearance/20260118_P_2_1_FCMC/appearance_unrev_20261109_p21"
+
+[targets."20260118_P_2_2_FCMC"]
+run = "staging:20260118_P_2_2_FCMC/appearance_unrev_20261109_p22"
+shared = "data:work/appearance/20260118_P_2_2_FCMC/appearance_unrev_20261109_p22"
+
+[targets."20260118_P_2_3_FCMC"]
+run = "staging:20260118_P_2_3_FCMC/appearance_unrev_20261109_p23"
+shared = "data:work/appearance/20260118_P_2_3_FCMC/appearance_unrev_20261109_p23"

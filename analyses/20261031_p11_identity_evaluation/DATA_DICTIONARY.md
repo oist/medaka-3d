@@ -95,3 +95,88 @@ agreement with reviewed identities, not independent 3D localization accuracy.
 `watched` only means a frame was displayed in the GUI, at any playback speed.
 The unused `uncertain` flag does not prove every displayed frame was decidable.
 No appearance model was trained or evaluated. No lambda was selected or promoted.
+
+## Separately versioned row-mapping follow-up
+
+`id_row_mapping_20261102_r1` preserves the baseline and uses a corrected source-row
+adapter. See [ROW_MAPPING_REPAIR.md](ROW_MAPPING_REPAIR.md) for the comparison
+protocol, input pins, and validation status. All ledger tables below are written
+under the new run, including the tables calculated from the old baseline.
+
+`join_ledger_v2/{baseline,repair}/lam*/` contains:
+
+| Table | Unit and interpretation |
+| --- | --- |
+| `tracks.csv` | One automatic local ID; time-weighted reference-label support, including IDs without reference matches |
+| `segments.csv` | One uninterrupted native-frame run with a valid position, a fixed output slot, and an unchanged local ID |
+| `edges.csv` | One asserted same-slot continuation between successive segments; correct/wrong/undecidable endpoint correspondence |
+| `event_candidates.csv` | One bounded-span temporal group of edges for review, with member edge IDs and half-open review frame ranges; not an adjudicated event |
+| `c30_decisions.csv` | One C30 candidate boundary or turbulent-zone decision, obtained by replay that matches the stored output exactly |
+| `c30_associations.csv` | One temporal relationship between a final C34 edge and a C30 decision; it does not establish causation or slot correspondence between stages |
+| `observed_assignment_changes.csv` | Original reference-to-slot changes, including changes within mixed tracks; gap-endpoint changes do not establish the number of intervening exchanges |
+| `wrong_identity_intervals.csv` | Original per-fish disagreement intervals, unmerged; overlapping M1/M2 intervals are fish-seconds, not distinct recording time |
+
+Track and segment `label_status` distinguish `supported_reference_label`,
+`mixed`, `insufficient_support`, `reference_incomplete`, and `unassessed`.
+`majority_label` is retained as a diagnostic even when it is not supported.
+`supported_reference_label` is null in that case; it is not a delivered
+trial-wide ID. `purity` and `matched_fraction` use acquisition-duration weights;
+they are not calibrated correctness probabilities.
+
+`edges.outcome` evaluates the supported reference labels at the two ends of the
+asserted continuation. `gap_interior_identity_status=unassessed` means no claim
+is made inside a gap, even when its endpoint correspondence is correct.
+`undecidable_reasons` preserves all applicable support limitations. Unassessed
+edges remain in `edge_count`; correct/(correct+wrong) must be accompanied by
+assessed/all-edge coverage. Neither denominator is a biological sample size.
+
+Geometric endpoint context is in millimetres. `wall_clearance_signed_mm` is the
+minimum signed distance to the four vertical tank walls.
+`depth_below_surface_signed_mm` is calibrated water height minus Z. Negative
+wall clearance or depth, or depth greater than calibrated water height, is not
+clipped. `contributing_cameras` counts nonnegative source rows for that slot.
+Reflection and BORIS status are explicitly unknown/not aligned.
+
+C30 history endpoints are native frame indices; `velocity_history_span_seconds`
+uses their native acquisition timestamps. `velocity_called` includes attempted
+evaluations; consult `velocity_costs_available` and the unavailable reason.
+`velocity_adopted` denotes a velocity or bridge correction, not proof that the
+individual was correctly identified. `physical_identity_correctness` remains
+`not_adjudicated`. An association marked `nearby_only` is weaker than temporal
+inclusion and must not be silently treated as the cause of an edge outcome.
+
+`summary.json` keeps the full expected fish-time separately from the summed
+eligible-grid intervals. Their small difference is the initial partial interval
+after 300 s, already documented above. V1 remains an explicitly superseded
+diagnostic attempt; it is not mixed into V2 comparisons.
+# Geometry/motion follow-up exports
+
+The follow-up is `geometry_motion_risk_20261104_r3`; its source geometry remains
+`id_row_mapping_20261102_r1`. These tables are exploratory review evidence, not
+accepted identity-bearing trajectories. All times are native recording seconds.
+
+| File / fields | Meaning |
+| --- | --- |
+| `lam*/warning_intervals_identity_core.csv` | Geometry-only warnings: <10 mm pair separation, >10 mm adjacent step, non-identity nearest assignment, or missing position; padded by 0.05 s. |
+| `start_frame`, `stop_frame_exclusive` | Half-open native-frame interval; no forced maximum duration. |
+| `start_s`, `end_s`, `duration_s` | Acquisition-time bounds and sum of eligible native hold durations. |
+| `review_start_*`, `review_end_s`, `review_stop_frame_exclusive` | An additional 0.5 s of viewing context on both sides, clipped to the analysis recording range. |
+| `reasons` | Comma-separated detector signals; no manual labels enter detection. |
+| `missing_geometry_s` | Time in the warning with at least one invalid animal position. |
+| `audit_v1/review_queue_lam*.csv` | Warning table plus retrospective reference evidence and a display priority. |
+| `reference_group_ids`, `reference_group_count` | Reference-derived sustained change brackets contained in the warning; not detector inputs or physical swap counts. |
+| `review_priority` | Assignment disagreement, large step, then proximity/missing; not a calibrated probability. |
+| `lam*/lower_risk_intervals.csv` | Contiguous valid-position intervals outside the core warnings. Earlier global naming mistakes can persist here. |
+| `slot*_reference_coverage` | Matched reference duration divided by segment duration for that raw slot. |
+| `slot*_reference_labels_observed`, `slot*_reference_purity` | Number of matched physical labels and time-weighted majority fraction inside this interval. Missing reference does not vote. |
+| `slot*_majority_label` | Diagnostic majority reference name, or unknown; not an automatic identity prediction. |
+| `group_capture_*.csv`, `raw_capture_*.csv` | Full containment versus any overlap of reference transition uncertainty brackets, with explicit warning IDs. |
+| `audit_v1/c30_connection_changes_lam*.csv` | Fish-level edges wrong under at least one method, distinguishing adjacent observations and gap endpoints. |
+| `baseline_correct`, `candidate_correct` | Whether consecutive observations of the same reference fish keep their output slot; not trial-wide naming correctness. |
+| `correction_summary.csv` | Fixed-anchor fish-seconds correct, wrong, repaired, newly wrong, and unassessed; all-time and declared time blocks. |
+| `reference_endpoint_oracle` | Explicit reference-only link composition diagnostic; not deployable accuracy or an upper bound. |
+
+The frozen source scorer's complete denominator remains in force. Missing,
+unassessed, and the leading partial acquisition interval are not converted to
+correct time. A clean-looking local segment does not resolve its relationship
+to the trial anchor across an unchecked warning.
