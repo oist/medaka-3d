@@ -127,3 +127,39 @@ cells retain their original paths and executed outputs. No tracking or model
 training was rerun, no raw inputs or human references were changed, and no video
 adjudication was performed. Full local check logs and the contextual commit
 manifest are in ignored `work/commit_push_20261109/`.
+
+## Addendum 2026-11-09: fifteen recordings and cross-trial comparison
+
+The supervisor requested committing the additional checks/code and merging
+the outstanding identity branch into main. The fifteen-recording execution
+and the frozen K_1-to-K_2 / P_1-to-P_2 comparison are recorded as separate
+commits in PR #4. Generated diagnostics, execution state and logs are
+excluded from Git and preserved with source snapshots and verified SHA-256
+hashes under `work/analyses/identity_commit_review/identity_commit_review_20261109/`
+in configured shared storage. Original run artifacts remain unchanged.
+
+Checks on this additional scope:
+
+- Cross-trial, candidate-export, appearance and cohort test files: 83 passed,
+  two skipped. New checks cover centroid assignment, complete-interval
+  agreement, mandatory manifest checksums and retention of both groups'
+  model provenance. This is a focused run, not another full-suite run.
+- Repository lint, formatting of the seven research/test Python files,
+  Python/TOML parsing and the cross-trial/archive CLI help checks passed.
+- The 42 cross-trial output hashes and four model hashes match their records;
+  the five available agreement fractions reproduce from saved interval
+  tables. All 108 selected view-bin assignments remain stable.
+- The archived original comparison runner matches the r2 source hash.
+  Future runs retain group-specific model provenance keys and reject a
+  missing shared-manifest crop checksum. Neither change alters the
+  embedding or naming calculation or rewrites r1/r2.
+- The previous PR CI run failed at the repository-wide format check
+  (247 files on Linux); its tests did not run. This is the existing
+  formatting backlog, not a passing CI result. The full-suite failure
+  record above remains applicable; no unrelated baseline repair is included.
+
+The README distinguishes complete three-slot interval agreement from
+per-fish accuracy, corrects the number of time bins, records the shared E_1/E_2
+individuals, and qualifies P_2's small but nonzero appearance shifts. The
+frozen-reference results do not verify target physical identities and do
+not change the separate S/G export policy.
