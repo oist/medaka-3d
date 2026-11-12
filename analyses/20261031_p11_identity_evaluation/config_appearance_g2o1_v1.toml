@@ -1,0 +1,145 @@
+lab = "labs/20261106_contrastive_appearance_link"
+lambda_mm = 0.767
+note = "Unreviewed-recording candidates (analyses/20261112_g2_o1_identity_candidates): Registration 4 pipeline, unchanged from config_appearance_fifteen_v1.toml, on the six recordings of G_2 and O_1. Crops are decoded from video and staged on local disk; no reference enters any step. Evaluate writes identity tracks (N_carry, S, G) and label-free diagnostics only."
+
+[run_ids]
+g21 = "appearance_unrev_20261112_g21"
+g22 = "appearance_unrev_20261112_g22"
+g23 = "appearance_unrev_20261112_g23"
+o11 = "appearance_unrev_20261112_o11"
+o12 = "appearance_unrev_20261112_o12"
+o13 = "appearance_unrev_20261112_o13"
+
+[g21]
+experiment = "20260109_G_2_1_FCMC"
+output_root = "appearance_staging_dir"
+output = "20260109_G_2_1_FCMC"
+crop_source = "video"
+chain_dir = "work/c34_microflip/20260109_G_2_1_FCMC__chain-c28-c33-c30v4-c34"
+cache_dir = "work/c01_s16_predictions/bottomup"
+
+[g21.warning]
+rules = ["missing_position", "large_step", "nonidentity_nearest"]
+proximity_mm = 10.0
+padding_s = 0.05
+step_mm = 10.0
+residual_mm = 3.0
+margin_mm = 1.5
+preparation_seconds = 300.0
+
+[g22]
+experiment = "20260109_G_2_2_FCMC"
+output_root = "appearance_staging_dir"
+output = "20260109_G_2_2_FCMC"
+crop_source = "video"
+chain_dir = "work/c34_microflip/20260109_G_2_2_FCMC__chain-c28-c33-c30v4-c34"
+cache_dir = "work/c01_s16_predictions/bottomup"
+
+[g22.warning]
+rules = ["missing_position", "large_step", "nonidentity_nearest"]
+proximity_mm = 10.0
+padding_s = 0.05
+step_mm = 10.0
+residual_mm = 3.0
+margin_mm = 1.5
+preparation_seconds = 300.0
+
+[g23]
+experiment = "20260109_G_2_3_FCMC"
+output_root = "appearance_staging_dir"
+output = "20260109_G_2_3_FCMC"
+crop_source = "video"
+chain_dir = "work/c34_microflip/20260109_G_2_3_FCMC__chain-c28-c33-c30v4-c34"
+cache_dir = "work/c01_s16_predictions/bottomup"
+
+[g23.warning]
+rules = ["missing_position", "large_step", "nonidentity_nearest"]
+proximity_mm = 10.0
+padding_s = 0.05
+step_mm = 10.0
+residual_mm = 3.0
+margin_mm = 1.5
+preparation_seconds = 300.0
+
+[o11]
+experiment = "20260109_O_1_1_FCMC"
+output_root = "appearance_staging_dir"
+output = "20260109_O_1_1_FCMC"
+crop_source = "video"
+chain_dir = "work/c34_microflip/20260109_O_1_1_FCMC__chain-c28-c33-c30v4-c34"
+cache_dir = "work/c01_s16_predictions/bottomup"
+
+[o11.warning]
+rules = ["missing_position", "large_step", "nonidentity_nearest"]
+proximity_mm = 10.0
+padding_s = 0.05
+step_mm = 10.0
+residual_mm = 3.0
+margin_mm = 1.5
+preparation_seconds = 300.0
+
+[o12]
+experiment = "20260109_O_1_2_FCMC"
+output_root = "appearance_staging_dir"
+output = "20260109_O_1_2_FCMC"
+crop_source = "video"
+chain_dir = "work/c34_microflip/20260109_O_1_2_FCMC__chain-c28-c33-c30v4-c34"
+cache_dir = "work/c01_s16_predictions/bottomup"
+
+[o12.warning]
+rules = ["missing_position", "large_step", "nonidentity_nearest"]
+proximity_mm = 10.0
+padding_s = 0.05
+step_mm = 10.0
+residual_mm = 3.0
+margin_mm = 1.5
+preparation_seconds = 300.0
+
+[o13]
+experiment = "20260109_O_1_3_FCMC"
+output_root = "appearance_staging_dir"
+output = "20260109_O_1_3_FCMC"
+crop_source = "video"
+chain_dir = "work/c34_microflip/20260109_O_1_3_FCMC__chain-c28-c33-c30v4-c34"
+cache_dir = "work/c01_s16_predictions/bottomup"
+
+[o13.warning]
+rules = ["missing_position", "large_step", "nonidentity_nearest"]
+proximity_mm = 10.0
+padding_s = 0.05
+step_mm = 10.0
+residual_mm = 3.0
+margin_mm = 1.5
+preparation_seconds = 300.0
+
+[crops]
+frame_step = 8
+out_px = 64
+
+[train]
+encoder = "cnn4"
+pairs = 128
+seed = 20261106
+threads_per_model = 12
+max_steps = 6000
+eval_every = 100
+validation_crops = 3000
+patience = 30
+target = 0.91
+target_patience = 2
+cross_pairs = 3000
+
+[train.models]
+top = ["top_cam"]
+side = ["side1_cam", "side2_cam"]
+
+[gap]
+alpha = 0.25
+posterior = 0.99
+
+[evaluate]
+end_window_s = 3.0
+min_reference_coverage = 0.5
+max_wrong_fraction_of_named = 0.01
+min_named_fraction = 0.9
+figure_evaluations = [0, 1, 3, 10]
